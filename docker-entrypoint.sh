@@ -45,6 +45,7 @@ echo "[3/4] Setting up database..."
 mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ethioserve CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pass_2024';
+GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1' IDENTIFIED BY 'ethioserve_pass_2024';
 FLUSH PRIVILEGES;
 EOF
 

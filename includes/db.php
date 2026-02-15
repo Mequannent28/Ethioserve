@@ -19,7 +19,8 @@ try {
      $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
      if (ENVIRONMENT === 'production') {
-          die("Service temporarily unavailable. Please try again later.");
+          // TEMPORARY DEBUGGING: Show actual error
+          die("Database Error: " . $e->getMessage());
      } else {
           die("Database connection failed. Please ensure the database '$db' exists and is configured correctly in includes/config.php.");
      }
