@@ -70,11 +70,26 @@ $bookings = $stmt->fetchAll();
     <style>
         body {
             overflow-x: hidden;
+<<<<<<< HEAD
             background-color: #f8fafc;
         }
 
         .main-content {
             padding: 40px;
+=======
+        }
+
+        .dashboard-wrapper {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: #f0f2f5;
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             min-height: 100vh;
         }
     </style>

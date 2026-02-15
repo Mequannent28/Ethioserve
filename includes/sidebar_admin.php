@@ -4,9 +4,13 @@
     <div class="sidebar-inner">
         <!-- Logo / Brand -->
         <div class="sidebar-brand">
+<<<<<<< HEAD
             <a href="../customer/index.php" class="text-decoration-none d-flex align-items-center gap-2">
                 <img src="../assets/img/AA.jpg" class="rounded-circle border border-warning"
                     style="width: 35px; height: 35px; object-fit: cover;" onerror="this.style.display='none'">
+=======
+            <a href="../customer/index.php" class="text-decoration-none">
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                 <h4 class="text-white fw-bold mb-0">Ethio<span class="text-warning">Serve</span></h4>
             </a>
             <p class="text-white-50 small mb-0 mt-1">
@@ -184,6 +188,7 @@
 
         <!-- Logout -->
         <div class="sidebar-footer">
+<<<<<<< HEAD
             <a class="nav-link text-danger mb-3" href="../logout.php">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
@@ -205,6 +210,12 @@
                     </div>
                 </div>
             </a>
+=======
+            <a class="nav-link text-danger" href="../logout.php">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         </div>
     </div>
 </nav>

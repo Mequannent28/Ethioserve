@@ -29,6 +29,7 @@
                 </a>
             </li>
             <li class="nav-item pt-5 mt-3 border-top border-white border-opacity-25">
+<<<<<<< HEAD
                 <a class="nav-link text-warning mb-3" href="../logout.php">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
@@ -48,6 +49,11 @@
                         </div>
                     </div>
                 </a>
+=======
+                <a class="nav-link text-warning" href="../logout.php">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             </li>
         </ul>
     </div>

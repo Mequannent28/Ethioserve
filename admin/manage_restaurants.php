@@ -10,7 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         $id = (int) $_POST['item_id'];
         $status = sanitize($_POST['status']);
         if (in_array($status, ['approved', 'rejected'])) {
+<<<<<<< HEAD
             $stmt = $pdo->prepare("UPDATE restaurants SET status = ? WHERE id = ?");
+=======
+            $stmt = $pdo->prepare("UPDATE hotels SET status = ? WHERE id = ?");
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             $stmt->execute([$status, $id]);
             redirectWithMessage('manage_restaurants.php', 'success', 'Restaurant status updated');
         }
@@ -20,11 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
 // Handle delete
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
+<<<<<<< HEAD
     $stmt = $pdo->prepare("DELETE FROM restaurants WHERE id = ?");
+=======
+    $stmt = $pdo->prepare("DELETE FROM hotels WHERE id = ?");
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     $stmt->execute([$id]);
     redirectWithMessage('manage_restaurants.php', 'success', 'Restaurant deleted successfully');
 }
 
+<<<<<<< HEAD
 // Fetch all restaurants
 $stmt = $pdo->query("SELECT r.*, u.full_name as owner_name, u.email as owner_email, u.phone as owner_phone 
                      FROM restaurants r 
@@ -69,6 +78,15 @@ if (isset($_FILES['restaurant_csv']) && $_FILES['restaurant_csv']['error'] === U
     }
 }
 
+=======
+// Fetch all restaurants (from hotels table)
+$stmt = $pdo->query("SELECT h.*, u.full_name as owner_name, u.email as owner_email, u.phone as owner_phone 
+                     FROM hotels h 
+                     JOIN users u ON h.user_id = u.id 
+                     ORDER BY CASE WHEN h.status = 'pending' THEN 1 WHEN h.status = 'approved' THEN 2 ELSE 3 END, h.name");
+$items = $stmt->fetchAll();
+
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 $pending = count(array_filter($items, fn($i) => $i['status'] === 'pending'));
 $approved = count(array_filter($items, fn($i) => $i['status'] === 'approved'));
 $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
@@ -123,6 +141,7 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                     </h2>
                     <p class="text-muted mb-0">Approve, reject, or manage restaurant registrations</p>
                 </div>
+<<<<<<< HEAD
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importModal">
@@ -132,6 +151,11 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                         <?php echo count($items); ?> Total
                     </span>
                 </div>
+=======
+                <span class="badge bg-primary-green fs-6 rounded-pill px-3 py-2">
+                    <?php echo count($items); ?> Total
+                </span>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             </div>
 
             <!-- Stats -->
@@ -270,15 +294,23 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
 
                                     <!-- View Modal -->
                                     <div class="modal fade" id="viewItem<?php echo $item['id']; ?>" tabindex="-1">
+<<<<<<< HEAD
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg">
                                                 <div class="modal-header border-0 pb-0">
                                                     <h5 class="modal-title fw-bold p-3"><i
+=======
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 rounded-4">
+                                                <div class="modal-header border-0 pb-0">
+                                                    <h5 class="modal-title fw-bold"><i
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                                             class="fas fa-utensils text-primary-green me-2"></i>Restaurant
                                                         Details</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body p-4">
+<<<<<<< HEAD
                                                     <div class="row g-4">
                                                         <div class="col-md-5">
                                                             <div class="position-relative">
@@ -332,6 +364,33 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                                                             </div>
                                                         </div>
                                                     </div>
+=======
+                                                    <div class="text-center mb-3">
+                                                        <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300'); ?>"
+                                                            class="rounded-4 shadow-sm"
+                                                            style="width:100%;max-height:200px;object-fit:cover;">
+                                                    </div>
+                                                    <h4 class="fw-bold">
+                                                        <?php echo htmlspecialchars($item['name']); ?>
+                                                    </h4>
+                                                    <p class="text-muted"><i class="fas fa-map-marker-alt me-2"></i>
+                                                        <?php echo htmlspecialchars($item['location']); ?>
+                                                    </p>
+                                                    <p><i class="fas fa-utensils me-2"></i>
+                                                        <?php echo htmlspecialchars($item['cuisine_type'] ?? 'N/A'); ?>
+                                                    </p>
+                                                    <p><i class="fas fa-star text-warning me-2"></i>
+                                                        <?php echo number_format($item['rating'], 1); ?> / 5.0
+                                                    </p>
+                                                    <hr>
+                                                    <h6 class="fw-bold"><i class="fas fa-user me-2"></i>Owner</h6>
+                                                    <p class="mb-1">
+                                                        <?php echo htmlspecialchars($item['owner_name']); ?>
+                                                    </p>
+                                                    <p class="text-muted small">
+                                                        <?php echo htmlspecialchars($item['owner_email']); ?>
+                                                    </p>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                                 </div>
                                                 <div class="modal-footer border-0">
                                                     <button type="button" class="btn btn-light rounded-pill px-4"
@@ -349,6 +408,7 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- Import Modal -->
     <div class="modal fade" id="importModal" tabindex="-1">
         <div class="modal-dialog">
@@ -379,6 +439,8 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
         </div>
     </div>
 
+=======
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

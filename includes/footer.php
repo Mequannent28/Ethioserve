@@ -61,6 +61,7 @@ $base_url = BASE_URL; ?>
     </style>
 
     <div class="footer-bottom-bar">
+<<<<<<< HEAD
         <div class="container">
             <div class="row align-items-center g-3">
                 <div class="col-md-6 text-center text-md-start">
@@ -93,6 +94,10 @@ $base_url = BASE_URL; ?>
                     </div>
                 </div>
             </div>
+=======
+        <div class="container text-center">
+            <p>&copy; 2026 EthioServe Platform. All rights reserved. Designed with ❤️ in Ethiopia.</p>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         </div>
     </div>
 </footer>

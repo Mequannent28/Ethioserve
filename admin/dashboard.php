@@ -22,9 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_hotel_status']
 // Fetch stats from database
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $total_hotels = $pdo->query("SELECT COUNT(*) FROM hotels")->fetchColumn();
+<<<<<<< HEAD
 $total_restaurants = $pdo->query("SELECT COUNT(*) FROM restaurants")->fetchColumn();
 $total_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies")->fetchColumn();
 $total_buses = $pdo->query("SELECT COUNT(*) FROM buses")->fetchColumn();
+=======
+$approved_hotels = $pdo->query("SELECT COUNT(*) FROM hotels WHERE status = 'approved'")->fetchColumn();
+$pending_hotels = $pdo->query("SELECT COUNT(*) FROM hotels WHERE status = 'pending'")->fetchColumn();
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 $total_orders = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 $total_revenue = $pdo->query("SELECT SUM(total_amount) FROM orders WHERE payment_status = 'paid'")->fetchColumn() ?: 0;
 $total_commissions = $pdo->query("SELECT SUM(commission_amount) FROM referrals WHERE status = 'paid'")->fetchColumn() ?: 0;

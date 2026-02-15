@@ -90,16 +90,24 @@ $top_customers = $stmt->fetchAll();
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<<<<<<< HEAD
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
         body {
             overflow-x: hidden;
             background-color: #f4f6f9;
+=======
+    <link rel="stylesheet" href="/ethioserve/assets/css/style.css">
+    <style>
+        body {
+            overflow-x: hidden;
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         }
 
         .dashboard-wrapper {
             display: flex;
             width: 100%;
+<<<<<<< HEAD
         }
 
         .main-content {
@@ -117,6 +125,37 @@ $top_customers = $stmt->fetchAll();
 
         .admin-stat-card:hover {
             transform: translateY(-5px);
+=======
+            align-items: stretch;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        .stat-card {
+            border-left: 4px solid var(--primary-green);
+            border-radius: 12px;
+        }
+
+        .stat-card.gold {
+            border-left-color: var(--secondary-gold);
+        }
+
+        .stat-card.red {
+            border-left-color: var(--accent-red);
+        }
+
+        .stat-card.blue {
+            border-left-color: #1976D2;
+        }
+
+        .stat-card.purple {
+            border-left-color: #7B1FA2;
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         }
 
         .customer-avatar {
@@ -171,6 +210,7 @@ $top_customers = $stmt->fetchAll();
             <!-- Top Nav -->
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
+<<<<<<< HEAD
                     <h2 class="fw-bold mb-0">Taxi Fleet Management</h2>
                     <p class="text-muted mb-0">Welcome back, <?php echo htmlspecialchars($company['company_name']); ?>
                     </p>
@@ -197,11 +237,28 @@ $top_customers = $stmt->fetchAll();
                                         class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                         </ul>
                     </div>
+=======
+                    <h2 class="fw-bold mb-0">🚕 Dashboard Overview</h2>
+                    <p class="text-muted mb-0">Welcome back,
+                        <?php echo htmlspecialchars($company['company_name']); ?>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span
+                        class="badge bg-<?php echo $company['status'] === 'approved' ? 'success' : 'warning'; ?> fs-6 px-3 py-2 rounded-pill">
+                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
+                        <?php echo ucfirst($company['status']); ?>
+                    </span>
+                    <a href="../logout.php" class="btn btn-white shadow-sm rounded-pill px-4 text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                 </div>
             </div>
 
             <!-- Stats Cards -->
             <div class="row g-4 mb-5">
+<<<<<<< HEAD
                 <div class="col-md-3">
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-primary-green">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Rides</p>
@@ -229,6 +286,66 @@ $top_customers = $stmt->fetchAll();
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Active Requests</p>
                         <h2 class="fw-bold mb-0"><?php echo $pending_rides; ?></h2>
                         <p class="small mb-0 mt-2"><i class="fas fa-clock me-1"></i> Waiting for acceptance</p>
+=======
+                <div class="col-md-3 col-6">
+                    <div class="card stat-card p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1 small">Total Rides</p>
+                                <h3 class="fw-bold mb-0">
+                                    <?php echo $total_rides; ?>
+                                </h3>
+                            </div>
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="fas fa-route text-primary-green fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card stat-card gold p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1 small">Revenue</p>
+                                <h3 class="fw-bold mb-0">
+                                    <?php echo number_format($total_revenue); ?> <small class="text-muted">ETB</small>
+                                </h3>
+                            </div>
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="fas fa-money-bill-wave text-warning fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card stat-card blue p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1 small">Customers</p>
+                                <h3 class="fw-bold mb-0">
+                                    <?php echo $total_customers; ?>
+                                </h3>
+                            </div>
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="fas fa-users text-primary fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card stat-card red p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted mb-1 small">Pending Rides</p>
+                                <h3 class="fw-bold mb-0">
+                                    <?php echo $pending_rides; ?>
+                                </h3>
+                            </div>
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="fas fa-clock text-danger fs-4"></i>
+                            </div>
+                        </div>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                     </div>
                 </div>
             </div>

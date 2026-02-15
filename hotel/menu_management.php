@@ -33,6 +33,7 @@ $menu_items = $stmt->fetchAll();
 // Fetch categories for the add/edit form
 $stmt = $pdo->query("SELECT * FROM categories ORDER BY name");
 $categories = $stmt->fetchAll();
+<<<<<<< HEAD
 ?>
 
 <!DOCTYPE html>
@@ -81,6 +82,26 @@ $categories = $stmt->fetchAll();
                         <i class="fas fa-plus me-2"></i> Add New Item
                     </button>
                 </div>
+=======
+
+include '../includes/header.php';
+?>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Dashboard Sidebar -->
+        <?php include '../includes/sidebar_hotel.php'; ?>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div
+                class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Menu Management</h1>
+                <button type="button" class="btn btn-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                    data-bs-target="#addItemModal">
+                    <i class="fas fa-plus me-2"></i> Add New Item
+                </button>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             </div>
 
             <!-- Menu Table -->
@@ -156,6 +177,7 @@ $categories = $stmt->fetchAll();
             </div>
         </main>
     </div>
+<<<<<<< HEAD
 
     <!-- Import Excel Modal -->
     <div class="modal fade" id="importExcelModal" tabindex="-1">
@@ -181,10 +203,62 @@ $categories = $stmt->fetchAll();
                     <button type="submit" class="btn btn-primary-green rounded-pill px-4">
                         <i class="fas fa-upload me-2"></i>Start Import
                     </button>
+=======
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <form action="process_menu.php?action=add" method="POST">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Add New Food Item</h5>
+                    <button type="button" class="btn-close" data-bs-close="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Item Name</label>
+                        <input type="text" name="name" class="form-control rounded-3" required
+                            placeholder="e.g. Special Kitfo">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select name="category_id" class="form-select rounded-3" required>
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?php echo $cat['id']; ?>">
+                                        <?php echo htmlspecialchars($cat['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Price (ETB)</label>
+                            <input type="number" name="price" step="0.01" class="form-control rounded-3" required
+                                placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" class="form-control rounded-3" rows="3"
+                            placeholder="Describe the ingredients or taste..."></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold">Image URL (Optional)</label>
+                        <input type="url" name="image_url" class="form-control rounded-3"
+                            placeholder="https://image-link.com/photo.jpg">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-green rounded-pill px-4">Save Item</button>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                 </div>
             </form>
         </div>
     </div>
+<<<<<<< HEAD
 
     <!-- Add Item Modal -->
     <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
@@ -315,3 +389,83 @@ $categories = $stmt->fetchAll();
     </script>
 
     <?php include '../includes/footer.php'; ?>
+=======
+</div>
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <form action="process_menu.php?action=edit" method="POST">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Edit Food Item</h5>
+                    <button type="button" class="btn-close" data-bs-close="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Item Name</label>
+                        <input type="text" name="name" id="edit_name" class="form-control rounded-3" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select name="category_id" id="edit_category_id" class="form-select rounded-3" required>
+                                <?php foreach ($categories as $cat): ?>
+                                    <option value="<?php echo $cat['id']; ?>">
+                                        <?php echo htmlspecialchars($cat['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Price (ETB)</label>
+                            <input type="number" name="price" id="edit_price" step="0.01" class="form-control rounded-3"
+                                required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" id="edit_description" class="form-control rounded-3"
+                            rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Image URL</label>
+                        <input type="url" name="image_url" id="edit_image_url" class="form-control rounded-3">
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="is_available" id="edit_is_available"
+                            value="1">
+                        <label class="form-check-label fw-bold small">Is Available</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-green rounded-pill px-4">Update Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const editBtns = document.querySelectorAll('.edit-btn');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const data = JSON.parse(this.getAttribute('data-item'));
+                document.getElementById('edit_id').value = data.id;
+                document.getElementById('edit_name').value = data.name;
+                document.getElementById('edit_category_id').value = data.category_id;
+                document.getElementById('edit_price').value = data.price;
+                document.getElementById('edit_description').value = data.description;
+                document.getElementById('edit_image_url').value = data.image_url;
+                document.getElementById('edit_is_available').checked = data.is_available == 1;
+            });
+        });
+    });
+</script>
+
+<?php include '../includes/footer.php'; ?>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1

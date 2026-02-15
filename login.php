@@ -84,9 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         case 'taxi':
                             header("Location: taxi/dashboard.php");
                             break;
+<<<<<<< HEAD
                         case 'student':
                             header("Location: customer/education.php");
                             break;
+=======
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                         default:
                             header("Location: customer/index.php");
                     }
@@ -203,18 +206,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     onclick="fillLogin('broker1','password')">
                                     <i class="fas fa-user-tie me-1"></i>Broker
                                 </button>
+<<<<<<< HEAD
                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
                                     onclick="fillLogin('broker1','password')">
                                     <i class="fas fa-home me-1"></i>Rent
                                 </button>
+=======
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
                                     onclick="fillLogin('golden_bus','password')">
                                     <i class="fas fa-bus me-1"></i>Transport
                                 </button>
+<<<<<<< HEAD
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
                                     onclick="fillLogin('student1','password')">
                                     <i class="fas fa-graduation-cap me-1"></i>Student
                                 </button>
+=======
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                     onclick="fillLogin('admin','password')">
                                     <i class="fas fa-shield-alt me-1"></i>Admin
@@ -229,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
 
+<<<<<<< HEAD
     <div class="text-center py-4 mt-auto">
         <p class="mb-1 text-muted small">&copy; 2026 EthioServe Platform. All rights reserved.</p>
         <p class="text-muted small">Developed by <a
@@ -237,6 +247,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             Ethiopia</p>
     </div>
 
+=======
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function togglePassword() {

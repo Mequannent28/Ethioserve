@@ -107,16 +107,24 @@ $recent_bookings = $stmt->fetchAll();
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<<<<<<< HEAD
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
         body {
             overflow-x: hidden;
             background-color: #f4f6f9;
+=======
+    <link rel="stylesheet" href="/ethioserve/assets/css/style.css">
+    <style>
+        body {
+            overflow-x: hidden;
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         }
 
         .dashboard-wrapper {
             display: flex;
             width: 100%;
+<<<<<<< HEAD
         }
 
         .main-content {
@@ -134,6 +142,29 @@ $recent_bookings = $stmt->fetchAll();
 
         .admin-stat-card:hover {
             transform: translateY(-5px);
+=======
+            align-items: stretch;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+            margin-left: 250px;
+        }
+
+        .stat-card {
+            border-left: 5px solid var(--primary-green);
+        }
+
+        .stat-card.gold {
+            border-left-color: var(--secondary-gold);
+        }
+
+        .stat-card.blue {
+            border-left-color: #0d6efd;
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         }
     </style>
 </head>
@@ -148,6 +179,7 @@ $recent_bookings = $stmt->fetchAll();
             <!-- Top Nav -->
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
+<<<<<<< HEAD
                     <h2 class="fw-bold mb-0">Transport Management</h2>
                     <p class="text-muted">Welcome back, <?php echo htmlspecialchars($company['company_name']); ?>!</p>
                 </div>
@@ -174,12 +206,27 @@ $recent_bookings = $stmt->fetchAll();
                                         class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
                         </ul>
                     </div>
+=======
+                    <h2 class="fw-bold mb-0">Transport Dashboard</h2>
+                    <p class="text-muted">Welcome back, <?php echo htmlspecialchars($company['company_name']); ?>!</p>
+                    <?php if ($company['status'] === 'pending'): ?>
+                        <span class="badge bg-warning text-dark">Your company is pending approval</span>
+                    <?php elseif ($company['status'] === 'rejected'): ?>
+                        <span class="badge bg-danger">Your company was rejected. Contact support.</span>
+                    <?php endif; ?>
+                </div>
+                <div class="d-flex gap-3 align-items-center">
+                    <a href="../logout.php" class="btn btn-white shadow-sm rounded-pill px-4 text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                 </div>
             </div>
 
             <!-- Stats Cards -->
             <div class="row g-4 mb-5">
                 <div class="col-md-3">
+<<<<<<< HEAD
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-primary-green">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Buses</p>
                         <h2 class="fw-bold mb-0"><?php echo number_format($total_buses); ?></h2>
@@ -206,6 +253,57 @@ $recent_bookings = $stmt->fetchAll();
                         <h2 class="fw-bold mb-0"><?php echo number_format($total_revenue / 1000, 1); ?>k <small
                                 class="fs-6">ETB</small></h2>
                         <p class="small mb-0 mt-2"><i class="fas fa-money-bill-wave me-1"></i> Paid earnings</p>
+=======
+                    <div class="card stat-card p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold text-uppercase">Total Buses</p>
+                                <h3 class="fw-bold mb-0"><?php echo number_format($total_buses); ?></h3>
+                            </div>
+                            <div class="bg-light p-3 rounded-circle">
+                                <i class="fas fa-bus text-primary-green fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card gold p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold text-uppercase">Active Routes</p>
+                                <h3 class="fw-bold mb-0"><?php echo number_format($total_routes); ?></h3>
+                            </div>
+                            <div class="bg-light p-3 rounded-circle">
+                                <i class="fas fa-route text-warning fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card blue p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold text-uppercase">Total Bookings</p>
+                                <h3 class="fw-bold mb-0"><?php echo number_format($total_bookings); ?></h3>
+                            </div>
+                            <div class="bg-light p-3 rounded-circle">
+                                <i class="fas fa-ticket-alt text-primary fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-4 border-0 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted small mb-1 fw-bold text-uppercase">Revenue (ETB)</p>
+                                <h3 class="fw-bold mb-0"><?php echo number_format($total_revenue / 1000, 1); ?>k</h3>
+                            </div>
+                            <div class="bg-light p-3 rounded-circle">
+                                <i class="fas fa-money-bill-wave text-success fs-4"></i>
+                            </div>
+                        </div>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                     </div>
                 </div>
             </div>
@@ -362,11 +460,17 @@ $recent_bookings = $stmt->fetchAll();
                             <?php foreach ($recent_bookings as $booking): ?>
                                 <tr>
                                     <td class="px-4 fw-bold text-primary-green">
+<<<<<<< HEAD
                                         <?php echo htmlspecialchars($booking['booking_reference']); ?>
                                     </td>
                                     <td><?php echo htmlspecialchars($booking['origin']); ?> →
                                         <?php echo htmlspecialchars($booking['destination']); ?>
                                     </td>
+=======
+                                        <?php echo htmlspecialchars($booking['booking_reference']); ?></td>
+                                    <td><?php echo htmlspecialchars($booking['origin']); ?> →
+                                        <?php echo htmlspecialchars($booking['destination']); ?></td>
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                     <td><?php echo htmlspecialchars($booking['customer_name']); ?></td>
                                     <td><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></td>
                                     <td><?php echo number_format($booking['total_amount']); ?> ETB</td>

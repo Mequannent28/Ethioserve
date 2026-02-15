@@ -1,4 +1,5 @@
 const CACHE_NAME = 'ethioserve-v1';
+<<<<<<< HEAD
 const OFFLINE_URL = '/Ethioserve-main/offline.html';
 
 // Assets to pre-cache on install
@@ -7,6 +8,16 @@ const PRECACHE_ASSETS = [
     '/Ethioserve-main/assets/css/style.css',
     '/Ethioserve-main/assets/js/main.js',
     '/Ethioserve-main/offline.html',
+=======
+const OFFLINE_URL = '/ethioserve/offline.html';
+
+// Assets to pre-cache on install
+const PRECACHE_ASSETS = [
+    '/ethioserve/customer/index.php',
+    '/ethioserve/assets/css/style.css',
+    '/ethioserve/assets/js/main.js',
+    '/ethioserve/offline.html',
+>>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css',
