@@ -60,15 +60,11 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
     <!-- Customer Navbar -->
     <nav class="navbar navbar-expand-lg sticky-top bg-white shadow-sm">
         <div class="container">
-<<<<<<< HEAD
             <a class="navbar-brand d-flex align-items-center gap-2" href="<?php echo $base_url; ?>/customer/index.php">
                 <img src="<?php echo $base_url; ?>/assets/img/AA.jpg" alt="Dev"
                     class="rounded-circle shadow-sm border border-2 border-warning"
                     style="width: 45px; height: 45px; object-fit: cover;"
                     onerror="this.src='https://ui-avatars.com/api/?name=Mequannent+Gashaw&background=1B5E20&color=fff&bold=true'">
-=======
-            <a class="navbar-brand d-flex align-items-center" href="<?php echo $base_url; ?>/customer/index.php">
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                 <span class="fw-bold fs-3 text-primary-green">Ethio<span class="text-warning">Serve</span></span>
             </a>
 
