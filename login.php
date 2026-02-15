@@ -84,12 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         case 'taxi':
                             header("Location: taxi/dashboard.php");
                             break;
-<<<<<<< HEAD
                         case 'student':
                             header("Location: customer/education.php");
                             break;
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                         default:
                             header("Location: customer/index.php");
                     }
