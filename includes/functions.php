@@ -519,7 +519,6 @@ function sendOrderEmail($pdo, $order_id)
 }
 
 /**
-<<<<<<< HEAD
  * Send Payment Successful Notification Email
  * Sends a premium confirmation receipt to Customer, Provider (Hotel/Restaurant), and Admin
  */

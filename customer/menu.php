@@ -193,33 +193,41 @@ include('../includes/header.php');
 <script>
     const csrfToken = '<?php echo generateCSRFToken(); ?>';
     const hotelId = <?php echo $hotel_id; ?>;
+    const apiUrl = '<?php echo BASE_URL; ?>/api.php';
 
     // Update cart button on page load
     updateCartButton();
 
     function addToCart(itemId, name, price, hotelId, hotelName, imageUrl) {
-        fetch('../api.php', {
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=add_to_cart&item_id=${itemId}&quantity=1&csrf_token=${csrfToken}`
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     showToast(`${name} added to cart!`);
                     updateCartButton();
                 } else {
-                    showToast(data.message, 'error');
+                    showToast(data.message || 'Could not add item', 'error');
                 }
             })
             .catch(err => {
+                console.error('Add to cart error:', err);
                 showToast('Failed to add item. Please try again.', 'error');
             });
     }
 
     function updateCartButton() {
-        fetch('../api.php?action=get_cart')
-            .then(res => res.json())
+        fetch(apiUrl + '?action=get_cart')
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 const cartBtn = document.getElementById('cartButton');
                 const cartCount = document.getElementById('cartCount');
@@ -230,6 +238,9 @@ include('../includes/header.php');
                 } else {
                     cartBtn.style.display = 'none';
                 }
+            })
+            .catch(err => {
+                console.error('Cart update error:', err);
             });
     }
 

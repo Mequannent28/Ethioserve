@@ -454,7 +454,8 @@ include('../includes/header.php');
                                 <h4 class="fw-bold mb-0">Bus Ticket (Ref:
                                     <?php echo htmlspecialchars($bus_booking['booking_reference']); ?>)
                                 </h4>
-                                <p class="small mb-0 opacity-75"><?php echo htmlspecialchars($bus_booking['company_name']); ?></p>
+                                <p class="small mb-0 opacity-75">
+                                    <?php echo htmlspecialchars($bus_booking['company_name']); ?></p>
                             </div>
                             <?php echo getStatusBadge($bus_booking['status']); ?>
                         </div>
@@ -470,7 +471,8 @@ include('../includes/header.php');
                             </div>
                             <div class="col-md-5 text-end">
                                 <p class="text-muted small text-uppercase mb-1">To</p>
-                                <h2 class="fw-bold mb-0 text-dark"><?php echo htmlspecialchars($bus_booking['destination']); ?>
+                                <h2 class="fw-bold mb-0 text-dark">
+                                    <?php echo htmlspecialchars($bus_booking['destination']); ?>
                                 </h2>
                             </div>
                         </div>
@@ -479,14 +481,16 @@ include('../includes/header.php');
                             <div class="col-md-4">
                                 <div class="p-3 bg-light rounded-3">
                                     <small class="text-muted text-uppercase d-block mb-1">Date</small>
-                                    <h6 class="mb-0 fw-bold"><?php echo date('M d, Y', strtotime($bus_booking['travel_date'])); ?>
+                                    <h6 class="mb-0 fw-bold">
+                                        <?php echo date('M d, Y', strtotime($bus_booking['travel_date'])); ?>
                                     </h6>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="p-3 bg-light rounded-3">
                                     <small class="text-muted text-uppercase d-block mb-1">Departure</small>
-                                    <h6 class="mb-0 fw-bold"><?php echo date('h:i A', strtotime($bus_booking['departure_time'])); ?>
+                                    <h6 class="mb-0 fw-bold">
+                                        <?php echo date('h:i A', strtotime($bus_booking['departure_time'])); ?>
                                     </h6>
                                 </div>
                             </div>
@@ -508,7 +512,8 @@ include('../includes/header.php');
                                 </div>
                                 <div class="text-end">
                                     <small class="text-muted text-uppercase">Total Amount</small>
-                                    <h6 class="mb-0 fw-bold"><?php echo number_format($bus_booking['total_amount']); ?> ETB</h6>
+                                    <h6 class="mb-0 fw-bold"><?php echo number_format($bus_booking['total_amount']); ?> ETB
+                                    </h6>
                                 </div>
                             </div>
                             <hr>
@@ -668,7 +673,8 @@ include('../includes/header.php');
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($rb['origin']); ?> ➔
-                                                <?php echo htmlspecialchars($rb['destination']); ?></h6>
+                                                <?php echo htmlspecialchars($rb['destination']); ?>
+                                            </h6>
                                             <small
                                                 class="<?php echo ($bus_booking && $bus_booking['id'] == $rb['id']) ? 'text-white-50' : 'text-muted'; ?>">
                                                 <?php echo htmlspecialchars($rb['company_name']); ?>
@@ -694,16 +700,20 @@ include('../includes/header.php');
 
 <script>
     const csrfToken = '<?php echo generateCSRFToken(); ?>';
+    const apiUrl = '<?php echo BASE_URL; ?>/api.php';
 
     function cancelOrder(orderId) {
         if (!confirm('Are you sure you want to cancel this order?')) return;
 
-        fetch('../api.php', {
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=cancel_order&order_id=${orderId}&csrf_token=${csrfToken}`
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert('Order cancelled successfully');
@@ -711,6 +721,10 @@ include('../includes/header.php');
                 } else {
                     alert(data.message);
                 }
+            })
+            .catch(err => {
+                console.error('Cancel order error:', err);
+                alert('Failed to cancel order. Please try again.');
             });
     }
 

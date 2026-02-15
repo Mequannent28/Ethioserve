@@ -43,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
         $stmt->execute([$item_id, $restaurant_id]);
         redirectWithMessage('menu_management.php', 'success', 'Availability toggled!');
     }
-<<<<<<< HEAD
 
     if (isset($_POST['import_demo_menu'])) {
         $demo_items = [
@@ -91,8 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
             redirectWithMessage('menu_management.php', 'error', 'Error opening the file.');
         }
     }
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 }
 
 // Get menu items
@@ -164,7 +161,6 @@ foreach ($menu_items as $item) {
                     </h2>
                     <p class="text-muted">Manage your restaurant menu items</p>
                 </div>
-<<<<<<< HEAD
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importExcelModal">
@@ -182,12 +178,6 @@ foreach ($menu_items as $item) {
                         <i class="fas fa-plus me-2"></i>Add Item
                     </button>
                 </div>
-=======
-                <button class="btn btn-primary-green rounded-pill px-4" data-bs-toggle="modal"
-                    data-bs-target="#addItemModal">
-                    <i class="fas fa-plus me-2"></i>Add Item
-                </button>
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             </div>
 
             <!-- Menu Items by Category -->
@@ -279,11 +269,8 @@ foreach ($menu_items as $item) {
                         <select name="category" class="form-select" required>
                             <option value="Main Course">Main Course</option>
                             <option value="Breakfast">Breakfast</option>
-<<<<<<< HEAD
                             <option value="Lunch">Lunch</option>
                             <option value="Dinner">Dinner</option>
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                             <option value="Appetizer">Appetizer</option>
                             <option value="Drinks">Drinks</option>
                             <option value="Desserts">Desserts</option>
@@ -311,7 +298,6 @@ foreach ($menu_items as $item) {
         </div>
     </div>
 
-<<<<<<< HEAD
     <!-- Import Excel Modal -->
     <div class="modal fade" id="importExcelModal" tabindex="-1">
         <div class="modal-dialog">
@@ -341,8 +327,6 @@ foreach ($menu_items as $item) {
         </div>
     </div>
 
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

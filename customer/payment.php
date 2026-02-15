@@ -186,6 +186,8 @@ include('../includes/header.php');
 </main>
 
 <script>
+    const apiUrl = '<?php echo BASE_URL; ?>/api.php';
+
     function simulatePayment() {
         const processDiv = document.getElementById('paymentProcess');
         const successDiv = document.getElementById('paymentSuccess');
@@ -196,12 +198,15 @@ include('../includes/header.php');
         const action = '<?php echo $type === 'flight' ? 'update_flight_payment' : 'update_payment_status'; ?>';
         const idParam = '<?php echo $type === 'flight' ? 'booking_id' : 'order_id'; ?>';
 
-        fetch('../api.php', {
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=${action}&${idParam}=<?php echo $id; ?>&status=paid&csrf_token=<?php echo generateCSRFToken(); ?>`
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     processDiv.style.display = 'none';
@@ -211,6 +216,12 @@ include('../includes/header.php');
                     processDiv.style.opacity = '1';
                     processDiv.querySelector('button').disabled = false;
                 }
+            })
+            .catch(err => {
+                console.error('Payment error:', err);
+                alert('Payment failed. Please try again.');
+                processDiv.style.opacity = '1';
+                processDiv.querySelector('button').disabled = false;
             });
     }
 
@@ -219,12 +230,15 @@ include('../includes/header.php');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Connecting to Chapa...';
 
-        fetch('../api.php', {
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=initiate_chapa_payment&order_id=<?php echo $id; ?>&payment_type=<?php echo $type; ?>&csrf_token=<?php echo generateCSRFToken(); ?>`
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.success && data.checkout_url) {
                     // Redirect to Chapa checkout
@@ -243,12 +257,15 @@ include('../includes/header.php');
 
     function simulateChapaSuccess() {
         // Update payment status first
-        fetch('../api.php', {
+        fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `action=update_payment_status&order_id=<?php echo $id; ?>&status=paid&csrf_token=<?php echo generateCSRFToken(); ?>`
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Server error: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     const chapaDiv = document.getElementById('chapaPayment');

@@ -203,24 +203,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     onclick="fillLogin('broker1','password')">
                                     <i class="fas fa-user-tie me-1"></i>Broker
                                 </button>
-<<<<<<< HEAD
                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
                                     onclick="fillLogin('broker1','password')">
                                     <i class="fas fa-home me-1"></i>Rent
                                 </button>
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
                                     onclick="fillLogin('golden_bus','password')">
                                     <i class="fas fa-bus me-1"></i>Transport
                                 </button>
-<<<<<<< HEAD
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
                                     onclick="fillLogin('student1','password')">
                                     <i class="fas fa-graduation-cap me-1"></i>Student
                                 </button>
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                     onclick="fillLogin('admin','password')">
                                     <i class="fas fa-shield-alt me-1"></i>Admin
@@ -235,7 +229,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
 
-<<<<<<< HEAD
     <div class="text-center py-4 mt-auto">
         <p class="mb-1 text-muted small">&copy; 2026 EthioServe Platform. All rights reserved.</p>
         <p class="text-muted small">Developed by <a
@@ -243,31 +236,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 class="fw-bold text-primary-green text-decoration-none">Mequannent Gashaw Asinake</a> with ❤️ in
             Ethiopia</p>
     </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            function togglePassword() {
+                const password = document.getElementById('password');
+                const icon = document.getElementById('toggleIcon');
 
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function togglePassword() {
-            const password = document.getElementById('password');
-            const icon = document.getElementById('toggleIcon');
-
-            if (password.type === 'password') {
-                password.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                password.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+                if (password.type === 'password') {
+                    password.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    password.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
             }
-        }
 
-        function fillLogin(username, pass) {
-            document.querySelector('input[name="username"]').value = username;
-            document.getElementById('password').value = pass;
-        }
-    </script>
+            function fillLogin(username, pass) {
+                document.querySelector('input[name="username"]').value = username;
+                document.getElementById('password').value = pass;
+            }
+        </script>
 </body>
 
 </html>

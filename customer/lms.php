@@ -68,7 +68,6 @@ $subject = sanitize($_GET['subject'] ?? '');
 // Get user info if logged in
 $user_id = $_SESSION['user_id'] ?? null;
 
-<<<<<<< HEAD
 // Auto-select grade if logged in
 if (!isset($_GET['grade']) && $user_id) {
     try {
@@ -82,9 +81,6 @@ if (!isset($_GET['grade']) && $user_id) {
     } catch (Exception $e) {
     }
 }
-
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 // Subjects by grade (matches education portal)
 $subjects_by_grade = [
     1 => ['Amharic', 'English', 'Mathematics', 'Environmental Science'],
@@ -685,12 +681,8 @@ include('../includes/header.php');
                 } catch (Exception $e) {
                 }
                 ?>
-<<<<<<< HEAD
                 <a href="<?php echo isLoggedIn() ? 'set_grade.php?redirect=lms&' : '?'; ?>grade=<?php echo $g; ?>"
                     class="grade-card">
-=======
-                <a href="?grade=<?php echo $g; ?>" class="grade-card">
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                     <div class="grade-num">
                         <?php echo $g; ?>
                     </div>

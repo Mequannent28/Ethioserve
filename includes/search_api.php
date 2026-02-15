@@ -5,10 +5,7 @@
  */
 
 header('Content-Type: application/json');
-<<<<<<< HEAD
 require_once __DIR__ . '/config.php';
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 require_once __DIR__ . '/db.php';
 
 $query = trim($_GET['q'] ?? '');
@@ -39,11 +36,7 @@ try {
             'category' => 'Restaurant',
             'icon' => 'fas fa-utensils',
             'color' => '#E65100',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/restaurants.php'
-=======
-            'link' => '/ethioserve/customer/restaurants.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -64,11 +57,7 @@ try {
             'category' => 'Hotel',
             'icon' => 'fas fa-hotel',
             'color' => '#1565C0',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/menu.php?hotel_id=' . $row['id']
-=======
-            'link' => '/ethioserve/customer/menu.php?hotel_id=' . $row['id']
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -89,11 +78,7 @@ try {
             'category' => 'Taxi',
             'icon' => 'fas fa-taxi',
             'color' => '#F9A825',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/taxi.php'
-=======
-            'link' => '/ethioserve/customer/taxi.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -114,11 +99,7 @@ try {
             'category' => 'Bus',
             'icon' => 'fas fa-bus',
             'color' => '#2E7D32',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/buses.php'
-=======
-            'link' => '/ethioserve/customer/buses.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -143,11 +124,7 @@ try {
             'category' => 'Bus Route',
             'icon' => 'fas fa-route',
             'color' => '#00695C',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/buses.php'
-=======
-            'link' => '/ethioserve/customer/buses.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -171,11 +148,7 @@ try {
             'category' => 'Food Menu',
             'icon' => 'fas fa-hamburger',
             'color' => '#AD1457',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/restaurants.php'
-=======
-            'link' => '/ethioserve/customer/restaurants.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -199,11 +172,7 @@ try {
             'category' => 'Hotel Menu',
             'icon' => 'fas fa-concierge-bell',
             'color' => '#6A1B9A',
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/menu.php'
-=======
-            'link' => '/ethioserve/customer/menu.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 
@@ -237,11 +206,7 @@ try {
             'category' => $cat_label,
             'icon' => $icon,
             'color' => $color,
-<<<<<<< HEAD
             'link' => BASE_URL . '/customer/listings.php'
-=======
-            'link' => '/ethioserve/customer/listings.php'
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         ];
     }
 

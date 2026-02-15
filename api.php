@@ -484,23 +484,14 @@ switch ($action) {
         }
 
         $base_url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
-<<<<<<< HEAD
         $callback_url = $base_url . BASE_URL . '/api.php?action=chapa_callback';
         $return_url = $base_url . BASE_URL . '/customer/track_order.php?id=' . $order_id;
-=======
-        $callback_url = $base_url . '/ethioserve/api.php?action=chapa_callback';
-        $return_url = $base_url . '/ethioserve/customer/track_order.php?id=' . $order_id;
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 
         $name_parts = explode(' ', $user['full_name'] ?? 'Customer User', 2);
         $first_name = $name_parts[0];
         $last_name = $name_parts[1] ?? '';
 
-<<<<<<< HEAD
         $type_prefix = ($payment_type === 'booking') ? 'BOK' : 'ORD';
-
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         $result = initiateChapaPayment(
             $order_id,
             $amount,
@@ -509,12 +500,8 @@ switch ($action) {
             $last_name,
             $user['phone'] ?? '',
             $callback_url,
-<<<<<<< HEAD
             $return_url,
             $type_prefix
-=======
-            $return_url
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         );
 
         jsonResponse($result);
@@ -524,7 +511,6 @@ switch ($action) {
         // Handle Chapa webhook callback
         $tx_ref = sanitize($_GET['trx_ref'] ?? $_POST['trx_ref'] ?? '');
         if (!empty($tx_ref)) {
-<<<<<<< HEAD
             // Extract type and ID from tx_ref (ETHIOSERVE-{TYPE}-{ID}-{timestamp})
             $parts = explode('-', $tx_ref);
             if (count($parts) >= 3) {
@@ -540,14 +526,6 @@ switch ($action) {
                     $stmt->execute([$id]);
                     sendPaymentConfirmationEmail($pdo, $id, 'booking');
                 }
-=======
-            // Extract order_id from tx_ref (ETHIOSERVE-{order_id}-{timestamp})
-            $parts = explode('-', $tx_ref);
-            if (count($parts) >= 2) {
-                $order_id = (int) $parts[1];
-                $stmt = $pdo->prepare("UPDATE orders SET payment_status = 'paid', payment_method = 'chapa' WHERE id = ?");
-                $stmt->execute([$order_id]);
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             }
         }
         jsonResponse(['success' => true, 'message' => 'Callback received']);

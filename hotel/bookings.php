@@ -66,17 +66,11 @@ $bookings = $stmt->fetchAll();
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="/ethioserve/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
         body {
             overflow-x: hidden;
-<<<<<<< HEAD
-            background-color: #f8fafc;
-        }
-
-        .main-content {
-            padding: 40px;
-=======
+            background-color: #f0f2f5;
         }
 
         .dashboard-wrapper {
@@ -85,12 +79,20 @@ $bookings = $stmt->fetchAll();
             align-items: stretch;
         }
 
+        /* Adjusted for fixed sidebar */
         .main-content {
-            flex: 1;
+            margin-left: 280px;
             padding: 30px;
             background-color: #f0f2f5;
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
             min-height: 100vh;
+            width: calc(100% - 280px);
+        }
+
+        @media (max-width: 991px) {
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
         }
     </style>
 </head>

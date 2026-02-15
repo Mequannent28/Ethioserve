@@ -45,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         header("Location: menu_management.php?success=updated");
         exit();
-<<<<<<< HEAD
     } elseif ($action === 'import_demo') {
         // Ensure standard categories exist
         $std_categories = ['Breakfast', 'Lunch', 'Main Course', 'Appetizer', 'Drinks', 'Dessert'];
@@ -127,8 +126,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header("Location: menu_management.php?error=upload_failed");
         exit();
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     }
 }
 

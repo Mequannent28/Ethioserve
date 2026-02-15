@@ -22,14 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_hotel_status']
 // Fetch stats from database
 $total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $total_hotels = $pdo->query("SELECT COUNT(*) FROM hotels")->fetchColumn();
-<<<<<<< HEAD
 $total_restaurants = $pdo->query("SELECT COUNT(*) FROM restaurants")->fetchColumn();
 $total_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies")->fetchColumn();
 $total_buses = $pdo->query("SELECT COUNT(*) FROM buses")->fetchColumn();
-=======
 $approved_hotels = $pdo->query("SELECT COUNT(*) FROM hotels WHERE status = 'approved'")->fetchColumn();
 $pending_hotels = $pdo->query("SELECT COUNT(*) FROM hotels WHERE status = 'pending'")->fetchColumn();
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 $total_orders = $pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 $total_revenue = $pdo->query("SELECT SUM(total_amount) FROM orders WHERE payment_status = 'paid'")->fetchColumn() ?: 0;
 $total_commissions = $pdo->query("SELECT SUM(commission_amount) FROM referrals WHERE status = 'paid'")->fetchColumn() ?: 0;
@@ -155,32 +152,42 @@ $monthly_stats = $stmt->fetchAll();
                 <div class="col-md-3">
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-primary-green text-white">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Users</p>
-                        <h2 class="fw-bold"><?php echo number_format($total_users); ?></h2>
+                        <h2 class="fw-bold">
+                            <?php echo number_format($total_users); ?>
+                        </h2>
                         <p class="small mb-0">Across all roles</p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-warning text-dark">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Hotels</p>
-                        <h2 class="fw-bold"><?php echo number_format($total_hotels); ?></h2>
-                        <p class="small mb-0"><?php echo $approved_hotels; ?> approved, <?php echo $pending_hotels; ?>
-                            pending</p>
+                        <h2 class="fw-bold">
+                            <?php echo number_format($total_hotels); ?>
+                        </h2>
+                        <p class="small mb-0">
+                            <?php echo $approved_hotels; ?> approved,
+                            <?php echo $pending_hotels; ?>
+                            pending
+                        </p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-white">
                         <p class="text-muted small fw-bold text-uppercase mb-1">Total Revenue</p>
-                        <h2 class="fw-bold"><?php echo number_format($total_revenue / 1000, 1); ?>k <small
-                                class="fs-6">ETB</small></h2>
+                        <h2 class="fw-bold">
+                            <?php echo number_format($total_revenue / 1000, 1); ?>k <small class="fs-6">ETB</small>
+                        </h2>
                         <p class="text-success small mb-0 fw-bold"><i class="fas fa-caret-up"></i>
-                            <?php echo number_format($total_orders); ?> orders</p>
+                            <?php echo number_format($total_orders); ?> orders
+                        </p>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card admin-stat-card border-0 shadow-sm p-4 bg-danger text-white">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Broker Commissions</p>
-                        <h2 class="fw-bold"><?php echo number_format($total_commissions / 1000, 1); ?>k <small
-                                class="fs-6">ETB</small></h2>
+                        <h2 class="fw-bold">
+                            <?php echo number_format($total_commissions / 1000, 1); ?>k <small class="fs-6">ETB</small>
+                        </h2>
                         <p class="small mb-0">Total distributed</p>
                     </div>
                 </div>
@@ -205,7 +212,9 @@ $monthly_stats = $stmt->fetchAll();
                     <div class="card border-0 shadow-sm p-4">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="fw-bold mb-0">Awaiting Approval</h5>
-                            <span class="badge bg-warning text-dark"><?php echo count($pending_hotels_list); ?></span>
+                            <span class="badge bg-warning text-dark">
+                                <?php echo count($pending_hotels_list); ?>
+                            </span>
                         </div>
 
                         <?php if (empty($pending_hotels_list)): ?>
@@ -222,7 +231,9 @@ $monthly_stats = $stmt->fetchAll();
                                                 <i class="fas fa-hotel text-primary-green"></i>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($hotel['name']); ?></h6>
+                                                <h6 class="mb-0 fw-bold">
+                                                    <?php echo htmlspecialchars($hotel['name']); ?>
+                                                </h6>
                                                 <p class="small text-muted mb-0">
                                                     <?php echo htmlspecialchars($hotel['owner_name']); ?>
                                                 </p>
@@ -274,16 +285,21 @@ $monthly_stats = $stmt->fetchAll();
                                                     class="rounded-circle me-3" width="35">
                                             </td>
                                             <td>
-                                                <strong><?php echo htmlspecialchars($user['full_name']); ?></strong>
-                                                <br><small
-                                                    class="text-muted"><?php echo htmlspecialchars($user['email']); ?></small>
+                                                <strong>
+                                                    <?php echo htmlspecialchars($user['full_name']); ?>
+                                                </strong>
+                                                <br><small class="text-muted">
+                                                    <?php echo htmlspecialchars($user['email']); ?>
+                                                </small>
                                             </td>
                                             <td>
                                                 <span class="badge bg-<?php
                                                 echo $user['role'] === 'admin' ? 'danger' :
                                                     ($user['role'] === 'hotel' ? 'warning' :
                                                         ($user['role'] === 'broker' ? 'info' : 'success'));
-                                                ?>"><?php echo ucfirst($user['role']); ?></span>
+                                                ?>">
+                                                    <?php echo ucfirst($user['role']); ?>
+                                                </span>
                                             </td>
                                             <td class="text-muted small">
                                                 <?php echo date('M d', strtotime($user['created_at'])); ?>
@@ -318,14 +334,23 @@ $monthly_stats = $stmt->fetchAll();
                                     <?php foreach ($recent_orders as $order): ?>
                                         <tr>
                                             <td class="px-4">
-                                                <strong>#<?php echo str_pad($order['id'], 5, '0', STR_PAD_LEFT); ?></strong>
-                                                <br><small
-                                                    class="text-muted"><?php echo htmlspecialchars($order['hotel_name']); ?></small>
+                                                <strong>#
+                                                    <?php echo str_pad($order['id'], 5, '0', STR_PAD_LEFT); ?>
+                                                </strong>
+                                                <br><small class="text-muted">
+                                                    <?php echo htmlspecialchars($order['hotel_name']); ?>
+                                                </small>
                                             </td>
-                                            <td><?php echo htmlspecialchars($order['customer_name']); ?></td>
-                                            <td><strong><?php echo number_format($order['total_amount']); ?> ETB</strong>
+                                            <td>
+                                                <?php echo htmlspecialchars($order['customer_name']); ?>
                                             </td>
-                                            <td><?php echo getStatusBadge($order['status']); ?></td>
+                                            <td><strong>
+                                                    <?php echo number_format($order['total_amount']); ?> ETB
+                                                </strong>
+                                            </td>
+                                            <td>
+                                                <?php echo getStatusBadge($order['status']); ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -348,33 +373,33 @@ $monthly_stats = $stmt->fetchAll();
         const revenueData = [45000, 62000, 85000, 120000, 155000, 210000];
 
         <?php if (!empty($monthly_stats)): ?>
-            const realMonths = <?php echo json_encode(array_column($monthly_stats, 'month')); ?>;
+                const realMonths = <?php echo json_encode(array_column($monthly_stats, 'month')); ?>;
             const realOrders = <?php echo json_encode(array_column($monthly_stats, 'order_count')); ?>;
             const realRevenue = <?php echo json_encode(array_column($monthly_stats, 'revenue')); ?>;
         <?php endif; ?>
 
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Orders',
-                    data: orderData,
-                    backgroundColor: '#1B5E20',
-                    borderRadius: 5
-                }, {
-                    label: 'Revenue (k ETB)',
-                    data: revenueData.map(r => r / 1000),
-                    backgroundColor: '#F9A825',
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Orders',
+                        data: orderData,
+                        backgroundColor: '#1B5E20',
+                        borderRadius: 5
+                    }, {
+                        label: 'Revenue (k ETB)',
+                        data: revenueData.map(r => r / 1000),
+                        backgroundColor: '#F9A825',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
     </script>
 </body>
 

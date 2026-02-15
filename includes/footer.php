@@ -61,45 +61,43 @@ $base_url = BASE_URL; ?>
     </style>
 
     <div class="footer-bottom-bar">
-<<<<<<< HEAD
-        <div class="container">
-            <div class="row align-items-center g-3">
-                <div class="col-md-6 text-center text-md-start">
-                    <p class="mb-0">&copy; 2026 EthioServe Platform. All rights reserved. Designed with ❤️ in Ethiopia.
-                    </p>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <div class="developer-badge d-inline-flex flex-column align-items-end">
-                        <a href="https://et.linkedin.com/in/mequannent-gashaw-asinake-48056b247" target="_blank"
-                            class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 border border-white border-opacity-10 shadow-sm text-decoration-none transition-all hover-scale"
-                            title="View LinkedIn Profile">
-                            <span class="text-white-50 small me-2">Developed by</span>
-                            <div class="d-flex align-items-center">
-                                <img src="<?php echo $base_url; ?>/assets/img/AA.jpg" alt="Mequannent Gashaw Asinake"
-                                    class="rounded-circle border border-2 border-white shadow-sm me-2"
-                                    style="width: 32px; height: 32px; object-fit: cover;"
-                                    onerror="this.src='https://ui-avatars.com/api/?name=Mequannent+Gashaw+Asinake&background=FFD600&color=1B5E20&bold=true'">
-                                <span class="text-white fw-bold small">Mequannent Gashaw Asinake</span>
-                                <i class="fab fa-linkedin ms-2 text-info"></i>
+        <div class="footer-bottom-bar">
+            <div class="container">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-6 text-center text-md-start">
+                        <p class="mb-0">&copy; 2026 EthioServe Platform. All rights reserved. Designed with ❤️ in
+                            Ethiopia.
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end">
+                        <div class="developer-badge d-inline-flex flex-column align-items-end">
+                            <a href="https://et.linkedin.com/in/mequannent-gashaw-asinake-48056b247" target="_blank"
+                                class="d-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 border border-white border-opacity-10 shadow-sm text-decoration-none transition-all hover-scale"
+                                title="View LinkedIn Profile">
+                                <span class="text-white-50 small me-2">Developed by</span>
+                                <div class="d-flex align-items-center">
+                                    <img src="<?php echo $base_url; ?>/assets/img/AA.jpg"
+                                        alt="Mequannent Gashaw Asinake"
+                                        class="rounded-circle border border-2 border-white shadow-sm me-2"
+                                        style="width: 32px; height: 32px; object-fit: cover;"
+                                        onerror="this.src='https://ui-avatars.com/api/?name=Mequannent+Gashaw+Asinake&background=FFD600&color=1B5E20&bold=true'">
+                                    <span class="text-white fw-bold small">Mequannent Gashaw Asinake</span>
+                                    <i class="fab fa-linkedin ms-2 text-info"></i>
+                                </div>
+                            </a>
+                            <div class="mt-1 d-flex gap-2">
+                                <a href="https://t.me/+251918592028" target="_blank"
+                                    class="text-white-50 small text-decoration-none hover-white"><i
+                                        class="fab fa-telegram me-1"></i>0918592028</a>
+                                <a href="https://wa.me/251918592028" target="_blank"
+                                    class="text-white-50 small text-decoration-none hover-white"><i
+                                        class="fab fa-whatsapp me-1"></i>0918592028</a>
                             </div>
-                        </a>
-                        <div class="mt-1 d-flex gap-2">
-                            <a href="https://t.me/+251918592028" target="_blank"
-                                class="text-white-50 small text-decoration-none hover-white"><i
-                                    class="fab fa-telegram me-1"></i>0918592028</a>
-                            <a href="https://wa.me/251918592028" target="_blank"
-                                class="text-white-50 small text-decoration-none hover-white"><i
-                                    class="fab fa-whatsapp me-1"></i>0918592028</a>
                         </div>
                     </div>
                 </div>
             </div>
-=======
-        <div class="container text-center">
-            <p>&copy; 2026 EthioServe Platform. All rights reserved. Designed with ❤️ in Ethiopia.</p>
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
         </div>
-    </div>
 </footer>
 
 <!-- Bootstrap 5.3 JS Bundle -->

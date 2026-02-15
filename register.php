@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Role validation
-        $valid_roles = ['customer', 'hotel', 'broker', 'transport', 'restaurant', 'taxi'];
+        $valid_roles = ['customer', 'hotel', 'broker', 'transport', 'restaurant', 'taxi', 'student'];
         if (!in_array($role, $valid_roles)) {
             $errors[] = "Please select a valid role";
         }
@@ -302,7 +302,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <small>Transport</small>
                                         </label>
                                     </div>
-<<<<<<< HEAD
                                     <div class="col-6 col-md-4 col-lg">
                                         <input type="radio" class="btn-check" name="role" id="roleStudent"
                                             value="student" <?php echo ($_POST['role'] ?? '') === 'student' ? 'checked' : ''; ?>>
@@ -312,8 +311,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <small>Student</small>
                                         </label>
                                     </div>
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
                                 </div>
                             </div>
 
@@ -335,7 +332,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </div>
     </div>
 
-<<<<<<< HEAD
     <div class="text-center py-4 mt-auto">
         <p class="mb-1 text-muted small">&copy; 2026 EthioServe Platform. All rights reserved.</p>
         <p class="text-muted small">Developed by <a
@@ -344,8 +340,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             Ethiopia</p>
     </div>
 
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Password confirmation validation
