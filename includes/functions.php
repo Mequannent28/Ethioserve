@@ -636,25 +636,15 @@ function sendPaymentConfirmationEmail($pdo, $id, $type = 'order')
 }
 
 /**
-=======
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
  * Generate Chapa payment checkout URL
  * Uses Chapa.co API for Ethiopian online payments
  * Docs: https://developer.chapa.co
  */
-<<<<<<< HEAD
 function initiateChapaPayment($order_id, $amount, $email, $first_name, $last_name, $phone, $callback_url, $return_url, $type = 'ORD')
 {
     // Chapa API configuration (REPLACE WITH YOUR REAL KEY)
     $chapa_secret_key = 'CHASECK_TEST-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // TODO: Replace with real Chapa secret key
     $tx_ref = 'ETHIOSERVE-' . $type . '-' . $order_id . '-' . time();
-=======
-function initiateChapaPayment($order_id, $amount, $email, $first_name, $last_name, $phone, $callback_url, $return_url)
-{
-    // Chapa API configuration (REPLACE WITH YOUR REAL KEY)
-    $chapa_secret_key = 'CHASECK_TEST-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'; // TODO: Replace with real Chapa secret key
-    $tx_ref = 'ETHIOSERVE-' . $order_id . '-' . time();
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 
     $data = [
         'amount' => $amount,
