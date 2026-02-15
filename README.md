@@ -2,6 +2,8 @@
 
 **EthioServe** is a comprehensive Ethiopian services platform offering food delivery, hotel booking, transport/bus booking, house & car rental, flight booking, education resources, and broker management — all in one place.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mequannent28/Ethioserve)
+
 ## 🚀 Features
 
 - 🍽️ **Restaurant & Food Delivery** — Browse menus, order food, and track deliveries
@@ -16,11 +18,11 @@
 
 ## 🛠️ Tech Stack
 
-- **Backend:** PHP 8.x
-- **Database:** MySQL
+- **Backend:** PHP 8.2
+- **Database:** MariaDB (bundled in Docker)
 - **Frontend:** HTML, CSS, JavaScript
 - **Server:** Apache (with mod_rewrite)
-- **Deployment:** Docker (Render)
+- **Deployment:** Docker (self-contained)
 
 ## 📦 Local Development (XAMPP)
 
@@ -39,54 +41,29 @@
    http://localhost/ethioserve
    ```
 
-4. Default admin login:
-   - Username: `admin`
-   - Password: `password`
+4. Default login credentials:
+   | Role | Username | Password |
+   |------|----------|----------|
+   | Admin | `admin` | `password` |
+   | Hotel | `hilton_owner` | `password` |
+   | Broker | `broker1` | `password` |
+   | Transport | `golden_bus` | `password` |
 
-## 🌐 Deploy to Render
+## 🌐 Deploy to Render (One Click!)
 
-### Step 1: Push to GitHub
-```bash
-git add .
-git commit -m "Ready for Render deployment"
-git push origin main
-```
+1. Click the **Deploy to Render** button above
+2. Sign in with your GitHub account
+3. Click **Create Web Service** — that's it! ✅
 
-### Step 2: Set Up MySQL Database
-Render doesn't offer MySQL natively. Use a **free MySQL provider**:
-
-| Provider | Free Tier | Link |
-|----------|-----------|------|
-| **TiDB Cloud** | 5GB free | [tidbcloud.com](https://tidbcloud.com) |
-| **PlanetScale** | 5GB free | [planetscale.com](https://planetscale.com) |
-| **Aiven** | Free trial | [aiven.io](https://aiven.io) |
-| **Railway** | $5 free credit | [railway.app](https://railway.app) |
-
-After creating the database, import `database.sql` using a MySQL client:
-```bash
-mysql -h YOUR_HOST -P YOUR_PORT -u YOUR_USER -p YOUR_DB < database.sql
-```
-
-### Step 3: Deploy on Render
-1. Go to [render.com](https://render.com) and sign in
-2. Click **New → Web Service**
-3. Connect your GitHub repo: `Mequannent28/Ethioserve`
-4. Settings:
-   - **Environment:** Docker
-   - **Plan:** Free
-5. Add **Environment Variables**:
-   | Key | Value |
-   |-----|-------|
-   | `ENVIRONMENT` | `production` |
-   | `DB_HOST` | Your MySQL host |
-   | `DB_NAME` | Your database name |
-   | `DB_USER` | Your database username |
-   | `DB_PASS` | Your database password |
-   | `DB_PORT` | Your MySQL port (usually 3306) |
-   | `BASE_URL` | *(leave empty)* |
-6. Click **Create Web Service**
+The app auto-configures everything:
+- ✅ MariaDB database (bundled inside)
+- ✅ Schema + seed data (auto-imported)
+- ✅ Apache web server (auto-configured)
+- ✅ PHP 8.2 with all extensions
 
 Your app will be live at: `https://ethioserve.onrender.com` 🎉
+
+> **Note:** On Render's free tier, the service spins down after 15 minutes of inactivity. The first request after spin-down takes ~30 seconds to start up, and the database is re-seeded with fresh data.
 
 ## 📁 Project Structure
 
@@ -102,8 +79,8 @@ ethioserve/
 ├── taxi/           # Taxi company dashboard
 ├── transport/      # Transport company dashboard
 ├── database.sql    # Full database schema + seed data
-├── Dockerfile      # Docker config for Render
-├── render.yaml     # Render Blueprint
+├── Dockerfile      # Self-contained Docker config
+├── render.yaml     # Render Blueprint (auto-deploy)
 └── index.php       # Entry point (role-based redirect)
 ```
 
