@@ -1,0 +1,324 @@
+:root {
+    --primary-green: #1B5E20;
+    --secondary-gold: #F9A825;
+    --accent-red: #C62828;
+    --bg-light: #F8F9FA;
+    --text-dark: #212529;
+    --white: #ffffff;
+    --shadow-sm: 0 .125rem .25rem rgba(0, 0, 0, .075);
+    --shadow-md: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    --transition-base: all 0.3s ease-in-out;
+}
+
+body {
+    font-family: 'Poppins', 'Inter', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+}
+
+/* Typography Enhancements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-weight: 700;
+}
+
+.text-primary-green {
+    color: var(--primary-green) !important;
+}
+
+.bg-primary-green {
+    background-color: var(--primary-green) !important;
+}
+
+.btn-primary-green {
+    background-color: var(--primary-green);
+    color: var(--white);
+    border: none;
+    transition: var(--transition-base);
+}
+
+.btn-primary-green:hover {
+    background-color: #144618;
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-gold {
+    background-color: var(--secondary-gold);
+    color: var(--text-dark);
+    border: none;
+    transition: var(--transition-base);
+}
+
+.btn-gold:hover {
+    background-color: #e6991f;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Cards & Containers */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.rounded-xl {
+    border-radius: 12px !important;
+}
+
+/* Sidebar Styles for Dashboards */
+.sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background-color: var(--primary-green);
+    color: white;
+    min-height: 100vh;
+    transition: var(--transition-base);
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 8px;
+    margin: 4px 15px;
+    transition: var(--transition-base);
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--secondary-gold);
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+}
+
+/* Customer Specifics */
+.navbar {
+    background-color: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.hero-slider {
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.category-card {
+    cursor: pointer;
+    text-align: center;
+    padding: 20px;
+    border-radius: 15px;
+    background: white;
+    transition: var(--transition-base);
+}
+
+.category-card:hover {
+    background: var(--primary-green);
+    color: white;
+}
+
+.category-card i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+/* Mobile Responsiveness for Dashboards */
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: -250px;
+    }
+
+    .sidebar.active {
+        margin-left: 0;
+    }
+}
+
+/* Super App Grid Styles */
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+@media (min-width: 768px) {
+    .service-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (min-width: 992px) {
+    .service-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.service-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px 10px;
+    text-align: center;
+    transition: var(--transition-base);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text-dark);
+}
+
+.service-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-green);
+}
+
+.service-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    font-size: 1.5rem;
+    transition: var(--transition-base);
+}
+
+.service-card:hover .service-icon {
+    transform: scale(1.1);
+}
+
+.service-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+/* Service Colors */
+.bg-taxi {
+    background-color: #00C853;
+    color: white;
+}
+
+.bg-food {
+    background-color: #00E676;
+    color: white;
+}
+
+.bg-bus {
+    background-color: #00C853;
+    color: white;
+}
+
+.bg-flight {
+    background-color: #00E676;
+    color: white;
+}
+
+.bg-movies {
+    background-color: #00C852;
+    color: white;
+}
+
+.bg-coupons {
+    background-color: #00E675;
+    color: white;
+}
+
+.bg-hotels {
+    background-color: #00C851;
+    color: white;
+}
+
+.bg-experiences {
+    background-color: #00E674;
+    color: white;
+}
+
+.bg-home-services {
+    background-color: #00C853;
+    color: white;
+}
+
+.bg-transport {
+    background-color: #00E676;
+    color: white;
+}
+
+.bg-emergency {
+    background-color: #00C853;
+    color: white;
+}
+
+.bg-rent {
+    background-color: #00E676;
+    color: white;
+}
+
+.bg-education {
+    background-color: #1565C0;
+    color: white;
+}
+
+/* Custom Badge */
+.live-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--accent-red);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(198, 40, 40, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(198, 40, 40, 0);
+    }
+}
+
+/* Hero Section Refinement */
+.hero-compact {
+    border-radius: 25px;
+    background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+    padding: 30px;
+    color: white;
+    margin-bottom: 30px;
+}

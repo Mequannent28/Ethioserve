@@ -1,0 +1,14 @@
+# Render Blueprint - EthioServe (Self-Contained)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: ethioserve
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: BASE_URL
+        value: ""
