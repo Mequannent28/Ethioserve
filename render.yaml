@@ -1,0 +1,30 @@
+# Render Blueprint - EthioServe
+# https://render.com/docs/blueprint-spec
+
+services:
+  # PHP Web Service
+  - type: web
+    name: ethioserve
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DB_HOST
+        sync: false  # Set manually in Render dashboard
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: BASE_URL
+        value: ""
+      - key: SITE_NAME
+        value: EthioServe
+
+databases:
+  # MySQL Database (Render uses PostgreSQL natively, 
+  # so you'll need an external MySQL provider)
+  # See README for instructions on setting up MySQL

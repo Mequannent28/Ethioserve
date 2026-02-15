@@ -1,0 +1,36 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+error_log
+
+# Agent/AI
+.agent/
+.antigravityignore
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# Uploads (if any local uploads)
+/uploads/temp/

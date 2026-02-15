@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1B5E20"/>
+      <stop offset="100%" style="stop-color:#2E7D32"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" ry="100" fill="url(#bg)"/>
+  <!-- Inner circle -->
+  <circle cx="256" cy="240" r="140" fill="rgba(255,255,255,0.1)" filter="url(#shadow)"/>
+  <!-- Fork icon -->
+  <g transform="translate(190, 140)" fill="#FFD600">
+    <rect x="10" y="0" width="8" height="80" rx="4"/>
+    <rect x="30" y="0" width="8" height="80" rx="4"/>
+    <rect x="50" y="0" width="8" height="80" rx="4"/>
+    <rect x="0" y="70" width="68" height="12" rx="6"/>
+    <rect x="25" y="75" width="18" height="90" rx="9"/>
+  </g>
+  <!-- Location pin -->
+  <g transform="translate(280, 130)" fill="white">
+    <path d="M30 0C13.4 0 0 13.4 0 30c0 22.5 30 50 30 50s30-27.5 30-50C60 13.4 46.6 0 30 0zm0 40c-5.5 0-10-4.5-10-10s4.5-10 10-10 10 4.5 10 10-4.5 10-10 10z"/>
+  </g>
+  <!-- App name -->
+  <text x="256" y="380" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="52" fill="white">Ethio</text>
+  <text x="256" y="380" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="bold" font-size="52">
+    <tspan fill="white">Ethio</tspan>
+    <tspan fill="#FFD600">Serve</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="256" y="420" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="normal" font-size="24" fill="rgba(255,255,255,0.7)">All-in-One</text>
+</svg>
