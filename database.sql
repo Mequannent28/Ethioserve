@@ -1,421 +1,1182 @@
--- EthioServe Platform Database Schema
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+--
+-- Host: localhost    Database: ethioserve
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB
 
-CREATE DATABASE IF NOT EXISTS ethioserve;
-USE ethioserve;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Users Table
-CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    full_name VARCHAR(100),
-    phone VARCHAR(20),
-    role ENUM('admin', 'hotel', 'broker', 'transport', 'customer') DEFAULT 'customer',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `bookings`
+--
 
--- Hotels Table
-CREATE TABLE IF NOT EXISTS hotels (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    location VARCHAR(255),
-    cuisine_type VARCHAR(100),
-    opening_hours VARCHAR(100),
-    rating DECIMAL(2,1) DEFAULT 0.0,
-    min_order DECIMAL(10,2) DEFAULT 0.0,
-    delivery_time VARCHAR(50),
-    image_url VARCHAR(255),
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+DROP TABLE IF EXISTS `bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `bookings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `customer_id` int(11) DEFAULT NULL,
+  `hotel_id` int(11) DEFAULT NULL,
+  `booking_date` date NOT NULL,
+  `booking_time` time NOT NULL,
+  `booking_type` enum('room','table','hall') NOT NULL,
+  `status` enum('pending','approved','cancelled') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `guest_name` varchar(100) DEFAULT NULL,
+  `guest_phone` varchar(20) DEFAULT NULL,
+  `guest_email` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `hotel_id` (`hotel_id`),
+  CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Menu Categories
-CREATE TABLE IF NOT EXISTS categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
-);
+--
+-- Dumping data for table `bookings`
+--
 
--- Menu Items Table
-CREATE TABLE IF NOT EXISTS menu_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    hotel_id INT,
-    category_id INT,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2) NOT NULL,
-    image_url VARCHAR(255),
-    is_available BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-);
+LOCK TABLES `bookings` WRITE;
+/*!40000 ALTER TABLE `bookings` DISABLE KEYS */;
+INSERT INTO `bookings` VALUES (1,10,1,'2026-02-16','01:57:00','room','cancelled','2026-02-15 09:57:12',NULL,NULL,NULL),(2,10,1,'2026-02-15','14:49:00','room','cancelled','2026-02-15 10:49:42',NULL,NULL,NULL),(3,10,1,'2026-02-25','01:42:00','room','cancelled','2026-02-15 19:39:57',NULL,NULL,NULL);
+/*!40000 ALTER TABLE `bookings` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Orders Table
-CREATE TABLE IF NOT EXISTS orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT,
-    hotel_id INT,
-    total_amount DECIMAL(10,2) NOT NULL,
-    status ENUM('pending', 'preparing', 'on_delivery', 'delivered', 'cancelled') DEFAULT 'pending',
-    payment_method VARCHAR(50),
-    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
-);
+--
+-- Table structure for table `brokers`
+--
 
--- Order Items Table
-CREATE TABLE IF NOT EXISTS order_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT,
-    menu_item_id INT,
-    quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE
-);
+DROP TABLE IF EXISTS `brokers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `brokers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `referral_code` varchar(20) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `total_earnings` decimal(10,2) DEFAULT 0.00,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `referral_code` (`referral_code`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `brokers_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Bookings Table
-CREATE TABLE IF NOT EXISTS bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT,
-    hotel_id INT,
-    booking_date DATE NOT NULL,
-    booking_time TIME NOT NULL,
-    booking_type ENUM('room', 'table', 'hall') NOT NULL,
-    status ENUM('pending', 'approved', 'cancelled') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
-);
+--
+-- Dumping data for table `brokers`
+--
 
--- Brokers Table
-CREATE TABLE IF NOT EXISTS brokers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    referral_code VARCHAR(20) UNIQUE,
-    bio TEXT,
-    total_earnings DECIMAL(10,2) DEFAULT 0.0,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+LOCK TABLES `brokers` WRITE;
+/*!40000 ALTER TABLE `brokers` DISABLE KEYS */;
+INSERT INTO `brokers` VALUES (1,4,'ETHIO678','Connecting you to the best hotels in Addis.',0.00),(2,16,'ABEL2026','Top-rated broker connecting you to premium services.',0.00),(3,17,'MART2026','Your trusted partner for real estate and rentals.',0.00);
+/*!40000 ALTER TABLE `brokers` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Referrals Table
-CREATE TABLE IF NOT EXISTS referrals (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    broker_id INT,
-    order_id INT,
-    commission_amount DECIMAL(10,2) NOT NULL,
-    status ENUM('pending', 'paid') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (broker_id) REFERENCES brokers(id) ON DELETE CASCADE,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
+--
+-- Table structure for table `bus_bookings`
+--
 
--- ==================== TRANSPORT SYSTEM ====================
+DROP TABLE IF EXISTS `bus_bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `bus_bookings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_reference` varchar(20) DEFAULT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `schedule_id` int(11) DEFAULT NULL,
+  `travel_date` date NOT NULL,
+  `seat_numbers` varchar(100) DEFAULT NULL,
+  `num_passengers` int(11) DEFAULT 1,
+  `passenger_names` text DEFAULT NULL,
+  `passenger_phones` text DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `pickup_point` varchar(255) DEFAULT NULL,
+  `dropoff_point` varchar(255) DEFAULT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_status` enum('pending','paid','failed') DEFAULT 'pending',
+  `status` enum('pending','confirmed','cancelled') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `booking_reference` (`booking_reference`),
+  KEY `customer_id` (`customer_id`),
+  KEY `schedule_id` (`schedule_id`),
+  CONSTRAINT `bus_bookings_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `bus_bookings_ibfk_2` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Transport Companies Table (Golden Bus, Walya Bus, Gion Bus, Geda Bus, Awash Bus)
-CREATE TABLE IF NOT EXISTS transport_companies (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    company_name VARCHAR(100) NOT NULL,
-    description TEXT,
-    logo_url VARCHAR(255),
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    address VARCHAR(255),
-    rating DECIMAL(2,1) DEFAULT 0.0,
-    total_buses INT DEFAULT 0,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+--
+-- Dumping data for table `bus_bookings`
+--
 
--- Bus Types
-CREATE TABLE IF NOT EXISTS bus_types (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    description VARCHAR(255),
-    seat_layout VARCHAR(50) DEFAULT '2-2'
-);
+LOCK TABLES `bus_bookings` WRITE;
+/*!40000 ALTER TABLE `bus_bookings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `bus_bookings` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Buses Table
-CREATE TABLE IF NOT EXISTS buses (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    company_id INT,
-    bus_type_id INT,
-    bus_number VARCHAR(20) NOT NULL UNIQUE,
-    plate_number VARCHAR(20),
-    total_seats INT DEFAULT 50,
-    amenities TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (company_id) REFERENCES transport_companies(id) ON DELETE CASCADE,
-    FOREIGN KEY (bus_type_id) REFERENCES bus_types(id) ON DELETE SET NULL
-);
+--
+-- Table structure for table `bus_types`
+--
 
--- Routes Table (e.g., Addis Ababa to Hawassa)
-CREATE TABLE IF NOT EXISTS routes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    company_id INT,
-    origin VARCHAR(100) NOT NULL,
-    destination VARCHAR(100) NOT NULL,
-    distance_km DECIMAL(10,2),
-    estimated_hours DECIMAL(4,1),
-    base_price DECIMAL(10,2) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    FOREIGN KEY (company_id) REFERENCES transport_companies(id) ON DELETE CASCADE
-);
+DROP TABLE IF EXISTS `bus_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `bus_types` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `seat_layout` varchar(50) DEFAULT '2-2',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Schedules Table (Daily departures)
-CREATE TABLE IF NOT EXISTS schedules (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    bus_id INT,
-    route_id INT,
-    departure_time TIME NOT NULL,
-    arrival_time TIME,
-    price DECIMAL(10,2) NOT NULL,
-    operating_days VARCHAR(50) DEFAULT 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (bus_id) REFERENCES buses(id) ON DELETE CASCADE,
-    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
-);
+--
+-- Dumping data for table `bus_types`
+--
 
--- Bus Bookings Table
-CREATE TABLE IF NOT EXISTS bus_bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    booking_reference VARCHAR(20) UNIQUE,
-    customer_id INT,
-    schedule_id INT,
-    travel_date DATE NOT NULL,
-    seat_numbers VARCHAR(100),
-    num_passengers INT DEFAULT 1,
-    passenger_names TEXT,
-    passenger_phones TEXT,
-    total_amount DECIMAL(10,2) NOT NULL,
-    pickup_point VARCHAR(255),
-    dropoff_point VARCHAR(255),
-    payment_method VARCHAR(50),
-    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
-    status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE
-);
+LOCK TABLES `bus_types` WRITE;
+/*!40000 ALTER TABLE `bus_types` DISABLE KEYS */;
+INSERT INTO `bus_types` VALUES (1,'Standard','Regular bus with 2-2 seating','2-2'),(2,'VIP','Luxury bus with extra legroom','2-1'),(3,'Sleeper','Overnight bus with beds','1-1'),(4,'Mini Bus','Smaller bus for short routes','2-2');
+/*!40000 ALTER TABLE `bus_types` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Seat Bookings Table (Individual seats)
-CREATE TABLE IF NOT EXISTS seat_bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    booking_id INT,
-    seat_number VARCHAR(10) NOT NULL,
-    passenger_name VARCHAR(100),
-    passenger_phone VARCHAR(20),
-    price DECIMAL(10,2),
-    FOREIGN KEY (booking_id) REFERENCES bus_bookings(id) ON DELETE CASCADE
-);
+--
+-- Table structure for table `buses`
+--
 
--- ==================== END TRANSPORT SYSTEM ====================
+DROP TABLE IF EXISTS `buses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `buses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) DEFAULT NULL,
+  `bus_type_id` int(11) DEFAULT NULL,
+  `bus_number` varchar(20) NOT NULL,
+  `plate_number` varchar(20) DEFAULT NULL,
+  `total_seats` int(11) DEFAULT 50,
+  `amenities` text DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `bus_number` (`bus_number`),
+  KEY `company_id` (`company_id`),
+  KEY `bus_type_id` (`bus_type_id`),
+  CONSTRAINT `buses_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `transport_companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `buses_ibfk_2` FOREIGN KEY (`bus_type_id`) REFERENCES `bus_types` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Listings Table (For House Rent, Car Rent, etc.)
-CREATE TABLE IF NOT EXISTS listings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    type ENUM('house_rent', 'car_rent', 'bus_ticket', 'home_service') NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2),
-    location VARCHAR(255),
-    image_url VARCHAR(500),
-    video_url VARCHAR(500),
-    bedrooms INT DEFAULT 0,
-    bathrooms INT DEFAULT 0,
-    area_sqm INT DEFAULT 0,
-    features TEXT,
-    contact_phone VARCHAR(20),
-    contact_name VARCHAR(100),
-    status ENUM('available', 'taken', 'pending') DEFAULT 'available',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+--
+-- Dumping data for table `buses`
+--
 
--- Rental Requests Table
-CREATE TABLE IF NOT EXISTS rental_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    listing_id INT,
-    customer_id INT,
-    customer_name VARCHAR(100),
-    customer_phone VARCHAR(20),
-    customer_email VARCHAR(100),
-    message TEXT,
-    status ENUM('pending','approved','rejected') DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
-);
+LOCK TABLES `buses` WRITE;
+/*!40000 ALTER TABLE `buses` DISABLE KEYS */;
+INSERT INTO `buses` VALUES (1,1,2,'GB-001','AA-1234-A1',45,'AC,WiFi,USB Charging,Reclining Seats',1),(2,1,1,'GB-002','AA-1235-A1',50,'AC,Reclining Seats',1),(3,2,1,'WB-001','AA-2345-B1',50,'AC,Reclining Seats',1),(4,2,2,'WB-002','AA-2346-B1',40,'AC,WiFi,USB Charging',1),(5,3,2,'GN-001','AA-3456-C1',35,'AC,WiFi,USB Charging,Entertainment,Luxury Seats',1),(6,3,3,'GN-002','AA-3457-C1',24,'AC,WiFi,Beds,Privacy Curtains',1),(7,4,1,'GD-001','AA-4567-D1',55,'AC,Fans',1),(8,4,1,'GD-002','AA-4568-D1',55,'AC,Fans',1),(9,5,1,'AW-001','AA-5678-E1',50,'AC,Reclining Seats',1),(10,5,2,'AW-002','AA-5679-E1',42,'AC,WiFi,USB Charging',1);
+/*!40000 ALTER TABLE `buses` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Flights Table
-CREATE TABLE IF NOT EXISTS flights (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    airline VARCHAR(100) NOT NULL,
-    flight_number VARCHAR(20) UNIQUE,
-    origin VARCHAR(100) DEFAULT 'Addis Ababa (ADD)',
-    destination VARCHAR(100) NOT NULL,
-    departure_time DATETIME NOT NULL,
-    arrival_time DATETIME NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    available_seats INT DEFAULT 50,
-    status ENUM('scheduled', 'delayed', 'cancelled', 'completed') DEFAULT 'scheduled',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `categories`
+--
 
--- Flight Bookings Table
-CREATE TABLE IF NOT EXISTS flight_bookings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT,
-    flight_id INT,
-    passenger_name VARCHAR(100),
-    passport_number VARCHAR(50),
-    pnr_code VARCHAR(10) UNIQUE,
-    trip_type ENUM('one_way', 'round_trip') DEFAULT 'one_way',
-    seat_number VARCHAR(10),
-    status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
-    payment_status ENUM('unpaid', 'paid') DEFAULT 'unpaid',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (flight_id) REFERENCES flights(id) ON DELETE CASCADE
-);
+DROP TABLE IF EXISTS `categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ==================== SEED DATA ====================
+--
+-- Dumping data for table `categories`
+--
 
--- Categories
-INSERT INTO categories (name) VALUES ('Breakfast'), ('Lunch'), ('Dinner'), ('Drinks'), ('Desserts');
+LOCK TABLES `categories` WRITE;
+/*!40000 ALTER TABLE `categories` DISABLE KEYS */;
+INSERT INTO `categories` VALUES (1,'Breakfast'),(2,'Lunch'),(3,'Dinner'),(4,'Drinks'),(5,'Desserts'),(6,'Main Course'),(7,'Appetizer'),(8,'Dessert');
+/*!40000 ALTER TABLE `categories` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Bus Types
-INSERT INTO bus_types (name, description, seat_layout) VALUES 
-('Standard', 'Regular bus with 2-2 seating', '2-2'),
-('VIP', 'Luxury bus with extra legroom', '2-1'),
-('Sleeper', 'Overnight bus with beds', '1-1'),
-('Mini Bus', 'Smaller bus for short routes', '2-2');
+--
+-- Table structure for table `education_resources`
+--
 
--- Admin
-INSERT INTO users (username, password, email, full_name, role) 
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@ethioserve.com', 'System Admin', 'admin');
+DROP TABLE IF EXISTS `education_resources`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `education_resources` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `grade` int(11) NOT NULL,
+  `subject` varchar(100) NOT NULL,
+  `type` enum('textbook','teacher_guide','video') DEFAULT 'textbook',
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `file_url` varchar(500) DEFAULT NULL,
+  `video_url` varchar(500) DEFAULT NULL,
+  `video_id` varchar(50) DEFAULT NULL,
+  `pages` int(11) DEFAULT 0,
+  `units` int(11) DEFAULT 0,
+  `edition` varchar(50) DEFAULT '2023',
+  `status` enum('active','draft','archived') DEFAULT 'active',
+  `downloads` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=434 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Hotel Owners
-INSERT INTO users (username, password, email, full_name, role) 
-VALUES ('hilton_owner', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'hilton@ethioserve.com', 'Hilton Addis', 'hotel'),
-       ('sheraton_owner', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'sheraton@ethioserve.com', 'Sheraton Addis', 'hotel');
+--
+-- Dumping data for table `education_resources`
+--
 
--- Hotels
-INSERT INTO hotels (user_id, name, description, location, cuisine_type, opening_hours, rating, min_order, delivery_time, image_url, status)
-VALUES 
-(2, 'Hilton Addis Ababa', 'Classic luxury with authentic Ethiopian hospitality.', 'Menelik II Avenue, Addis Ababa', 'Ethiopian & International', '24/7', 4.8, 500.00, '30-45 min', 'https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=1200&q=80', 'approved'),
-(3, 'Sheraton Addis', 'State-of-the-art sanctuary in the heart of Ethiopia.', 'Taitu Street, Addis Ababa', 'Fine Dining', '06:00 AM - 11:00 PM', 4.9, 800.00, '40-60 min', 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1200&q=80', 'approved');
+LOCK TABLES `education_resources` WRITE;
+/*!40000 ALTER TABLE `education_resources` DISABLE KEYS */;
+INSERT INTO `education_resources` VALUES (92,1,'Amharic','teacher_guide','Grade 1 Amharic Teacher Guide','Ethiopian New Curriculum Grade 1 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-1/amharic','','',160,8,'2023','active',1,'2026-02-15 10:21:16','2026-02-15 10:23:52'),(93,1,'English','teacher_guide','Grade 1 English Teacher Guide','Ethiopian New Curriculum Grade 1 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-1/english-for-ethiopia','','',172,10,'2023','active',0,'2026-02-15 10:21:16','2026-02-15 10:21:16'),(94,1,'Mathematics','teacher_guide','Grade 1 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 1 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-1/mathematics','','',184,10,'2023','active',0,'2026-02-15 10:21:16','2026-02-15 10:21:16'),(95,1,'Environmental Science','teacher_guide','Grade 1 Environmental Science Teacher Guide','Ethiopian New Curriculum Grade 1 Environmental Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-1/environmental-science','','',136,8,'2023','active',0,'2026-02-15 10:21:16','2026-02-15 10:21:16'),(96,2,'Amharic','teacher_guide','Grade 2 Amharic Teacher Guide','Ethiopian New Curriculum Grade 2 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-2/amharic','','',168,8,'2023','active',0,'2026-02-15 10:21:16','2026-02-15 10:21:16'),(97,2,'English','teacher_guide','Grade 2 English Teacher Guide','Ethiopian New Curriculum Grade 2 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-2/english-for-ethiopia','','',180,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(98,2,'Mathematics','teacher_guide','Grade 2 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 2 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-2/mathematics','','',192,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(99,2,'Environmental Science','teacher_guide','Grade 2 Environmental Science Teacher Guide','Ethiopian New Curriculum Grade 2 Environmental Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-2/environmental-science','','',144,8,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(100,3,'Amharic','teacher_guide','Grade 3 Amharic Teacher Guide','Ethiopian New Curriculum Grade 3 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-3/amharic','','',176,9,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(101,3,'English','teacher_guide','Grade 3 English Teacher Guide','Ethiopian New Curriculum Grade 3 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-3/english-for-ethiopia','','',188,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(102,3,'Mathematics','teacher_guide','Grade 3 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 3 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-3/mathematics','','',200,12,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(103,3,'Environmental Science','teacher_guide','Grade 3 Environmental Science Teacher Guide','Ethiopian New Curriculum Grade 3 Environmental Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-3/environmental-science','','',152,9,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(104,3,'Afan Oromo','teacher_guide','Grade 3 Afan Oromo Teacher Guide','Ethiopian New Curriculum Grade 3 Afan Oromo Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-3/afan-oromo','','',160,8,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(105,4,'Amharic','teacher_guide','Grade 4 Amharic Teacher Guide','Ethiopian New Curriculum Grade 4 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/amharic','','',184,9,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(106,4,'English','teacher_guide','Grade 4 English Teacher Guide','Ethiopian New Curriculum Grade 4 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/english-for-ethiopia','','',196,12,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(107,4,'Mathematics','teacher_guide','Grade 4 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 4 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/mathematics','','',216,12,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(108,4,'Environmental Science','teacher_guide','Grade 4 Environmental Science Teacher Guide','Ethiopian New Curriculum Grade 4 Environmental Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/environmental-science','','',160,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(109,4,'Afan Oromo','teacher_guide','Grade 4 Afan Oromo Teacher Guide','Ethiopian New Curriculum Grade 4 Afan Oromo Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/afan-oromo','','',168,8,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(110,4,'Social Studies','teacher_guide','Grade 4 Social Studies Teacher Guide','Ethiopian New Curriculum Grade 4 Social Studies Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-4/social-studies','','',152,8,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(111,5,'Amharic','teacher_guide','Grade 5 Amharic Teacher Guide','Ethiopian New Curriculum Grade 5 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/amharic','','',192,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(112,5,'English','teacher_guide','Grade 5 English Teacher Guide','Ethiopian New Curriculum Grade 5 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/english-for-ethiopia','','',208,12,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(113,5,'Mathematics','teacher_guide','Grade 5 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 5 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/mathematics','','',232,14,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(114,5,'General Science','teacher_guide','Grade 5 General Science Teacher Guide','Ethiopian New Curriculum Grade 5 General Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/general-science','','',184,10,'2023','active',0,'2026-02-15 10:21:17','2026-02-15 10:21:17'),(115,5,'Social Studies','teacher_guide','Grade 5 Social Studies Teacher Guide','Ethiopian New Curriculum Grade 5 Social Studies Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/social-studies','','',168,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(116,5,'Civics','teacher_guide','Grade 5 Civics Teacher Guide','Ethiopian New Curriculum Grade 5 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-5/civic-and-ethical-education','','',152,8,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(117,6,'Amharic','teacher_guide','Grade 6 Amharic Teacher Guide','Ethiopian New Curriculum Grade 6 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/amharic','','',200,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(118,6,'English','teacher_guide','Grade 6 English Teacher Guide','Ethiopian New Curriculum Grade 6 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/english-for-ethiopia','','',216,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(119,6,'Mathematics','teacher_guide','Grade 6 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 6 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/mathematics','','',240,14,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(120,6,'General Science','teacher_guide','Grade 6 General Science Teacher Guide','Ethiopian New Curriculum Grade 6 General Science Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/general-science','','',192,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(121,6,'Social Studies','teacher_guide','Grade 6 Social Studies Teacher Guide','Ethiopian New Curriculum Grade 6 Social Studies Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/social-studies','','',176,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(122,6,'Civics','teacher_guide','Grade 6 Civics Teacher Guide','Ethiopian New Curriculum Grade 6 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-6/civic-and-ethical-education','','',160,8,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(123,7,'Amharic','teacher_guide','Grade 7 Amharic Teacher Guide','Ethiopian New Curriculum Grade 7 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/amharic','','',208,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(124,7,'English','teacher_guide','Grade 7 English Teacher Guide','Ethiopian New Curriculum Grade 7 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/english-for-ethiopia','','',224,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(125,7,'Mathematics','teacher_guide','Grade 7 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 7 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/mathematics','','',256,14,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(126,7,'Biology','teacher_guide','Grade 7 Biology Teacher Guide','Ethiopian New Curriculum Grade 7 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/biology','','',216,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(127,7,'Physics','teacher_guide','Grade 7 Physics Teacher Guide','Ethiopian New Curriculum Grade 7 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/physics','','',200,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(128,7,'Chemistry','teacher_guide','Grade 7 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 7 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/chemistry','','',208,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(129,7,'Geography','teacher_guide','Grade 7 Geography Teacher Guide','Ethiopian New Curriculum Grade 7 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/geography','','',184,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(130,7,'History','teacher_guide','Grade 7 History Teacher Guide','Ethiopian New Curriculum Grade 7 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/history','','',192,10,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(131,7,'Civics','teacher_guide','Grade 7 Civics Teacher Guide','Ethiopian New Curriculum Grade 7 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-7/civic-and-ethical-education','','',168,8,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(132,8,'Amharic','teacher_guide','Grade 8 Amharic Teacher Guide','Ethiopian New Curriculum Grade 8 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/amharic','','',216,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(133,8,'English','teacher_guide','Grade 8 English Teacher Guide','Ethiopian New Curriculum Grade 8 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/english-for-ethiopia','','',232,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(134,8,'Mathematics','teacher_guide','Grade 8 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 8 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/mathematics','','',264,14,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(135,8,'Biology','teacher_guide','Grade 8 Biology Teacher Guide','Ethiopian New Curriculum Grade 8 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/biology','','',224,12,'2023','active',0,'2026-02-15 10:21:18','2026-02-15 10:21:18'),(136,8,'Physics','teacher_guide','Grade 8 Physics Teacher Guide','Ethiopian New Curriculum Grade 8 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/physics','','',208,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(137,8,'Chemistry','teacher_guide','Grade 8 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 8 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/chemistry','','',216,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(138,8,'Geography','teacher_guide','Grade 8 Geography Teacher Guide','Ethiopian New Curriculum Grade 8 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/geography','','',192,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(139,8,'History','teacher_guide','Grade 8 History Teacher Guide','Ethiopian New Curriculum Grade 8 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/history','','',200,12,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(140,8,'Civics','teacher_guide','Grade 8 Civics Teacher Guide','Ethiopian New Curriculum Grade 8 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-8/civic-and-ethical-education','','',176,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(141,9,'Amharic','teacher_guide','Grade 9 Amharic Teacher Guide','Ethiopian New Curriculum Grade 9 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/amharic','','',232,12,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(142,9,'English','teacher_guide','Grade 9 English Teacher Guide','Ethiopian New Curriculum Grade 9 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/english-for-ethiopia','','',248,14,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(143,9,'Mathematics','teacher_guide','Grade 9 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 9 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/mathematics','','',296,16,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(144,9,'Biology','teacher_guide','Grade 9 Biology Teacher Guide','Ethiopian New Curriculum Grade 9 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/biology','','',264,14,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(145,9,'Physics','teacher_guide','Grade 9 Physics Teacher Guide','Ethiopian New Curriculum Grade 9 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/physics','','',248,12,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(146,9,'Chemistry','teacher_guide','Grade 9 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 9 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/chemistry','','',256,12,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(147,9,'Geography','teacher_guide','Grade 9 Geography Teacher Guide','Ethiopian New Curriculum Grade 9 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/geography','','',216,12,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(148,9,'History','teacher_guide','Grade 9 History Teacher Guide','Ethiopian New Curriculum Grade 9 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/history','','',232,14,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(149,9,'Civics','teacher_guide','Grade 9 Civics Teacher Guide','Ethiopian New Curriculum Grade 9 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/civic-and-ethical-education','','',184,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(150,9,'ICT','teacher_guide','Grade 9 ICT Teacher Guide','Ethiopian New Curriculum Grade 9 ICT Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-9/ict','','',200,10,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(151,10,'Amharic','teacher_guide','Grade 10 Amharic Teacher Guide','Ethiopian New Curriculum Grade 10 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/amharic','','',240,14,'2023','active',0,'2026-02-15 10:21:19','2026-02-15 10:21:19'),(152,10,'English','teacher_guide','Grade 10 English Teacher Guide','Ethiopian New Curriculum Grade 10 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/english-for-ethiopia','','',256,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(153,10,'Mathematics','teacher_guide','Grade 10 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 10 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/mathematics','','',312,16,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(154,10,'Biology','teacher_guide','Grade 10 Biology Teacher Guide','Ethiopian New Curriculum Grade 10 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/biology','','',280,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(155,10,'Physics','teacher_guide','Grade 10 Physics Teacher Guide','Ethiopian New Curriculum Grade 10 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/physics','','',264,12,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(156,10,'Chemistry','teacher_guide','Grade 10 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 10 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/chemistry','','',272,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(157,10,'Geography','teacher_guide','Grade 10 Geography Teacher Guide','Ethiopian New Curriculum Grade 10 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/geography','','',232,12,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(158,10,'History','teacher_guide','Grade 10 History Teacher Guide','Ethiopian New Curriculum Grade 10 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/history','','',248,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(159,10,'Civics','teacher_guide','Grade 10 Civics Teacher Guide','Ethiopian New Curriculum Grade 10 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/civic-and-ethical-education','','',200,10,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(160,10,'ICT','teacher_guide','Grade 10 ICT Teacher Guide','Ethiopian New Curriculum Grade 10 ICT Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-10/ict','','',216,12,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(161,11,'Amharic','teacher_guide','Grade 11 Amharic Teacher Guide','Ethiopian New Curriculum Grade 11 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/amharic','','',256,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(162,11,'English','teacher_guide','Grade 11 English Teacher Guide','Ethiopian New Curriculum Grade 11 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/english-for-ethiopia','','',272,16,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(163,11,'Mathematics','teacher_guide','Grade 11 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 11 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/mathematics','','',328,18,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(164,11,'Biology','teacher_guide','Grade 11 Biology Teacher Guide','Ethiopian New Curriculum Grade 11 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/biology','','',296,16,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(165,11,'Physics','teacher_guide','Grade 11 Physics Teacher Guide','Ethiopian New Curriculum Grade 11 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/physics','','',280,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(166,11,'Chemistry','teacher_guide','Grade 11 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 11 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/chemistry','','',288,14,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(167,11,'Economics','teacher_guide','Grade 11 Economics Teacher Guide','Ethiopian New Curriculum Grade 11 Economics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/economics','','',240,12,'2023','active',0,'2026-02-15 10:21:20','2026-02-15 10:21:20'),(168,11,'Geography','teacher_guide','Grade 11 Geography Teacher Guide','Ethiopian New Curriculum Grade 11 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/geography','','',248,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(169,11,'History','teacher_guide','Grade 11 History Teacher Guide','Ethiopian New Curriculum Grade 11 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/history','','',264,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(170,11,'Civics','teacher_guide','Grade 11 Civics Teacher Guide','Ethiopian New Curriculum Grade 11 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/civic-and-ethical-education','','',208,12,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(171,11,'ICT','teacher_guide','Grade 11 ICT Teacher Guide','Ethiopian New Curriculum Grade 11 ICT Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-11/ict','','',232,12,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(172,12,'Amharic','teacher_guide','Grade 12 Amharic Teacher Guide','Ethiopian New Curriculum Grade 12 Amharic Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/amharic','','',264,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(173,12,'English','teacher_guide','Grade 12 English Teacher Guide','Ethiopian New Curriculum Grade 12 English Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/english-for-ethiopia','','',280,16,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(174,12,'Mathematics','teacher_guide','Grade 12 Mathematics Teacher Guide','Ethiopian New Curriculum Grade 12 Mathematics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/mathematics','','',344,18,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(175,12,'Biology','teacher_guide','Grade 12 Biology Teacher Guide','Ethiopian New Curriculum Grade 12 Biology Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/biology','','',312,16,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(176,12,'Physics','teacher_guide','Grade 12 Physics Teacher Guide','Ethiopian New Curriculum Grade 12 Physics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/physics','','',296,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(177,12,'Chemistry','teacher_guide','Grade 12 Chemistry Teacher Guide','Ethiopian New Curriculum Grade 12 Chemistry Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/chemistry','','',304,16,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(178,12,'Economics','teacher_guide','Grade 12 Economics Teacher Guide','Ethiopian New Curriculum Grade 12 Economics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/economics','','',256,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(179,12,'Geography','teacher_guide','Grade 12 Geography Teacher Guide','Ethiopian New Curriculum Grade 12 Geography Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/geography','','',260,14,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(180,12,'History','teacher_guide','Grade 12 History Teacher Guide','Ethiopian New Curriculum Grade 12 History Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/history','','',280,16,'2023','active',0,'2026-02-15 10:21:21','2026-02-15 10:21:21'),(181,12,'Civics','teacher_guide','Grade 12 Civics Teacher Guide','Ethiopian New Curriculum Grade 12 Civics Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/civic-and-ethical-education','','',216,12,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(182,12,'ICT','teacher_guide','Grade 12 ICT Teacher Guide','Ethiopian New Curriculum Grade 12 ICT Teacher\'s Guide. Includes lesson plans, teaching strategies, assessment tools, and answer keys. Published by Ministry of Education, Ethiopia.','https://kehulum.com/teachers-guide/new/grade-12/ict','','',240,12,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(183,1,'Amharic','video','Grade 1 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 1 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(184,1,'English','video','Grade 1 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 1 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(185,1,'Mathematics','video','Grade 1 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 1 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(186,1,'Environmental Science','video','Grade 1 Environmental Science - Environmental Science for Kids','Video lesson for Grade 1 Environmental Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=v-FnKpVRjWg','v-FnKpVRjWg',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(187,2,'Amharic','video','Grade 2 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 2 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(188,2,'English','video','Grade 2 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 2 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(189,2,'Mathematics','video','Grade 2 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 2 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(190,2,'Environmental Science','video','Grade 2 Environmental Science - Environmental Science for Kids','Video lesson for Grade 2 Environmental Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=v-FnKpVRjWg','v-FnKpVRjWg',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(191,3,'Amharic','video','Grade 3 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 3 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(192,3,'English','video','Grade 3 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 3 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(193,3,'Mathematics','video','Grade 3 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 3 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(194,3,'Environmental Science','video','Grade 3 Environmental Science - Environmental Science for Kids','Video lesson for Grade 3 Environmental Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=v-FnKpVRjWg','v-FnKpVRjWg',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(195,3,'Afan Oromo','video','Grade 3 Afan Oromo - Afan Oromo Lessons / Barnoota Afaan Oromoo','Video lesson for Grade 3 Afan Oromo. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=R_9cGmLJ58M','R_9cGmLJ58M',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(196,4,'Amharic','video','Grade 4 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 4 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(197,4,'English','video','Grade 4 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 4 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:22','2026-02-15 10:21:22'),(198,4,'Mathematics','video','Grade 4 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 4 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(199,4,'Environmental Science','video','Grade 4 Environmental Science - Environmental Science for Kids','Video lesson for Grade 4 Environmental Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=v-FnKpVRjWg','v-FnKpVRjWg',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(200,4,'Afan Oromo','video','Grade 4 Afan Oromo - Afan Oromo Lessons / Barnoota Afaan Oromoo','Video lesson for Grade 4 Afan Oromo. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=R_9cGmLJ58M','R_9cGmLJ58M',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(201,4,'Social Studies','video','Grade 4 Social Studies - Social Studies for Ethiopian Students','Video lesson for Grade 4 Social Studies. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=9e1U7k87SUc','9e1U7k87SUc',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(202,5,'Amharic','video','Grade 5 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 5 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(203,5,'English','video','Grade 5 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 5 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(204,5,'Mathematics','video','Grade 5 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 5 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(205,5,'General Science','video','Grade 5 General Science - General Science Basics','Video lesson for Grade 5 General Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=U5EOkMYjmhk','U5EOkMYjmhk',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(206,5,'Social Studies','video','Grade 5 Social Studies - Social Studies for Ethiopian Students','Video lesson for Grade 5 Social Studies. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=9e1U7k87SUc','9e1U7k87SUc',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(207,5,'Civics','video','Grade 5 Civics - Civic & Ethical Education','Video lesson for Grade 5 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(208,6,'Amharic','video','Grade 6 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 6 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(209,6,'English','video','Grade 6 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 6 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(210,6,'Mathematics','video','Grade 6 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 6 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(211,6,'General Science','video','Grade 6 General Science - General Science Basics','Video lesson for Grade 6 General Science. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=U5EOkMYjmhk','U5EOkMYjmhk',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(212,6,'Social Studies','video','Grade 6 Social Studies - Social Studies for Ethiopian Students','Video lesson for Grade 6 Social Studies. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=9e1U7k87SUc','9e1U7k87SUc',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(213,6,'Civics','video','Grade 6 Civics - Civic & Ethical Education','Video lesson for Grade 6 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(214,7,'Amharic','video','Grade 7 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 7 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(215,7,'English','video','Grade 7 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 7 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(216,7,'Mathematics','video','Grade 7 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 7 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:23','2026-02-15 10:21:23'),(217,7,'Biology','video','Grade 7 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 7 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(218,7,'Physics','video','Grade 7 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 7 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(219,7,'Chemistry','video','Grade 7 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 7 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(220,7,'Geography','video','Grade 7 Geography - Geography of Ethiopia','Video lesson for Grade 7 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(221,7,'History','video','Grade 7 History - History of Ethiopia','Video lesson for Grade 7 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(222,7,'Civics','video','Grade 7 Civics - Civic & Ethical Education','Video lesson for Grade 7 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(223,8,'Amharic','video','Grade 8 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 8 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(224,8,'English','video','Grade 8 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 8 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(225,8,'Mathematics','video','Grade 8 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 8 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(226,8,'Biology','video','Grade 8 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 8 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(227,8,'Physics','video','Grade 8 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 8 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(228,8,'Chemistry','video','Grade 8 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 8 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(229,8,'Geography','video','Grade 8 Geography - Geography of Ethiopia','Video lesson for Grade 8 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(230,8,'History','video','Grade 8 History - History of Ethiopia','Video lesson for Grade 8 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(231,8,'Civics','video','Grade 8 Civics - Civic & Ethical Education','Video lesson for Grade 8 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(232,9,'Amharic','video','Grade 9 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 9 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(233,9,'English','video','Grade 9 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 9 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(234,9,'Mathematics','video','Grade 9 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 9 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(235,9,'Biology','video','Grade 9 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 9 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(236,9,'Physics','video','Grade 9 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 9 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:24','2026-02-15 10:21:24'),(237,9,'Chemistry','video','Grade 9 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 9 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(238,9,'Geography','video','Grade 9 Geography - Geography of Ethiopia','Video lesson for Grade 9 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(239,9,'History','video','Grade 9 History - History of Ethiopia','Video lesson for Grade 9 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(240,9,'Civics','video','Grade 9 Civics - Civic & Ethical Education','Video lesson for Grade 9 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(241,9,'ICT','video','Grade 9 ICT - ICT Basics - Computer Fundamentals','Video lesson for Grade 9 ICT. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=O5nskjZ_GoI','O5nskjZ_GoI',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(242,10,'Amharic','video','Grade 10 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 10 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(243,10,'English','video','Grade 10 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 10 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(244,10,'Mathematics','video','Grade 10 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 10 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(245,10,'Biology','video','Grade 10 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 10 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(246,10,'Physics','video','Grade 10 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 10 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:25','2026-02-15 10:21:25'),(247,10,'Chemistry','video','Grade 10 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 10 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(248,10,'Geography','video','Grade 10 Geography - Geography of Ethiopia','Video lesson for Grade 10 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(249,10,'History','video','Grade 10 History - History of Ethiopia','Video lesson for Grade 10 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(250,10,'Civics','video','Grade 10 Civics - Civic & Ethical Education','Video lesson for Grade 10 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(251,10,'ICT','video','Grade 10 ICT - ICT Basics - Computer Fundamentals','Video lesson for Grade 10 ICT. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=O5nskjZ_GoI','O5nskjZ_GoI',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(252,11,'Amharic','video','Grade 11 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 11 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(253,11,'English','video','Grade 11 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 11 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(254,11,'Mathematics','video','Grade 11 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 11 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(255,11,'Biology','video','Grade 11 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 11 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(256,11,'Physics','video','Grade 11 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 11 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(257,11,'Chemistry','video','Grade 11 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 11 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(258,11,'Economics','video','Grade 11 Economics - Economics Basic Concepts','Video lesson for Grade 11 Economics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=3ez10ADR_gM','3ez10ADR_gM',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(259,11,'Geography','video','Grade 11 Geography - Geography of Ethiopia','Video lesson for Grade 11 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(260,11,'History','video','Grade 11 History - History of Ethiopia','Video lesson for Grade 11 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(261,11,'Civics','video','Grade 11 Civics - Civic & Ethical Education','Video lesson for Grade 11 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(262,11,'ICT','video','Grade 11 ICT - ICT Basics - Computer Fundamentals','Video lesson for Grade 11 ICT. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=O5nskjZ_GoI','O5nskjZ_GoI',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(263,12,'Amharic','video','Grade 12 Amharic - Amharic Fidel Learning / የአማርኛ ፊደል','Video lesson for Grade 12 Amharic. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=wk3v4GkxbPo','wk3v4GkxbPo',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(264,12,'English','video','Grade 12 English - English Grammar Basics for Ethiopian Students','Video lesson for Grade 12 English. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=Qf1Kj0EhKdE','Qf1Kj0EhKdE',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(265,12,'Mathematics','video','Grade 12 Mathematics - Math Made Easy - Ethiopian Curriculum','Video lesson for Grade 12 Mathematics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=pTnEG_WGd2Q','pTnEG_WGd2Q',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(266,12,'Biology','video','Grade 12 Biology - Biology Introduction - Ethiopian Curriculum','Video lesson for Grade 12 Biology. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=QnQe0xW_JY4','QnQe0xW_JY4',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(267,12,'Physics','video','Grade 12 Physics - Physics Fundamentals - Ethiopian Curriculum','Video lesson for Grade 12 Physics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=ZM8ECi_piNU','ZM8ECi_piNU',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(268,12,'Chemistry','video','Grade 12 Chemistry - Chemistry Basics - Ethiopian Curriculum','Video lesson for Grade 12 Chemistry. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=FSyAehMdpyI','FSyAehMdpyI',0,0,'2023','active',0,'2026-02-15 10:21:26','2026-02-15 10:21:26'),(269,12,'Economics','video','Grade 12 Economics - Economics Basic Concepts','Video lesson for Grade 12 Economics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=3ez10ADR_gM','3ez10ADR_gM',0,0,'2023','active',0,'2026-02-15 10:21:27','2026-02-15 10:21:27'),(270,12,'Geography','video','Grade 12 Geography - Geography of Ethiopia','Video lesson for Grade 12 Geography. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=JX65BbFdMGc','JX65BbFdMGc',0,0,'2023','active',0,'2026-02-15 10:21:27','2026-02-15 10:21:27'),(271,12,'History','video','Grade 12 History - History of Ethiopia','Video lesson for Grade 12 History. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=x1rP1dh4kBc','x1rP1dh4kBc',0,0,'2023','active',0,'2026-02-15 10:21:27','2026-02-15 10:21:27'),(272,12,'Civics','video','Grade 12 Civics - Civic & Ethical Education','Video lesson for Grade 12 Civics. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=5xu78_xHDFY','5xu78_xHDFY',0,0,'2023','active',0,'2026-02-15 10:21:27','2026-02-15 10:21:27'),(273,12,'ICT','video','Grade 12 ICT - ICT Basics - Computer Fundamentals','Video lesson for Grade 12 ICT. Part of the Ethiopian New Curriculum educational materials.','','https://youtube.com/watch?v=O5nskjZ_GoI','O5nskjZ_GoI',0,0,'2023','active',0,'2026-02-15 10:21:27','2026-02-15 10:21:27'),(336,1,'Amharic','textbook','Grade 1 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 1 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',3,'2026-02-15 10:41:23','2026-02-15 10:52:21'),(337,1,'English','textbook','Grade 1 English Student Textbook','Official Ethiopian New Curriculum Grade 1 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:23','2026-02-15 18:19:45'),(338,1,'Mathematics','textbook','Grade 1 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 1 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(339,1,'General Science','textbook','Grade 1 General Science Student Textbook','Official Ethiopian New Curriculum Grade 1 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(340,1,'Environmental Science','textbook','Grade 1 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 1 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:24','2026-02-15 10:42:02'),(341,1,'HPE','textbook','Grade 1 HPE Student Textbook','Official Ethiopian New Curriculum Grade 1 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(342,1,'Visual and Performing Art','textbook','Grade 1 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 1 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade1/Grade%201_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(343,2,'Amharic','textbook','Grade 2 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 2 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(344,2,'English','textbook','Grade 2 English Student Textbook','Official Ethiopian New Curriculum Grade 2 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(345,2,'Mathematics','textbook','Grade 2 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 2 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(346,2,'General Science','textbook','Grade 2 General Science Student Textbook','Official Ethiopian New Curriculum Grade 2 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(347,2,'Environmental Science','textbook','Grade 2 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 2 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:24','2026-02-15 10:42:27'),(348,2,'HPE','textbook','Grade 2 HPE Student Textbook','Official Ethiopian New Curriculum Grade 2 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(349,2,'Visual and Performing Art','textbook','Grade 2 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 2 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade2/Grade%202_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(350,3,'Amharic','textbook','Grade 3 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 3 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',2,'2026-02-15 10:41:24','2026-02-15 11:00:13'),(351,3,'English','textbook','Grade 3 English Student Textbook','Official Ethiopian New Curriculum Grade 3 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:24','2026-02-15 19:49:45'),(352,3,'Mathematics','textbook','Grade 3 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 3 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:24','2026-02-15 19:49:23'),(353,3,'General Science','textbook','Grade 3 General Science Student Textbook','Official Ethiopian New Curriculum Grade 3 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(354,3,'Environmental Science','textbook','Grade 3 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 3 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(355,3,'HPE','textbook','Grade 3 HPE Student Textbook','Official Ethiopian New Curriculum Grade 3 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:24','2026-02-15 10:41:24'),(356,3,'Visual and Performing Art','textbook','Grade 3 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 3 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade3/Grade%203_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(357,4,'Amharic','textbook','Grade 4 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 4 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(358,4,'English','textbook','Grade 4 English Student Textbook','Official Ethiopian New Curriculum Grade 4 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(359,4,'Mathematics','textbook','Grade 4 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 4 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(360,4,'General Science','textbook','Grade 4 General Science Student Textbook','Official Ethiopian New Curriculum Grade 4 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(361,4,'Environmental Science','textbook','Grade 4 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 4 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(362,4,'HPE','textbook','Grade 4 HPE Student Textbook','Official Ethiopian New Curriculum Grade 4 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(363,4,'Visual and Performing Art','textbook','Grade 4 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 4 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade4/Grade%204_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(364,5,'Amharic','textbook','Grade 5 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 5 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',2,'2026-02-15 10:41:25','2026-02-15 11:20:37'),(365,5,'English','textbook','Grade 5 English Student Textbook','Official Ethiopian New Curriculum Grade 5 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(366,5,'Mathematics','textbook','Grade 5 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 5 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(367,5,'General Science','textbook','Grade 5 General Science Student Textbook','Official Ethiopian New Curriculum Grade 5 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:25','2026-02-15 10:43:58'),(368,5,'Environmental Science','textbook','Grade 5 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 5 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(369,5,'Social Studies','textbook','Grade 5 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 5 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(370,5,'Civics','textbook','Grade 5 Civics Student Textbook','Official Ethiopian New Curriculum Grade 5 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(371,5,'HPE','textbook','Grade 5 HPE Student Textbook','Official Ethiopian New Curriculum Grade 5 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(372,5,'Visual and Performing Art','textbook','Grade 5 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 5 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade5/Grade%205_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:25','2026-02-15 10:41:25'),(373,6,'Amharic','textbook','Grade 6 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 6 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(374,6,'English','textbook','Grade 6 English Student Textbook','Official Ethiopian New Curriculum Grade 6 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(375,6,'Mathematics','textbook','Grade 6 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 6 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(376,6,'General Science','textbook','Grade 6 General Science Student Textbook','Official Ethiopian New Curriculum Grade 6 General Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(377,6,'Environmental Science','textbook','Grade 6 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 6 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(378,6,'Social Studies','textbook','Grade 6 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 6 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(379,6,'Civics','textbook','Grade 6 Civics Student Textbook','Official Ethiopian New Curriculum Grade 6 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(380,6,'HPE','textbook','Grade 6 HPE Student Textbook','Official Ethiopian New Curriculum Grade 6 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(381,6,'Visual and Performing Art','textbook','Grade 6 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 6 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade6/Grade%206_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(382,7,'Amharic','textbook','Grade 7 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 7 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:26','2026-02-15 10:43:46'),(383,7,'English','textbook','Grade 7 English Student Textbook','Official Ethiopian New Curriculum Grade 7 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(384,7,'Mathematics','textbook','Grade 7 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 7 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',2,'2026-02-15 10:41:26','2026-02-15 18:24:15'),(385,7,'Environmental Science','textbook','Grade 7 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 7 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(386,7,'Social Studies','textbook','Grade 7 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 7 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(387,7,'Civics','textbook','Grade 7 Civics Student Textbook','Official Ethiopian New Curriculum Grade 7 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:26','2026-02-15 10:41:26'),(388,7,'HPE','textbook','Grade 7 HPE Student Textbook','Official Ethiopian New Curriculum Grade 7 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(389,7,'Visual and Performing Art','textbook','Grade 7 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 7 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade7/Grade%207_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(390,8,'Amharic','textbook','Grade 8 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 8 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(391,8,'English','textbook','Grade 8 English Student Textbook','Official Ethiopian New Curriculum Grade 8 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:27','2026-02-15 19:05:46'),(392,8,'Mathematics','textbook','Grade 8 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 8 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(393,8,'Environmental Science','textbook','Grade 8 Environmental Science Student Textbook','Official Ethiopian New Curriculum Grade 8 Environmental Science Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Environmental%20Science_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(394,8,'Social Studies','textbook','Grade 8 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 8 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(395,8,'Civics','textbook','Grade 8 Civics Student Textbook','Official Ethiopian New Curriculum Grade 8 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(396,8,'HPE','textbook','Grade 8 HPE Student Textbook','Official Ethiopian New Curriculum Grade 8 HPE Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_HPE_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(397,8,'Visual and Performing Art','textbook','Grade 8 Visual and Performing Art Student Textbook','Official Ethiopian New Curriculum Grade 8 Visual and Performing Art Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade8/Grade%208_Visual%20and%20Performing%20Art_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(398,9,'Amharic','textbook','Grade 9 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 9 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:27','2026-02-15 10:41:27'),(399,9,'English','textbook','Grade 9 English Student Textbook','Official Ethiopian New Curriculum Grade 9 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(400,9,'Mathematics','textbook','Grade 9 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 9 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(401,9,'Biology','textbook','Grade 9 Biology Student Textbook','Official Ethiopian New Curriculum Grade 9 Biology Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Biology_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(402,9,'Physics','textbook','Grade 9 Physics Student Textbook','Official Ethiopian New Curriculum Grade 9 Physics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Physics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(403,9,'Chemistry','textbook','Grade 9 Chemistry Student Textbook','Official Ethiopian New Curriculum Grade 9 Chemistry Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Chemistry_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(404,9,'Social Studies','textbook','Grade 9 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 9 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(405,9,'Civics','textbook','Grade 9 Civics Student Textbook','Official Ethiopian New Curriculum Grade 9 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(406,9,'ICT','textbook','Grade 9 ICT Student Textbook','Official Ethiopian New Curriculum Grade 9 ICT Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade9/Grade%209_ICT_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(407,10,'Amharic','textbook','Grade 10 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 10 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',1,'2026-02-15 10:41:28','2026-02-15 10:59:36'),(408,10,'English','textbook','Grade 10 English Student Textbook','Official Ethiopian New Curriculum Grade 10 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(409,10,'Mathematics','textbook','Grade 10 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 10 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(410,10,'Biology','textbook','Grade 10 Biology Student Textbook','Official Ethiopian New Curriculum Grade 10 Biology Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Biology_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(411,10,'Physics','textbook','Grade 10 Physics Student Textbook','Official Ethiopian New Curriculum Grade 10 Physics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Physics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(412,10,'Chemistry','textbook','Grade 10 Chemistry Student Textbook','Official Ethiopian New Curriculum Grade 10 Chemistry Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Chemistry_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(413,10,'Social Studies','textbook','Grade 10 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 10 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(414,10,'Civics','textbook','Grade 10 Civics Student Textbook','Official Ethiopian New Curriculum Grade 10 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(415,10,'ICT','textbook','Grade 10 ICT Student Textbook','Official Ethiopian New Curriculum Grade 10 ICT Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade10/Grade%2010_ICT_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(416,11,'Amharic','textbook','Grade 11 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 11 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(417,11,'English','textbook','Grade 11 English Student Textbook','Official Ethiopian New Curriculum Grade 11 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',4,'2026-02-15 10:41:28','2026-02-15 18:19:22'),(418,11,'Mathematics','textbook','Grade 11 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 11 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:28','2026-02-15 10:41:28'),(419,11,'Biology','textbook','Grade 11 Biology Student Textbook','Official Ethiopian New Curriculum Grade 11 Biology Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Biology_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(420,11,'Physics','textbook','Grade 11 Physics Student Textbook','Official Ethiopian New Curriculum Grade 11 Physics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Physics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(421,11,'Chemistry','textbook','Grade 11 Chemistry Student Textbook','Official Ethiopian New Curriculum Grade 11 Chemistry Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Chemistry_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(422,11,'Social Studies','textbook','Grade 11 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 11 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(423,11,'Civics','textbook','Grade 11 Civics Student Textbook','Official Ethiopian New Curriculum Grade 11 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(424,11,'ICT','textbook','Grade 11 ICT Student Textbook','Official Ethiopian New Curriculum Grade 11 ICT Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade11/Grade%2011_ICT_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(425,12,'Amharic','textbook','Grade 12 Amharic Student Textbook','Official Ethiopian New Curriculum Grade 12 Amharic Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Amharic_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(426,12,'English','textbook','Grade 12 English Student Textbook','Official Ethiopian New Curriculum Grade 12 English Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_English_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(427,12,'Mathematics','textbook','Grade 12 Mathematics Student Textbook','Official Ethiopian New Curriculum Grade 12 Mathematics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Mathematics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(428,12,'Biology','textbook','Grade 12 Biology Student Textbook','Official Ethiopian New Curriculum Grade 12 Biology Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Biology_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(429,12,'Physics','textbook','Grade 12 Physics Student Textbook','Official Ethiopian New Curriculum Grade 12 Physics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Physics_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:29','2026-02-15 10:41:29'),(430,12,'Chemistry','textbook','Grade 12 Chemistry Student Textbook','Official Ethiopian New Curriculum Grade 12 Chemistry Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Chemistry_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:30','2026-02-15 10:41:30'),(431,12,'Social Studies','textbook','Grade 12 Social Studies Student Textbook','Official Ethiopian New Curriculum Grade 12 Social Studies Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Social%20Study_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:30','2026-02-15 10:41:30'),(432,12,'Civics','textbook','Grade 12 Civics Student Textbook','Official Ethiopian New Curriculum Grade 12 Civics Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_Citizenship%20Education_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:30','2026-02-15 10:41:30'),(433,12,'ICT','textbook','Grade 12 ICT Student Textbook','Official Ethiopian New Curriculum Grade 12 ICT Student Textbook. Direct High-Quality PDF.','https://www.anrseb.gov.et/wp-content/uploads/New_Text_Books/Grade12/Grade%2012_ICT_Textbook.pdf',NULL,NULL,0,0,'2023','active',0,'2026-02-15 10:41:30','2026-02-15 10:41:30');
+/*!40000 ALTER TABLE `education_resources` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Menu Items
-INSERT INTO menu_items (hotel_id, category_id, name, description, price, image_url)
-VALUES 
-(1, 1, 'Injera with Firfir', 'Spicy beef firfir served with fresh injera.', 350.00, 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=300&q=80'),
-(1, 2, 'Beyaynetu', 'Large assortment of vegan stews on injera.', 450.00, 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=300&q=80'),
-(2, 2, 'Special Kitfo', 'Minced beef seasoned with mitmita and kibbeh.', 950.00, 'https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=300&q=80'),
-(2, 4, 'Buna (Coffee)', 'Traditional Ethiopian coffee ceremony style.', 150.00, 'https://images.unsplash.com/photo-1547825407-2d060104b7f8?auto=format&fit=crop&w=300&q=80');
+--
+-- Table structure for table `experiences`
+--
 
--- Broker
-INSERT INTO users (username, password, email, full_name, role) 
-VALUES ('broker1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'broker1@ethioserve.com', 'Abebe Bikila', 'broker');
+DROP TABLE IF EXISTS `experiences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `experiences` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT 0.00,
+  `image_url` varchar(500) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-INSERT INTO brokers (user_id, referral_code, bio)
-VALUES (4, 'ETHIO678', 'Connecting you to the best hotels in Addis.');
+--
+-- Dumping data for table `experiences`
+--
 
--- ==================== TRANSPORT SEED DATA ====================
+LOCK TABLES `experiences` WRITE;
+/*!40000 ALTER TABLE `experiences` DISABLE KEYS */;
+/*!40000 ALTER TABLE `experiences` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Transport Company Owners
-INSERT INTO users (username, password, email, full_name, role) 
-VALUES 
-('golden_bus', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'golden@ethioserve.com', 'Golden Bus', 'transport'),
-('walya_bus', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'walya@ethioserve.com', 'Walya Bus', 'transport'),
-('gion_bus', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'gion@ethioserve.com', 'Gion Bus', 'transport'),
-('geda_bus', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'geda@ethioserve.com', 'Geda Bus', 'transport'),
-('awash_bus', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'awash@ethioserve.com', 'Awash Bus', 'transport');
+--
+-- Table structure for table `flight_bookings`
+--
 
--- Transport Companies
-INSERT INTO transport_companies (user_id, company_name, description, phone, email, address, rating, total_buses, status)
-VALUES 
-(5, 'Golden Bus', 'Premium intercity bus service with modern fleet. Comfortable seats, AC, and entertainment.', '+251911000001', 'golden@ethioserve.com', 'Lamberet Bus Station, Addis Ababa', 4.5, 25, 'approved'),
-(6, 'Walya Bus', 'Reliable and affordable transport across Ethiopia. Known for punctuality.', '+251911000002', 'walya@ethioserve.com', 'Meskel Square Terminal, Addis Ababa', 4.3, 30, 'approved'),
-(7, 'Gion Bus', 'Luxury travel experience with VIP and sleeper options.', '+251911000003', 'gion@ethioserve.com', 'Bole International Airport Area', 4.7, 20, 'approved'),
-(8, 'Geda Bus', 'Budget-friendly travel with extensive route network.', '+251911000004', 'geda@ethioserve.com', 'Mercato Bus Terminal', 4.1, 35, 'approved'),
-(9, 'Awash Bus', 'Connecting major cities with comfortable standard buses.', '+251911000005', 'awash@ethioserve.com', 'Kazanchis Bus Station', 4.2, 28, 'approved');
+DROP TABLE IF EXISTS `flight_bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `flight_bookings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `customer_id` int(11) DEFAULT NULL,
+  `flight_id` int(11) DEFAULT NULL,
+  `passenger_name` varchar(100) DEFAULT NULL,
+  `passport_number` varchar(50) DEFAULT NULL,
+  `pnr_code` varchar(10) DEFAULT NULL,
+  `trip_type` enum('one_way','round_trip') DEFAULT 'one_way',
+  `seat_number` varchar(10) DEFAULT NULL,
+  `status` enum('pending','confirmed','cancelled') DEFAULT 'pending',
+  `payment_status` enum('unpaid','paid') DEFAULT 'unpaid',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pnr_code` (`pnr_code`),
+  KEY `customer_id` (`customer_id`),
+  KEY `flight_id` (`flight_id`),
+  CONSTRAINT `flight_bookings_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `flight_bookings_ibfk_2` FOREIGN KEY (`flight_id`) REFERENCES `flights` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Buses
-INSERT INTO buses (company_id, bus_type_id, bus_number, plate_number, total_seats, amenities, is_active)
-VALUES 
-(1, 2, 'GB-001', 'AA-1234-A1', 45, 'AC,WiFi,USB Charging,Reclining Seats', TRUE),
-(1, 1, 'GB-002', 'AA-1235-A1', 50, 'AC,Reclining Seats', TRUE),
-(2, 1, 'WB-001', 'AA-2345-B1', 50, 'AC,Reclining Seats', TRUE),
-(2, 2, 'WB-002', 'AA-2346-B1', 40, 'AC,WiFi,USB Charging', TRUE),
-(3, 2, 'GN-001', 'AA-3456-C1', 35, 'AC,WiFi,USB Charging,Entertainment,Luxury Seats', TRUE),
-(3, 3, 'GN-002', 'AA-3457-C1', 24, 'AC,WiFi,Beds,Privacy Curtains', TRUE),
-(4, 1, 'GD-001', 'AA-4567-D1', 55, 'AC,Fans', TRUE),
-(4, 1, 'GD-002', 'AA-4568-D1', 55, 'AC,Fans', TRUE),
-(5, 1, 'AW-001', 'AA-5678-E1', 50, 'AC,Reclining Seats', TRUE),
-(5, 2, 'AW-002', 'AA-5679-E1', 42, 'AC,WiFi,USB Charging', TRUE);
+--
+-- Dumping data for table `flight_bookings`
+--
 
--- Routes
-INSERT INTO routes (company_id, origin, destination, distance_km, estimated_hours, base_price, is_active)
-VALUES 
-(1, 'Addis Ababa', 'Hawassa', 275, 5.0, 650.00, TRUE),
-(1, 'Addis Ababa', 'Bahir Dar', 565, 10.0, 950.00, TRUE),
-(1, 'Addis Ababa', 'Dire Dawa', 515, 9.0, 900.00, TRUE),
-(2, 'Addis Ababa', 'Hawassa', 275, 5.0, 550.00, TRUE),
-(2, 'Addis Ababa', 'Jimma', 352, 6.0, 700.00, TRUE),
-(2, 'Addis Ababa', 'Gondar', 738, 12.0, 1100.00, TRUE),
-(3, 'Addis Ababa', 'Hawassa', 275, 5.0, 850.00, TRUE),
-(3, 'Addis Ababa', 'Mekelle', 783, 12.0, 1200.00, TRUE),
-(4, 'Addis Ababa', 'Hawassa', 275, 5.0, 450.00, TRUE),
-(4, 'Addis Ababa', 'Adama', 99, 2.0, 250.00, TRUE),
-(4, 'Addis Ababa', 'Bahir Dar', 565, 10.0, 750.00, TRUE),
-(5, 'Addis Ababa', 'Hawassa', 275, 5.0, 500.00, TRUE),
-(5, 'Addis Ababa', 'Dire Dawa', 515, 9.0, 800.00, TRUE);
+LOCK TABLES `flight_bookings` WRITE;
+/*!40000 ALTER TABLE `flight_bookings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `flight_bookings` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Schedules
-INSERT INTO schedules (bus_id, route_id, departure_time, arrival_time, price, operating_days, is_active)
-VALUES 
-(1, 1, '06:00:00', '11:00:00', 750.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(1, 1, '14:00:00', '19:00:00', 750.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(2, 2, '20:00:00', '06:00:00', 1100.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(3, 4, '07:00:00', '12:00:00', 600.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(3, 4, '15:00:00', '20:00:00', 600.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(4, 5, '08:00:00', '14:00:00', 800.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(5, 7, '06:30:00', '11:30:00', 950.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(6, 8, '18:00:00', '06:00:00', 1400.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(7, 9, '05:00:00', '10:00:00', 500.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(7, 9, '12:00:00', '17:00:00', 500.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(8, 10, '06:00:00', '08:00:00', 300.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(8, 10, '10:00:00', '12:00:00', 300.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(8, 10, '14:00:00', '16:00:00', 300.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(9, 12, '07:00:00', '12:00:00', 550.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(9, 12, '16:00:00', '21:00:00', 550.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE),
-(10, 13, '06:00:00', '15:00:00', 900.00, 'Mon,Tue,Wed,Thu,Fri,Sat,Sun', TRUE);
+--
+-- Table structure for table `flights`
+--
 
--- Flights
-INSERT INTO flights (airline, flight_number, destination, departure_time, arrival_time, price) VALUES 
-('Ethiopian Airlines', 'ET302', 'Nairobi (NBO)', DATE_ADD(NOW(), INTERVAL 2 DAY), DATE_ADD(NOW(), INTERVAL '2 2' DAY_HOUR), 8500.00),
-('Ethiopian Airlines', 'ET500', 'Washington D.C. (IAD)', DATE_ADD(NOW(), INTERVAL 3 DAY), DATE_ADD(NOW(), INTERVAL '3 14' DAY_HOUR), 45000.00),
-('Emirates', 'EK723', 'Dubai (DXB)', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL '1 4' DAY_HOUR), 22000.00),
-('Ethiopian Airlines', 'ET700', 'London (LHR)', DATE_ADD(NOW(), INTERVAL 5 DAY), DATE_ADD(NOW(), INTERVAL '5 8' DAY_HOUR), 35000.00);
+DROP TABLE IF EXISTS `flights`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `flights` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `airline` varchar(100) NOT NULL,
+  `flight_number` varchar(20) DEFAULT NULL,
+  `origin` varchar(100) DEFAULT 'Addis Ababa (ADD)',
+  `destination` varchar(100) NOT NULL,
+  `departure_time` datetime NOT NULL,
+  `arrival_time` datetime NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `available_seats` int(11) DEFAULT 50,
+  `status` enum('scheduled','delayed','cancelled','completed') DEFAULT 'scheduled',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `flight_number` (`flight_number`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- Listings
-INSERT INTO listings (user_id, type, title, description, price, location, image_url, video_url, bedrooms, bathrooms, area_sqm, features, contact_phone, contact_name)
-VALUES 
-(4, 'house_rent', 'Luxury Villa in Bole', 'Stunning 4-bedroom villa with private garden, modern kitchen, marble floors, and 24/7 security. Perfect for families looking for premium living in the heart of Bole.', 55000.00, 'Bole, Addis Ababa', 'https://images.unsplash.com/photo-1580587767526-cf3660a9dd38?auto=format&fit=crop&w=800&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 4, 5, 250, 'Garden,Parking,Security,Swimming Pool', '+251911223344', 'Abebe Kebede'),
-(4, 'house_rent', 'Modern 2BR Apartment CMC', 'Newly built apartment with open-plan living, balcony views, elevator access, and underground parking. Walking distance to shopping centers.', 22000.00, 'CMC, Addis Ababa', 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80', NULL, 2, 2, 120, 'Elevator,Parking,Balcony', '+251922334455', 'Meron Tadesse'),
-(4, 'house_rent', 'Cozy Studio near Meskel Square', 'Furnished studio apartment ideal for young professionals. Includes Wi-Fi, water heater, and a small kitchenette.', 12000.00, 'Meskel Square, Addis Ababa', 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80', NULL, 1, 1, 45, 'Furnished,Wi-Fi,Water Heater', '+251933445566', 'Sara Hailu'),
-(4, 'house_rent', 'Penthouse with City View', 'Luxurious penthouse on the 12th floor with panoramic city views, 3 bedrooms, walk-in closets, and a private rooftop terrace.', 85000.00, 'Kazanchis, Addis Ababa', 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 3, 3, 200, 'Rooftop Terrace,City View,Walk-in Closet,Gym', '+251944556677', 'Daniel Girma'),
-(4, 'house_rent', 'Family Home in Ayat', 'Spacious family home with a large compound, servant quarters, and ample parking. Quiet neighborhood near schools.', 35000.00, 'Ayat, Addis Ababa', 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80', NULL, 3, 2, 180, 'Compound,Servant Quarter,Parking,Near Schools', '+251955667788', 'Tigist Mulugeta'),
-(4, 'car_rent', 'Toyota Land Cruiser V8', 'Full options Land Cruiser, perfect for field trips and long-distance travel. Leather interior, AC, GPS navigation.', 3500.00, 'Meskel Square, Addis Ababa', 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 0, 0, 0, 'GPS,Leather Seats,AC,4WD', '+251911001100', 'Yonas Motors'),
-(4, 'car_rent', 'Toyota Corolla 2023', 'Brand new Corolla with automatic transmission, fuel efficient and comfortable for city driving.', 1800.00, 'Bole, Addis Ababa', 'https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=800&q=80', NULL, 0, 0, 0, 'Automatic,AC,Bluetooth,USB', '+251922112233', 'Star Rent'),
-(4, 'car_rent', 'Hyundai Santa Fe', 'SUV perfect for family outings and weekend getaways. Spacious interior with 7 seats.', 2500.00, 'Piassa, Addis Ababa', 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=800&q=80', NULL, 0, 0, 0, '7 Seats,AC,Bluetooth,Cruise Control', '+251933223344', 'Addis Car Hire'),
-(4, 'car_rent', 'Mercedes-Benz E-Class', 'Premium luxury sedan for business meetings, weddings, and VIP transport. Chauffeur available.', 5000.00, 'Kazanchis, Addis Ababa', 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80', 'https://www.youtube.com/embed/dQw4w9WgXcQ', 0, 0, 0, 'Luxury,Chauffeur Available,Leather,Premium Sound', '+251944334455', 'Royal Motors');
+--
+-- Dumping data for table `flights`
+--
 
+LOCK TABLES `flights` WRITE;
+/*!40000 ALTER TABLE `flights` DISABLE KEYS */;
+INSERT INTO `flights` VALUES (1,'Ethiopian Airlines','ET302','Addis Ababa (ADD)','Nairobi (NBO)','2026-02-17 12:28:01','2026-02-17 14:28:01',8500.00,50,'scheduled','2026-02-15 09:28:01'),(2,'Ethiopian Airlines','ET500','Addis Ababa (ADD)','Washington D.C. (IAD)','2026-02-18 12:28:01','2026-02-19 02:28:01',45000.00,50,'scheduled','2026-02-15 09:28:01'),(3,'Emirates','EK723','Addis Ababa (ADD)','Dubai (DXB)','2026-02-16 12:28:01','2026-02-16 16:28:01',22000.00,50,'scheduled','2026-02-15 09:28:01'),(4,'Ethiopian Airlines','ET700','Addis Ababa (ADD)','London (LHR)','2026-02-20 12:28:01','2026-02-20 20:28:01',35000.00,50,'scheduled','2026-02-15 09:28:01'),(5,'Lufthansa','LH591','Addis Ababa (ADD)','Frankfurt (FRA)','2026-02-17 13:20:40','2026-02-17 16:20:40',35000.00,50,'scheduled','2026-02-15 10:20:40'),(6,'Turkish Airlines','TK606','Addis Ababa (ADD)','Istanbul (IST)','2026-02-17 13:20:40','2026-02-17 16:20:40',28000.00,50,'scheduled','2026-02-15 10:20:40'),(7,'Qatar Airways','QR1428','Addis Ababa (ADD)','Doha (DOH)','2026-02-17 13:20:40','2026-02-17 16:20:40',25000.00,50,'scheduled','2026-02-15 10:20:40');
+/*!40000 ALTER TABLE `flights` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `hotels`
+--
+
+DROP TABLE IF EXISTS `hotels`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `hotels` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `cuisine_type` varchar(100) DEFAULT NULL,
+  `opening_hours` varchar(100) DEFAULT NULL,
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `min_order` decimal(10,2) DEFAULT 0.00,
+  `delivery_time` varchar(50) DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `hotels_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `hotels`
+--
+
+LOCK TABLES `hotels` WRITE;
+/*!40000 ALTER TABLE `hotels` DISABLE KEYS */;
+INSERT INTO `hotels` VALUES (1,2,'Hilton Addis Ababa','Classic luxury with authentic Ethiopian hospitality.','Menelik II Avenue, Addis Ababa','Ethiopian & International','24/7',4.8,500.00,'30-45 min','https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=1200&q=80','+251115170000','hilton@ethiopia.com','approved'),(2,3,'Sheraton Addis','State-of-the-art sanctuary in the heart of Ethiopia.','Taitu Street, Addis Ababa','Fine Dining','06:00 AM - 11:00 PM',4.9,800.00,'40-60 min','https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1200&q=80','+251115171717','sheraton@ethiopia.com','approved'),(3,13,'Lucy International Hotel','Premium hospitality and dining experience in the heart of Ethiopia.','Bole Road, Addis Ababa','Ethiopian & Continental','06:00 AM - 11:00 PM',4.6,200.00,'25-40 min','https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(4,14,'Getfam Hotel','Premium hospitality and dining experience in the heart of Ethiopia.','Kazanchis, Addis Ababa','Ethiopian & International','24/7',4.4,200.00,'25-40 min','https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(5,15,'Eliana Hotel','Premium hospitality and dining experience in the heart of Ethiopia.','Piazza, Addis Ababa','Traditional Ethiopian','07:00 AM - 10:00 PM',4.3,200.00,'25-40 min','https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(6,19,'Sheraton Addis, a Luxury Collection Hotel','Nestled on a hilltop overlooking the city, Sheraton Addis is a landmark of luxury and elegance in the heart of Ethiopia.','Taitu Street, Addis Ababa','International & Ethiopian Fusion',NULL,4.7,0.00,NULL,'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80','+251115171717','sheraton@ethiopia.com','approved'),(7,19,'Ethiopian Skylight Hotel','The largest hotel in Ethiopia, located just minutes from Bole International Airport, offering world-class luxury and comfort.','Bole Airport Area, Addis Ababa','Continental & Traditional',NULL,4.8,0.00,NULL,'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(8,19,'Hyatt Regency Addis Ababa','Modern and stylish hotel located on Meskel Square, offering sophisticated dining and the highest service standards.','Meskel Square, Addis Ababa','International',NULL,4.8,0.00,NULL,'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(9,19,'Radisson Blu Hotel, Addis Ababa','A premier upscale hotel located in the city center, perfect for business travelers and luxury seekers.','Kazanchis, Addis Ababa','Mediterranean & Local',NULL,4.7,0.00,NULL,'https://images.unsplash.com/photo-1517840901100-8179e982acb7?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(10,20,'Yod Abyssinia Traditional Restaurant','Iconic cultural restaurant offering an unforgettable Ethiopian dining experience with traditional music, dance performances, and authentic cuisine since 1997.','Bole Medhanialem, Addis Ababa','Traditional Ethiopian','11:00 AM - 11:00 PM',4.8,300.00,'40-55 min','https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(11,20,'2000 Habesha Cultural Restaurant','A vibrant cultural hub serving authentic Ethiopian dishes with live traditional performances, known for its colorful Mesob dining experience.','Bole Road, Addis Ababa','Traditional Ethiopian','10:00 AM - 12:00 AM',4.7,350.00,'35-50 min','https://images.unsplash.com/photo-1541510965749-fdd893598387?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(12,20,'Lucy Restaurant & Lounge','Named after the famous fossil, Lucy offers a sophisticated blend of Ethiopian and international cuisine in an elegant upscale setting near Bole.','Atlas Area, Bole, Addis Ababa','Ethiopian & International','07:00 AM - 11:00 PM',4.6,400.00,'30-45 min','https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(13,20,'Kategna Traditional Food','Famous for the best kategna (toasted injera with kibbeh and berbere) and traditional breakfast in the city. A beloved local favorite.','Multiple Locations, Addis Ababa','Traditional Ethiopian','06:30 AM - 10:00 PM',4.9,200.00,'25-35 min','https://images.unsplash.com/photo-1547928576-96541f94f997?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(14,20,'Totot Cultural Restaurant','Specializing in Southern Ethiopian flavors and cultural shows. Famous for its premium Kitfo and Gurage specialties.','Haya Hulet, Addis Ababa','Southern Ethiopian / Gurage','10:00 AM - 11:00 PM',4.7,350.00,'35-50 min','https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(15,20,'Four Sisters Restaurant','Located in historic Gondar, this legendary restaurant is run by four real sisters serving family recipes passed down for generations.','Piazza Area, Gondar','Northern Ethiopian / Amhara','08:00 AM - 9:30 PM',4.9,250.00,'30-40 min','https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(16,20,'Makush Art Gallery & Restaurant','A stunning restaurant surrounded by Ethiopia\'s largest private art collection. Fine dining meets culture with curated Ethiopian fusion cuisine.','Bole Atlas, Addis Ababa','Ethiopian Fusion & Fine Dining','11:30 AM - 10:30 PM',4.8,500.00,'45-60 min','https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(17,20,'Ben Abeba Restaurant','An architectural marvel perched on a cliff in Lalibela, offering panoramic views and an eclectic mix of Ethiopian and Scottish cuisine.','Hilltop, Lalibela','Ethiopian & Scottish Fusion','07:30 AM - 9:00 PM',4.8,300.00,'30-45 min','https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(18,20,'Dashen Traditional Restaurant','Named after Ethiopia\'s highest mountain, Dashen serves hearty traditional Ethiopian food in a warm, family-style mesob dining setup.','Kazanchis, Addis Ababa','Traditional Ethiopian','09:00 AM - 10:30 PM',4.5,250.00,'30-45 min','https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(19,20,'Habesha Restaurant','One of Addis Ababa\'s most popular dining spots for both locals and visitors, offering generous portions and an authentic atmosphere.','Bole Rwanda, Addis Ababa','Traditional Ethiopian','10:00 AM - 11:00 PM',4.6,280.00,'30-45 min','https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(20,20,'Saro-Maria Hotel Restaurant','An upscale hotel restaurant offering a refined Ethiopian dining experience with international flair, located in the heart of Bole.','Bole Sub-City, Addis Ababa','Ethiopian & Continental','06:00 AM - 11:30 PM',4.7,450.00,'40-55 min','https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(21,20,'Tomoca Coffee','Ethiopia\'s most legendary coffee house since 1953. The birthplace of premium Ethiopian coffee culture, serving the finest Arabica beans.','Wavel Street, Piazza, Addis Ababa','Coffee & Light Bites','06:00 AM - 8:00 PM',4.9,50.00,'15-25 min','https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(22,20,'Addis in Dar Restaurant','A modern Ethiopian restaurant bringing Addis Ababa flavors with a contemporary twist. Popular among young professionals and food enthusiasts.','Sarbet, Addis Ababa','Modern Ethiopian','11:00 AM - 11:00 PM',4.5,300.00,'30-40 min','https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(23,20,'Lime Tree Café & Restaurant','A beloved Addis Ababa gem known for its garden seating, healthy options, and a perfect fusion of Ethiopian and European cuisines.','Bole Medhanialem, Addis Ababa','Ethiopian-European Fusion','07:00 AM - 10:00 PM',4.6,350.00,'35-50 min','https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(24,20,'Castelli\'s Italian-Ethiopian Restaurant','An Addis Ababa institution since 1948, Castelli\'s blends Italian and Ethiopian gastronomy in a vintage, elegantly decorated dining hall.','Piazza, Churchill Avenue, Addis Ababa','Italian-Ethiopian','12:00 PM - 10:00 PM',4.7,600.00,'45-60 min','https://images.unsplash.com/photo-1550966871-3ed3cdb51f3a?auto=format&fit=crop&w=800&q=80','+251115170000','info@ethioserve.com','approved'),(25,32,'Haile Resort','Luxury resort by the lake.','Hawassa','International','24/7',4.8,1000.00,'45 min',NULL,'+251462200000','haile@hailehotels.com','approved'),(26,33,'Kuriftu Resort','Premium spa and resort.','Bishoftu','Traditional & European','06:00-22:00',4.9,1500.00,'60 min',NULL,'+251114331000','info@kurifturesort.com','approved'),(27,34,'Skylight Hotel','Modern luxury near airport.','Bole, Addis Ababa','Chinese, Ethio, International','24/7',4.7,2000.00,'30 min',NULL,'+251116618060','info@ethiopianskylighthotel.com','approved'),(28,35,'Elilly International','Centrally located luxury.','Kazanchis, Addis Ababa','Buffet','07:00-23:00',4.5,800.00,'40 min',NULL,'+251115587777','info@elillyhotel.com','approved'),(29,36,'Jupiter International','Business hotel in Kazanchis.','Kazanchis','Grill & Bar','24/7',4.3,500.00,'35 min',NULL,'+251115527333','info@jupiterhotel.com','approved'),(30,37,'Golden Tulip','International brand in Bole.','Bole','Fine Dining','24/7',4.6,1200.00,'25 min',NULL,'+251116170740','info@goldentuliptana.com','approved');
+/*!40000 ALTER TABLE `hotels` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `listings`
+--
+
+DROP TABLE IF EXISTS `listings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `listings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `type` enum('house_rent','car_rent','bus_ticket','home_service') NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `image_url` varchar(500) DEFAULT NULL,
+  `video_url` varchar(500) DEFAULT NULL,
+  `bedrooms` int(11) DEFAULT 0,
+  `bathrooms` int(11) DEFAULT 0,
+  `area_sqm` int(11) DEFAULT 0,
+  `features` text DEFAULT NULL,
+  `contact_phone` varchar(20) DEFAULT NULL,
+  `contact_name` varchar(100) DEFAULT NULL,
+  `status` enum('available','taken','pending') DEFAULT 'available',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `listings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `listings`
+--
+
+LOCK TABLES `listings` WRITE;
+/*!40000 ALTER TABLE `listings` DISABLE KEYS */;
+INSERT INTO `listings` VALUES (1,4,'house_rent','Luxury Villa in Bole','Stunning 4-bedroom villa with private garden, modern kitchen, marble floors, and 24/7 security. Perfect for families looking for premium living in the heart of Bole.',55000.00,'Bole, Addis Ababa','https://images.unsplash.com/photo-1580587767526-cf3660a9dd38?auto=format&fit=crop&w=800&q=80','https://www.youtube.com/embed/dQw4w9WgXcQ',4,5,250,'Garden,Parking,Security,Swimming Pool','+251911223344','Abebe Kebede','available','2026-02-15 09:28:01'),(2,4,'house_rent','Modern 2BR Apartment CMC','Newly built apartment with open-plan living, balcony views, elevator access, and underground parking. Walking distance to shopping centers.',22000.00,'CMC, Addis Ababa','https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',NULL,2,2,120,'Elevator,Parking,Balcony','+251922334455','Meron Tadesse','available','2026-02-15 09:28:01'),(3,4,'house_rent','Cozy Studio near Meskel Square','Furnished studio apartment ideal for young professionals. Includes Wi-Fi, water heater, and a small kitchenette.',12000.00,'Meskel Square, Addis Ababa','https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',NULL,1,1,45,'Furnished,Wi-Fi,Water Heater','+251933445566','Sara Hailu','available','2026-02-15 09:28:01'),(4,4,'house_rent','Penthouse with City View','Luxurious penthouse on the 12th floor with panoramic city views, 3 bedrooms, walk-in closets, and a private rooftop terrace.',85000.00,'Kazanchis, Addis Ababa','https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80','https://www.youtube.com/embed/dQw4w9WgXcQ',3,3,200,'Rooftop Terrace,City View,Walk-in Closet,Gym','+251944556677','Daniel Girma','available','2026-02-15 09:28:01'),(5,4,'house_rent','Family Home in Ayat','Spacious family home with a large compound, servant quarters, and ample parking. Quiet neighborhood near schools.',35000.00,'Ayat, Addis Ababa','https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80',NULL,3,2,180,'Compound,Servant Quarter,Parking,Near Schools','+251955667788','Tigist Mulugeta','available','2026-02-15 09:28:01'),(6,4,'car_rent','Toyota Land Cruiser V8','Full options Land Cruiser, perfect for field trips and long-distance travel. Leather interior, AC, GPS navigation.',3500.00,'Meskel Square, Addis Ababa','https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80','https://www.youtube.com/embed/dQw4w9WgXcQ',0,0,0,'GPS,Leather Seats,AC,4WD','+251911001100','Yonas Motors','available','2026-02-15 09:28:01'),(7,4,'car_rent','Toyota Corolla 2023','Brand new Corolla with automatic transmission, fuel efficient and comfortable for city driving.',1800.00,'Bole, Addis Ababa','https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=800&q=80',NULL,0,0,0,'Automatic,AC,Bluetooth,USB','+251922112233','Star Rent','available','2026-02-15 09:28:01'),(8,4,'car_rent','Hyundai Santa Fe','SUV perfect for family outings and weekend getaways. Spacious interior with 7 seats.',2500.00,'Piassa, Addis Ababa','https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=800&q=80',NULL,0,0,0,'7 Seats,AC,Bluetooth,Cruise Control','+251933223344','Addis Car Hire','available','2026-02-15 09:28:01'),(9,4,'car_rent','Mercedes-Benz E-Class','Premium luxury sedan for business meetings, weddings, and VIP transport. Chauffeur available.',5000.00,'Kazanchis, Addis Ababa','https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80','https://www.youtube.com/embed/dQw4w9WgXcQ',0,0,0,'Luxury,Chauffeur Available,Leather,Premium Sound','+251944334455','Royal Motors','available','2026-02-15 09:28:01'),(10,4,'house_rent','Modern Apt CMC','2 BR Furnished Apartment.',30000.00,'CMC',NULL,NULL,0,0,0,'Elevator, Parking, WiFi',NULL,NULL,'available','2026-02-15 10:20:40'),(11,4,'house_rent','Cosy Studio Piassa','Studio for young professionals.',15000.00,'Piassa',NULL,NULL,0,0,0,'Near Metro, Safe Area',NULL,NULL,'available','2026-02-15 10:20:40'),(12,4,'house_rent','Big Mansion Ayat','6 BR with large compound.',85000.00,'Ayat',NULL,NULL,0,0,0,'Compound, Guard House',NULL,NULL,'available','2026-02-15 10:20:40'),(13,4,'house_rent','Office Space Kazanchis','150 SQM premium office.',45000.00,'Kazanchis',NULL,NULL,0,0,0,'AC, Power Backup',NULL,NULL,'available','2026-02-15 10:20:40'),(14,4,'house_rent','G+1 Home Lebu','3 BR family home.',40000.00,'Lebu',NULL,NULL,0,0,0,'Quiet Area',NULL,NULL,'available','2026-02-15 10:20:40'),(15,4,'car_rent','Mercedes E-Class','Luxury for weddings/VIP.',6000.00,'Addis Ababa',NULL,NULL,0,0,0,'Chauffeur, Black',NULL,NULL,'available','2026-02-15 10:20:40'),(16,4,'car_rent','Nissan Patrol','Off road beast.',4500.00,'Addis Ababa',NULL,NULL,0,0,0,'Tough, 4WD',NULL,NULL,'available','2026-02-15 10:20:40'),(17,4,'car_rent','Suzuki Dzire','Budget city transport.',1200.00,'Addis Ababa',NULL,NULL,0,0,0,'Manual, Efficiency',NULL,NULL,'available','2026-02-15 10:20:40');
+/*!40000 ALTER TABLE `listings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `lms_answers`
+--
+
+DROP TABLE IF EXISTS `lms_answers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `lms_answers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `attempt_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `selected_answer` char(1) DEFAULT NULL,
+  `is_correct` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `attempt_id` (`attempt_id`),
+  KEY `question_id` (`question_id`),
+  CONSTRAINT `lms_answers_ibfk_1` FOREIGN KEY (`attempt_id`) REFERENCES `lms_attempts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `lms_answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `lms_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `lms_answers`
+--
+
+LOCK TABLES `lms_answers` WRITE;
+/*!40000 ALTER TABLE `lms_answers` DISABLE KEYS */;
+INSERT INTO `lms_answers` VALUES (1,3,1,NULL,0),(2,3,2,NULL,0),(3,3,3,NULL,0),(4,3,4,NULL,0),(5,3,5,NULL,0),(6,4,1,NULL,0),(7,4,2,NULL,0),(8,4,3,NULL,0),(9,4,4,NULL,0),(10,4,5,NULL,0),(11,5,1,'A',0),(12,5,2,'B',0),(13,5,3,'C',1),(14,5,4,'B',1),(15,5,5,'D',1),(16,7,1,'A',0),(17,7,2,'B',0),(18,7,3,'C',1),(19,7,4,'B',1),(20,7,5,'D',1),(21,10,36,'C',1),(22,10,37,'B',1),(23,10,38,'D',0),(24,10,39,'A',0),(25,10,40,'B',0),(26,12,11,'B',1),(27,12,12,'A',0),(28,12,13,'B',1),(29,12,14,'C',1),(30,12,15,'C',1),(31,13,11,'B',1),(32,13,12,'A',0),(33,13,13,'B',1),(34,13,14,'C',1),(35,13,15,'C',1),(36,14,76,NULL,0),(37,14,77,NULL,0),(38,14,78,NULL,0),(39,14,79,NULL,0),(40,14,80,NULL,0),(41,16,36,'A',0),(42,16,37,'A',0),(43,16,38,'A',0),(44,16,39,'A',0),(45,16,40,'A',0),(46,17,36,'A',0),(47,17,37,'A',0),(48,17,38,'A',0),(49,17,39,'A',0),(50,17,40,'A',0),(51,18,36,NULL,0),(52,18,37,NULL,0),(53,18,38,NULL,0),(54,18,39,NULL,0),(55,18,40,NULL,0),(56,19,36,NULL,0),(57,19,37,NULL,0),(58,19,38,NULL,0),(59,19,39,NULL,0),(60,19,40,NULL,0),(61,22,36,NULL,0),(62,22,37,NULL,0),(63,22,38,NULL,0),(64,22,39,NULL,0),(65,22,40,NULL,0);
+/*!40000 ALTER TABLE `lms_answers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `lms_attempts`
+--
+
+DROP TABLE IF EXISTS `lms_attempts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `lms_attempts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `exam_id` int(11) NOT NULL,
+  `score` decimal(5,2) DEFAULT 0.00,
+  `total_points` int(11) DEFAULT 0,
+  `earned_points` int(11) DEFAULT 0,
+  `status` enum('in_progress','completed','abandoned') DEFAULT 'in_progress',
+  `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `time_spent_seconds` int(11) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `exam_id` (`exam_id`),
+  CONSTRAINT `lms_attempts_ibfk_1` FOREIGN KEY (`exam_id`) REFERENCES `lms_exams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `lms_attempts`
+--
+
+LOCK TABLES `lms_attempts` WRITE;
+/*!40000 ALTER TABLE `lms_attempts` DISABLE KEYS */;
+INSERT INTO `lms_attempts` VALUES (1,47,1,0.00,0,0,'in_progress','2026-02-15 18:20:42',NULL,0),(2,47,1,0.00,0,0,'in_progress','2026-02-15 18:21:55',NULL,0),(3,47,1,0.00,5,0,'completed','2026-02-15 18:22:21','2026-02-15 18:22:46',20),(4,47,1,0.00,5,0,'completed','2026-02-15 18:22:55','2026-02-15 18:22:57',24),(5,47,1,60.00,5,3,'completed','2026-02-15 18:22:59','2026-02-15 18:24:03',59),(6,47,1,0.00,0,0,'in_progress','2026-02-15 18:24:51',NULL,0),(7,47,1,60.00,5,3,'completed','2026-02-15 18:24:56','2026-02-15 18:24:57',63),(8,47,1,0.00,0,0,'in_progress','2026-02-15 18:24:59',NULL,0),(9,47,1,0.00,0,0,'in_progress','2026-02-15 18:25:07',NULL,0),(10,10,8,40.00,5,2,'completed','2026-02-15 18:25:13','2026-02-15 18:27:17',116),(11,47,24,0.00,0,0,'in_progress','2026-02-15 18:25:26',NULL,0),(12,47,3,80.00,5,4,'completed','2026-02-15 18:53:58','2026-02-15 18:57:03',174),(13,47,3,80.00,5,4,'completed','2026-02-15 18:57:03','2026-02-15 18:57:03',175),(14,1,16,0.00,5,0,'completed','2026-02-15 19:50:03','2026-02-15 19:50:37',22),(15,1,16,0.00,0,0,'in_progress','2026-02-15 19:50:38',NULL,0),(16,1,8,0.00,5,0,'completed','2026-02-15 19:51:21','2026-02-15 19:51:45',17),(17,1,8,0.00,5,0,'completed','2026-02-15 19:51:48','2026-02-15 19:51:48',19),(18,1,8,0.00,5,0,'completed','2026-02-15 19:51:58','2026-02-15 19:52:40',30),(19,1,8,0.00,5,0,'completed','2026-02-15 19:52:42','2026-02-15 19:52:52',33),(20,1,8,0.00,0,0,'in_progress','2026-02-15 19:52:54',NULL,0),(21,1,8,0.00,0,0,'in_progress','2026-02-15 19:53:09',NULL,0),(22,1,8,0.00,5,0,'completed','2026-02-15 19:57:04','2026-02-15 19:57:08',3);
+/*!40000 ALTER TABLE `lms_attempts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `lms_exams`
+--
+
+DROP TABLE IF EXISTS `lms_exams`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `lms_exams` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `grade` int(11) NOT NULL,
+  `subject` varchar(100) NOT NULL,
+  `chapter` int(11) NOT NULL DEFAULT 1,
+  `chapter_title` varchar(255) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `duration_minutes` int(11) DEFAULT 30,
+  `pass_percentage` int(11) DEFAULT 50,
+  `total_questions` int(11) DEFAULT 10,
+  `difficulty` enum('easy','medium','hard') DEFAULT 'medium',
+  `status` enum('active','draft','archived') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `lms_exams`
+--
+
+LOCK TABLES `lms_exams` WRITE;
+/*!40000 ALTER TABLE `lms_exams` DISABLE KEYS */;
+INSERT INTO `lms_exams` VALUES (1,1,'Mathematics',1,'Numbers 1-20','Grade 1 Mathematics — Chapter 1: Numbers 1-20','Test your knowledge of Numbers 1-20 from Grade 1 Mathematics.',15,50,5,'easy','active','2026-02-15 18:14:34'),(2,1,'Mathematics',2,'Addition and Subtraction','Grade 1 Mathematics — Chapter 2: Addition and Subtraction','Test your knowledge of Addition and Subtraction from Grade 1 Mathematics.',15,50,5,'easy','active','2026-02-15 18:14:35'),(3,2,'Mathematics',1,'Numbers up to 100','Grade 2 Mathematics — Chapter 1: Numbers up to 100','Test your knowledge of Numbers up to 100 from Grade 2 Mathematics.',15,50,5,'easy','active','2026-02-15 18:14:35'),(4,3,'Mathematics',1,'Multiplication Basics','Grade 3 Mathematics — Chapter 1: Multiplication Basics','Test your knowledge of Multiplication Basics from Grade 3 Mathematics.',15,50,5,'easy','active','2026-02-15 18:14:36'),(5,4,'Mathematics',1,'Long Division','Grade 4 Mathematics — Chapter 1: Long Division','Test your knowledge of Long Division from Grade 4 Mathematics.',15,50,5,'medium','active','2026-02-15 18:14:36'),(6,5,'Mathematics',1,'Fractions','Grade 5 Mathematics — Chapter 1: Fractions','Test your knowledge of Fractions from Grade 5 Mathematics.',15,50,5,'medium','active','2026-02-15 18:14:36'),(7,6,'Mathematics',1,'Decimals and Percentages','Grade 6 Mathematics — Chapter 1: Decimals and Percentages','Test your knowledge of Decimals and Percentages from Grade 6 Mathematics.',15,50,5,'medium','active','2026-02-15 18:14:37'),(8,7,'Mathematics',1,'Algebra - Linear Equations','Grade 7 Mathematics — Chapter 1: Algebra - Linear Equations','Test your knowledge of Algebra - Linear Equations from Grade 7 Mathematics.',15,50,5,'medium','active','2026-02-15 18:14:37'),(9,8,'Mathematics',1,'Geometry - Shapes & Angles','Grade 8 Mathematics — Chapter 1: Geometry - Shapes & Angles','Test your knowledge of Geometry - Shapes & Angles from Grade 8 Mathematics.',15,50,5,'medium','active','2026-02-15 18:14:37'),(10,9,'Mathematics',1,'Quadratic Equations','Grade 9 Mathematics — Chapter 1: Quadratic Equations','Test your knowledge of Quadratic Equations from Grade 9 Mathematics.',15,50,5,'hard','active','2026-02-15 18:14:38'),(11,10,'Mathematics',1,'Trigonometry','Grade 10 Mathematics — Chapter 1: Trigonometry','Test your knowledge of Trigonometry from Grade 10 Mathematics.',15,50,5,'hard','active','2026-02-15 18:14:38'),(12,11,'Mathematics',1,'Calculus - Limits & Derivatives','Grade 11 Mathematics — Chapter 1: Calculus - Limits & Derivatives','Test your knowledge of Calculus - Limits & Derivatives from Grade 11 Mathematics.',15,50,5,'hard','active','2026-02-15 18:14:38'),(13,12,'Mathematics',1,'Probability & Statistics','Grade 12 Mathematics — Chapter 1: Probability & Statistics','Test your knowledge of Probability & Statistics from Grade 12 Mathematics.',15,50,5,'hard','active','2026-02-15 18:14:38'),(14,1,'English',1,'Alphabet & Phonics','Grade 1 English — Chapter 1: Alphabet & Phonics','Test your knowledge of Alphabet & Phonics from Grade 1 English.',15,50,5,'easy','active','2026-02-15 18:14:39'),(15,2,'English',1,'Alphabet & Phonics','Grade 2 English — Chapter 1: Alphabet & Phonics','Test your knowledge of Alphabet & Phonics from Grade 2 English.',15,50,5,'easy','active','2026-02-15 18:14:39'),(16,3,'English',1,'Alphabet & Phonics','Grade 3 English — Chapter 1: Alphabet & Phonics','Test your knowledge of Alphabet & Phonics from Grade 3 English.',15,50,5,'easy','active','2026-02-15 18:14:39'),(17,4,'English',1,'Alphabet & Phonics','Grade 4 English — Chapter 1: Alphabet & Phonics','Test your knowledge of Alphabet & Phonics from Grade 4 English.',15,50,5,'easy','active','2026-02-15 18:14:39'),(18,5,'English',1,'Parts of Speech','Grade 5 English — Chapter 1: Parts of Speech','Test your knowledge of Parts of Speech from Grade 5 English.',15,50,5,'medium','active','2026-02-15 18:14:40'),(19,6,'English',1,'Parts of Speech','Grade 6 English — Chapter 1: Parts of Speech','Test your knowledge of Parts of Speech from Grade 6 English.',15,50,5,'medium','active','2026-02-15 18:14:40'),(20,7,'English',1,'Parts of Speech','Grade 7 English — Chapter 1: Parts of Speech','Test your knowledge of Parts of Speech from Grade 7 English.',15,50,5,'medium','active','2026-02-15 18:14:40'),(21,8,'English',1,'Parts of Speech','Grade 8 English — Chapter 1: Parts of Speech','Test your knowledge of Parts of Speech from Grade 8 English.',15,50,5,'medium','active','2026-02-15 18:14:40'),(22,9,'English',1,'Essay Writing & Grammar','Grade 9 English — Chapter 1: Essay Writing & Grammar','Test your knowledge of Essay Writing & Grammar from Grade 9 English.',15,50,5,'medium','active','2026-02-15 18:14:41'),(23,10,'English',1,'Essay Writing & Grammar','Grade 10 English — Chapter 1: Essay Writing & Grammar','Test your knowledge of Essay Writing & Grammar from Grade 10 English.',15,50,5,'medium','active','2026-02-15 18:14:42'),(24,11,'English',1,'Essay Writing & Grammar','Grade 11 English — Chapter 1: Essay Writing & Grammar','Test your knowledge of Essay Writing & Grammar from Grade 11 English.',15,50,5,'medium','active','2026-02-15 18:14:42'),(25,12,'English',1,'Essay Writing & Grammar','Grade 12 English — Chapter 1: Essay Writing & Grammar','Test your knowledge of Essay Writing & Grammar from Grade 12 English.',15,50,5,'medium','active','2026-02-15 18:14:42'),(26,1,'Environmental Science',1,'Living & Non-Living Things','Grade 1 Environmental Science — Chapter 1: Living & Non-Living Things','Test your knowledge of Living & Non-Living Things from Grade 1 Environmental Science.',15,50,5,'easy','active','2026-02-15 18:14:43'),(27,7,'Biology',1,'Cell Biology','Grade 7 Biology — Chapter 1: Cell Biology','Test your knowledge of Cell Biology from Grade 7 Biology.',15,50,5,'medium','active','2026-02-15 18:14:43'),(28,9,'Biology',1,'Genetics & Heredity','Grade 9 Biology — Chapter 1: Genetics & Heredity','Test your knowledge of Genetics & Heredity from Grade 9 Biology.',15,50,5,'hard','active','2026-02-15 18:14:43'),(29,7,'Physics',1,'Force & Motion','Grade 7 Physics — Chapter 1: Force & Motion','Test your knowledge of Force & Motion from Grade 7 Physics.',15,50,5,'medium','active','2026-02-15 18:14:43'),(30,9,'Physics',1,'Electricity & Magnetism','Grade 9 Physics — Chapter 1: Electricity & Magnetism','Test your knowledge of Electricity & Magnetism from Grade 9 Physics.',15,50,5,'hard','active','2026-02-15 18:14:44'),(31,7,'Chemistry',1,'Matter & Its Properties','Grade 7 Chemistry — Chapter 1: Matter & Its Properties','Test your knowledge of Matter & Its Properties from Grade 7 Chemistry.',15,50,5,'medium','active','2026-02-15 18:14:44'),(32,9,'Chemistry',1,'The Periodic Table','Grade 9 Chemistry — Chapter 1: The Periodic Table','Test your knowledge of The Periodic Table from Grade 9 Chemistry.',15,50,5,'hard','active','2026-02-15 18:14:44'),(33,5,'General Science',1,'The Human Body','Grade 5 General Science — Chapter 1: The Human Body','Test your knowledge of The Human Body from Grade 5 General Science.',15,50,5,'medium','active','2026-02-15 18:14:44'),(34,7,'History',1,'Ancient Ethiopian History','Grade 7 History — Chapter 1: Ancient Ethiopian History','Test your knowledge of Ancient Ethiopian History from Grade 7 History.',15,50,5,'medium','active','2026-02-15 18:14:45'),(35,9,'History',1,'Modern Ethiopian History','Grade 9 History — Chapter 1: Modern Ethiopian History','Test your knowledge of Modern Ethiopian History from Grade 9 History.',15,50,5,'medium','active','2026-02-15 18:14:45'),(36,7,'Geography',1,'Ethiopian Geography','Grade 7 Geography — Chapter 1: Ethiopian Geography','Test your knowledge of Ethiopian Geography from Grade 7 Geography.',15,50,5,'medium','active','2026-02-15 18:14:45'),(37,5,'Civics',1,'Rights & Responsibilities','Grade 5 Civics — Chapter 1: Rights & Responsibilities','Test your knowledge of Rights & Responsibilities from Grade 5 Civics.',15,50,5,'easy','active','2026-02-15 18:14:45'),(38,9,'Economics',1,'Basic Economic Concepts','Grade 9 Economics — Chapter 1: Basic Economic Concepts','Test your knowledge of Basic Economic Concepts from Grade 9 Economics.',15,50,5,'medium','active','2026-02-15 18:14:46'),(39,9,'ICT',1,'Computer Basics','Grade 9 ICT — Chapter 1: Computer Basics','Test your knowledge of Computer Basics from Grade 9 ICT.',15,50,5,'medium','active','2026-02-15 18:14:46'),(40,1,'Amharic',1,'ፊደላት (Letters)','Grade 1 Amharic — Chapter 1: ፊደላት (Letters)','Test your knowledge of ፊደላት (Letters) from Grade 1 Amharic.',15,50,5,'easy','active','2026-02-15 18:14:47');
+/*!40000 ALTER TABLE `lms_exams` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `lms_questions`
+--
+
+DROP TABLE IF EXISTS `lms_questions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `lms_questions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `exam_id` int(11) NOT NULL,
+  `question_text` text NOT NULL,
+  `option_a` varchar(500) NOT NULL,
+  `option_b` varchar(500) NOT NULL,
+  `option_c` varchar(500) NOT NULL,
+  `option_d` varchar(500) NOT NULL,
+  `correct_answer` char(1) NOT NULL,
+  `explanation` text DEFAULT NULL,
+  `points` int(11) DEFAULT 1,
+  `sort_order` int(11) DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `exam_id` (`exam_id`),
+  CONSTRAINT `lms_questions_ibfk_1` FOREIGN KEY (`exam_id`) REFERENCES `lms_exams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `lms_questions`
+--
+
+LOCK TABLES `lms_questions` WRITE;
+/*!40000 ALTER TABLE `lms_questions` DISABLE KEYS */;
+INSERT INTO `lms_questions` VALUES (1,1,'What comes after 5?','4','6','7','3','B','After 5 comes 6 in counting order.',1,1),(2,1,'How many fingers do you have on one hand?','4','10','5','3','C','One hand has 5 fingers.',1,2),(3,1,'What is 2 + 3?','4','6','5','7','C','2 + 3 = 5',1,3),(4,1,'Which number is bigger: 8 or 3?','3','8','They are equal','Neither','B','8 is bigger than 3.',1,4),(5,1,'What is 10 - 4?','5','7','4','6','D','10 - 4 = 6',1,5),(6,2,'What is 1 + 1?','3','1','2','0','C','1 + 1 = 2',1,1),(7,2,'What is 7 - 3?','4','5','3','2','A','7 - 3 = 4',1,2),(8,2,'What is 4 + 5?','8','10','9','7','C','4 + 5 = 9',1,3),(9,2,'If you have 6 apples and eat 2, how many are left?','3','4','5','8','B','6 - 2 = 4 apples remain.',1,4),(10,2,'What is 3 + 3 + 3?','6','12','9','10','C','3 + 3 + 3 = 9',1,5),(11,3,'What is 15 + 10?','20','25','30','35','B','15 + 10 = 25',1,1),(12,3,'Which number comes after 49?','48','40','50','59','C','After 49 comes 50.',1,2),(13,3,'What is the value of 5 tens?','5','50','500','55','B','5 tens = 50',1,3),(14,3,'Count by 2s: 2, 4, 6, __?','7','10','8','9','C','Counting by 2: 2, 4, 6, 8',1,4),(15,3,'What is 50 - 20?','20','40','30','25','C','50 - 20 = 30',1,5),(16,4,'What is 3 × 4?','7','12','10','14','B','3 × 4 = 12',1,1),(17,4,'What is 5 × 2?','10','7','25','52','A','5 × 2 = 10',1,2),(18,4,'What is 6 × 3?','9','63','18','15','C','6 × 3 = 18',1,3),(19,4,'If each bag has 4 oranges, how many in 3 bags?','7','12','15','43','B','3 bags × 4 = 12 oranges',1,4),(20,4,'What is 7 × 1?','8','6','1','7','D','Any number × 1 = itself. So 7 × 1 = 7',1,5),(21,5,'What is 24 ÷ 6?','3','4','5','6','B','24 ÷ 6 = 4',1,1),(22,5,'What is 36 ÷ 9?','3','5','4','6','C','36 ÷ 9 = 4',1,2),(23,5,'What is the remainder of 17 ÷ 5?','1','3','2','4','C','17 ÷ 5 = 3 remainder 2',1,3),(24,5,'What is 100 ÷ 10?','1','100','10','1000','C','100 ÷ 10 = 10',1,4),(25,5,'What is 45 ÷ 5?','7','8','10','9','D','45 ÷ 5 = 9',1,5),(26,6,'What is 1/2 + 1/2?','2/4','1','1/4','2/2','B','1/2 + 1/2 = 1 (or 2/2 = 1)',1,1),(27,6,'Which fraction is larger: 1/3 or 1/2?','1/3','1/2','They are equal','Cannot tell','B','1/2 is larger because dividing into 2 parts gives bigger pieces than 3 parts.',1,2),(28,6,'Simplify 4/8','2/4','1/2','4/8','1/4','B','4/8 = 1/2 after dividing both by 4.',1,3),(29,6,'What is 3/4 of 20?','10','12','15','18','C','3/4 × 20 = 60/4 = 15',1,4),(30,6,'Convert 1/4 to a percentage','40%','50%','25%','75%','C','1/4 = 0.25 = 25%',1,5),(31,7,'What is 0.5 + 0.25?','0.30','0.75','0.52','0.70','B','0.5 + 0.25 = 0.75',1,1),(32,7,'Convert 75% to a decimal','7.5','0.075','0.75','75.0','C','75% = 75/100 = 0.75',1,2),(33,7,'What is 10% of 200?','10','20','2','100','B','10% × 200 = 20',1,3),(34,7,'What is 3.14 rounded to the nearest whole number?','3','4','3.1','3.2','A','3.14 rounds down to 3.',1,4),(35,7,'Which is greater: 0.6 or 0.55?','0.55','0.6','They are equal','Cannot tell','B','0.6 = 0.60, which is greater than 0.55.',1,5),(36,8,'Solve: x + 5 = 12','x = 5','x = 17','x = 7','x = 6','C','x = 12 - 5 = 7',1,1),(37,8,'Solve: 2x = 10','x = 20','x = 5','x = 8','x = 12','B','x = 10/2 = 5',1,2),(38,8,'What is the value of 3(x+2) when x=4?','14','18','12','10','B','3(4+2) = 3×6 = 18',1,3),(39,8,'Simplify: 4x + 3x','12x','7x','43x','7x²','B','4x + 3x = 7x (combine like terms)',1,4),(40,8,'If 3x - 6 = 9, what is x?','1','3','5','15','C','3x = 15, x = 5',1,5),(41,9,'How many degrees in a full circle?','180°','90°','360°','270°','C','A full circle has 360 degrees.',1,1),(42,9,'What is the sum of angles in a triangle?','360°','90°','270°','180°','D','The sum of interior angles in a triangle is always 180°.',1,2),(43,9,'A right angle measures how many degrees?','45°','90°','180°','60°','B','A right angle is exactly 90 degrees.',1,3),(44,9,'How many sides does a hexagon have?','5','7','6','8','C','A hexagon has 6 sides.',1,4),(45,9,'What is the area of a rectangle with length 8 and width 5?','13','40','26','45','B','Area = length × width = 8 × 5 = 40',1,5),(46,10,'What is the standard form of a quadratic equation?','y = mx + b','ax² + bx + c = 0','a/b = c/d','y = kx','B','The standard form is ax² + bx + c = 0 where a ≠ 0.',1,1),(47,10,'Solve: x² = 25','x = 5','x = -5','x = 5 or x = -5','x = 25','C','√25 = ±5, so x = 5 or x = -5.',1,2),(48,10,'What is the discriminant of ax² + bx + c?','a² - 4bc','b² - 4ac','4ac - b²','b² + 4ac','B','The discriminant is b² - 4ac.',1,3),(49,10,'If discriminant > 0, how many real solutions?','0','1','2','3','C','If b² - 4ac > 0, there are 2 distinct real solutions.',1,4),(50,10,'Factor: x² - 9','(x-3)(x-3)','(x+3)(x-3)','(x+9)(x-1)','(x-3)(x+9)','B','x² - 9 is a difference of squares: (x+3)(x-3)',1,5),(51,11,'What is sin(30°)?','1','√3/2','1/2','√2/2','C','sin(30°) = 1/2 is a standard trigonometric value.',1,1),(52,11,'What is the Pythagorean theorem?','a + b = c','a² + b² = c²','a × b = c','a/b = c','B','For a right triangle: a² + b² = c² where c is the hypotenuse.',1,2),(53,11,'cos(0°) equals?','0','-1','1','1/2','C','cos(0°) = 1',1,3),(54,11,'In a right triangle, the longest side is called?','Base','Height','Hypotenuse','Perpendicular','C','The hypotenuse is the longest side, opposite the right angle.',1,4),(55,11,'What is tan(45°)?','0','√2','1','1/2','C','tan(45°) = sin(45°)/cos(45°) = 1',1,5),(56,12,'What is the derivative of x²?','x','2x','x²','2x²','B','Using the power rule: d/dx(x²) = 2x.',1,1),(57,12,'What is the limit of 1/x as x → ∞?','∞','1','0','-1','C','As x gets larger, 1/x approaches 0.',1,2),(58,12,'Derivative of a constant is?','1','The constant itself','∞','0','D','The derivative of any constant is 0.',1,3),(59,12,'What is d/dx(3x³)?','3x²','9x²','9x³','x³','B','d/dx(3x³) = 3·3x² = 9x²',1,4),(60,12,'What does the integral of v(t) represent?','Acceleration','Velocity','Displacement','Force','C','The integral of velocity gives displacement.',1,5),(61,13,'A fair coin is flipped. P(heads) is?','1','1/3','0','1/2','D','A fair coin has equal probability: P(H) = 1/2.',1,1),(62,13,'The mean of 2, 4, 6 is?','3','4','12','6','B','Mean = (2+4+6)/3 = 12/3 = 4',1,2),(63,13,'What is the mode of: 3, 5, 3, 7, 3, 9?','3','5','7','9','A','Mode is the most frequent value. 3 appears 3 times.',1,3),(64,13,'Standard deviation measures what?','Central tendency','Spread of data','Probability','Frequency','B','Standard deviation measures how spread out data is from the mean.',1,4),(65,13,'Rolling a die, P(even number) is?','1/6','1/3','1/2','2/3','C','Even numbers: 2,4,6 → 3 out of 6 = 1/2',1,5),(66,14,'How many letters are in the English alphabet?','24','25','26','27','C','The English alphabet has 26 letters (A-Z).',1,1),(67,14,'Which is a vowel?','B','C','A','D','C','A, E, I, O, U are vowels. A is a vowel.',1,2),(68,14,'What sound does \"C\" make in \"cat\"?','S','K','Ch','Sh','B','\"C\" makes a hard \"K\" sound in \"cat\".',1,3),(69,14,'Which word rhymes with \"bat\"?','Ball','Cat','Dog','Sun','B','\"Bat\" and \"cat\" both end with \"-at\".',1,4),(70,14,'Complete: The ___ is red.','car','run','big','happy','A','\"The car is red.\" is a complete sentence with a noun.',1,5),(71,15,'How many letters are in the English alphabet?','24','25','26','27','C','The English alphabet has 26 letters (A-Z).',1,1),(72,15,'Which is a vowel?','B','C','A','D','C','A, E, I, O, U are vowels. A is a vowel.',1,2),(73,15,'What sound does \"C\" make in \"cat\"?','S','K','Ch','Sh','B','\"C\" makes a hard \"K\" sound in \"cat\".',1,3),(74,15,'Which word rhymes with \"bat\"?','Ball','Cat','Dog','Sun','B','\"Bat\" and \"cat\" both end with \"-at\".',1,4),(75,15,'Complete: The ___ is red.','car','run','big','happy','A','\"The car is red.\" is a complete sentence with a noun.',1,5),(76,16,'How many letters are in the English alphabet?','24','25','26','27','C','The English alphabet has 26 letters (A-Z).',1,1),(77,16,'Which is a vowel?','B','C','A','D','C','A, E, I, O, U are vowels. A is a vowel.',1,2),(78,16,'What sound does \"C\" make in \"cat\"?','S','K','Ch','Sh','B','\"C\" makes a hard \"K\" sound in \"cat\".',1,3),(79,16,'Which word rhymes with \"bat\"?','Ball','Cat','Dog','Sun','B','\"Bat\" and \"cat\" both end with \"-at\".',1,4),(80,16,'Complete: The ___ is red.','car','run','big','happy','A','\"The car is red.\" is a complete sentence with a noun.',1,5),(81,17,'How many letters are in the English alphabet?','24','25','26','27','C','The English alphabet has 26 letters (A-Z).',1,1),(82,17,'Which is a vowel?','B','C','A','D','C','A, E, I, O, U are vowels. A is a vowel.',1,2),(83,17,'What sound does \"C\" make in \"cat\"?','S','K','Ch','Sh','B','\"C\" makes a hard \"K\" sound in \"cat\".',1,3),(84,17,'Which word rhymes with \"bat\"?','Ball','Cat','Dog','Sun','B','\"Bat\" and \"cat\" both end with \"-at\".',1,4),(85,17,'Complete: The ___ is red.','car','run','big','happy','A','\"The car is red.\" is a complete sentence with a noun.',1,5),(86,18,'Which is a noun?','Run','Beautiful','Table','Quickly','C','A noun is a person, place, or thing. \"Table\" is a thing.',1,1),(87,18,'Identify the verb: \"She sings beautifully.\"','She','sings','beautifully','None','B','\"Sings\" is the action word (verb) in the sentence.',1,2),(88,18,'What is an adjective?','A doing word','A naming word','A describing word','A joining word','C','An adjective describes a noun (e.g., big, red, happy).',1,3),(89,18,'\"He ran quickly.\" — \"quickly\" is a(n)?','Noun','Verb','Adjective','Adverb','D','An adverb modifies a verb. \"Quickly\" tells how he ran.',1,4),(90,18,'Which is a conjunction?','and','big','run','the','A','\"And\" joins words or sentences. It is a conjunction.',1,5),(91,19,'Which is a noun?','Run','Beautiful','Table','Quickly','C','A noun is a person, place, or thing. \"Table\" is a thing.',1,1),(92,19,'Identify the verb: \"She sings beautifully.\"','She','sings','beautifully','None','B','\"Sings\" is the action word (verb) in the sentence.',1,2),(93,19,'What is an adjective?','A doing word','A naming word','A describing word','A joining word','C','An adjective describes a noun (e.g., big, red, happy).',1,3),(94,19,'\"He ran quickly.\" — \"quickly\" is a(n)?','Noun','Verb','Adjective','Adverb','D','An adverb modifies a verb. \"Quickly\" tells how he ran.',1,4),(95,19,'Which is a conjunction?','and','big','run','the','A','\"And\" joins words or sentences. It is a conjunction.',1,5),(96,20,'Which is a noun?','Run','Beautiful','Table','Quickly','C','A noun is a person, place, or thing. \"Table\" is a thing.',1,1),(97,20,'Identify the verb: \"She sings beautifully.\"','She','sings','beautifully','None','B','\"Sings\" is the action word (verb) in the sentence.',1,2),(98,20,'What is an adjective?','A doing word','A naming word','A describing word','A joining word','C','An adjective describes a noun (e.g., big, red, happy).',1,3),(99,20,'\"He ran quickly.\" — \"quickly\" is a(n)?','Noun','Verb','Adjective','Adverb','D','An adverb modifies a verb. \"Quickly\" tells how he ran.',1,4),(100,20,'Which is a conjunction?','and','big','run','the','A','\"And\" joins words or sentences. It is a conjunction.',1,5),(101,21,'Which is a noun?','Run','Beautiful','Table','Quickly','C','A noun is a person, place, or thing. \"Table\" is a thing.',1,1),(102,21,'Identify the verb: \"She sings beautifully.\"','She','sings','beautifully','None','B','\"Sings\" is the action word (verb) in the sentence.',1,2),(103,21,'What is an adjective?','A doing word','A naming word','A describing word','A joining word','C','An adjective describes a noun (e.g., big, red, happy).',1,3),(104,21,'\"He ran quickly.\" — \"quickly\" is a(n)?','Noun','Verb','Adjective','Adverb','D','An adverb modifies a verb. \"Quickly\" tells how he ran.',1,4),(105,21,'Which is a conjunction?','and','big','run','the','A','\"And\" joins words or sentences. It is a conjunction.',1,5),(106,22,'What is a thesis statement?','The first sentence','The conclusion','The main argument of an essay','A quote','C','A thesis statement clearly states the main argument.',1,1),(107,22,'Which sentence is in passive voice?','The cat caught the mouse.','She wrote a letter.','The letter was written by her.','They play football.','C','\"Was written by her\" = passive. The subject receives the action.',1,2),(108,22,'\"Their, There, They\'re\" — Which means \"belonging to them\"?','There','Their','They\'re','All of them','B','\"Their\" is possessive (belonging to them).',1,3),(109,22,'A paragraph should have a?','Title','Topic sentence','Bibliography','Footnote','B','Every paragraph needs a topic sentence that states the main idea.',1,4),(110,22,'What does \"revise\" mean in writing?','Delete everything','Read once','Review and improve','Submit','C','Revising means reviewing and improving your writing.',1,5),(111,23,'What is a thesis statement?','The first sentence','The conclusion','The main argument of an essay','A quote','C','A thesis statement clearly states the main argument.',1,1),(112,23,'Which sentence is in passive voice?','The cat caught the mouse.','She wrote a letter.','The letter was written by her.','They play football.','C','\"Was written by her\" = passive. The subject receives the action.',1,2),(113,23,'\"Their, There, They\'re\" — Which means \"belonging to them\"?','There','Their','They\'re','All of them','B','\"Their\" is possessive (belonging to them).',1,3),(114,23,'A paragraph should have a?','Title','Topic sentence','Bibliography','Footnote','B','Every paragraph needs a topic sentence that states the main idea.',1,4),(115,23,'What does \"revise\" mean in writing?','Delete everything','Read once','Review and improve','Submit','C','Revising means reviewing and improving your writing.',1,5),(116,24,'What is a thesis statement?','The first sentence','The conclusion','The main argument of an essay','A quote','C','A thesis statement clearly states the main argument.',1,1),(117,24,'Which sentence is in passive voice?','The cat caught the mouse.','She wrote a letter.','The letter was written by her.','They play football.','C','\"Was written by her\" = passive. The subject receives the action.',1,2),(118,24,'\"Their, There, They\'re\" — Which means \"belonging to them\"?','There','Their','They\'re','All of them','B','\"Their\" is possessive (belonging to them).',1,3),(119,24,'A paragraph should have a?','Title','Topic sentence','Bibliography','Footnote','B','Every paragraph needs a topic sentence that states the main idea.',1,4),(120,24,'What does \"revise\" mean in writing?','Delete everything','Read once','Review and improve','Submit','C','Revising means reviewing and improving your writing.',1,5),(121,25,'What is a thesis statement?','The first sentence','The conclusion','The main argument of an essay','A quote','C','A thesis statement clearly states the main argument.',1,1),(122,25,'Which sentence is in passive voice?','The cat caught the mouse.','She wrote a letter.','The letter was written by her.','They play football.','C','\"Was written by her\" = passive. The subject receives the action.',1,2),(123,25,'\"Their, There, They\'re\" — Which means \"belonging to them\"?','There','Their','They\'re','All of them','B','\"Their\" is possessive (belonging to them).',1,3),(124,25,'A paragraph should have a?','Title','Topic sentence','Bibliography','Footnote','B','Every paragraph needs a topic sentence that states the main idea.',1,4),(125,25,'What does \"revise\" mean in writing?','Delete everything','Read once','Review and improve','Submit','C','Revising means reviewing and improving your writing.',1,5),(126,26,'Which is a living thing?','Rock','Water','Tree','Chair','C','Trees grow, breathe, and reproduce — they are living things.',1,1),(127,26,'What do plants need to grow?','Darkness','Water and sunlight','Ice','Rocks','B','Plants need water, sunlight, soil, and air to grow.',1,2),(128,26,'Which animal lives in water?','Cat','Fish','Dog','Hen','B','Fish live in water — they breathe through gills.',1,3),(129,26,'What season is hottest?','Winter','Spring','Summer','Autumn','C','Summer is the hottest season of the year.',1,4),(130,26,'Trees give us?','Fire','Oxygen','Salt','Metal','B','Trees produce oxygen through photosynthesis.',1,5),(131,27,'What is the basic unit of life?','Atom','Molecule','Cell','Organ','C','The cell is the basic structural and functional unit of life.',1,1),(132,27,'Which organelle is the \"powerhouse\" of the cell?','Nucleus','Ribosome','Mitochondria','Golgi body','C','Mitochondria produce energy (ATP) for the cell.',1,2),(133,27,'Plant cells have ___ that animal cells don\'t.','Nucleus','Cell wall','Cytoplasm','Ribosomes','B','Plant cells have a rigid cell wall; animal cells do not.',1,3),(134,27,'DNA is found in the?','Cell wall','Nucleus','Cytoplasm','Membrane','B','DNA is stored in the nucleus of the cell.',1,4),(135,27,'Which organelle makes proteins?','Lysosome','Ribosome','Vacuole','Nucleus','B','Ribosomes are responsible for protein synthesis.',1,5),(136,28,'Who is the father of genetics?','Darwin','Mendel','Watson','Linnaeus','B','Gregor Mendel is known as the father of genetics.',1,1),(137,28,'DNA stands for?','Deoxyribose Nucleic Acid','Deoxyribonucleic Acid','Dinitro Nucleotide Acid','Dinucleic Acid','B','DNA = Deoxyribonucleic Acid',1,2),(138,28,'How many chromosomes do humans have?','23','44','46','48','C','Humans have 46 chromosomes (23 pairs).',1,3),(139,28,'A dominant trait is represented by?','Lowercase letter','Capital letter','Number','Symbol','B','Dominant alleles are shown with capital letters (e.g., B).',1,4),(140,28,'Genotype refers to?','Physical appearance','Genetic makeup','Blood type only','Eye color only','B','Genotype is the genetic composition (e.g., Bb, BB).',1,5),(141,29,'What is the SI unit of force?','Watt','Joule','Newton','Pascal','C','The SI unit of force is the Newton (N).',1,1),(142,29,'Speed is measured in?','kg','m/s','liters','m²','B','Speed = distance/time, measured in meters per second (m/s).',1,2),(143,29,'Gravity pulls objects towards?','Sky','Sideways','Earth\'s center','Space','C','Gravity pulls everything towards the center of Earth.',1,3),(144,29,'Newton\'s first law is about?','Force','Inertia','Energy','Gravity','B','Newton\'s first law (law of inertia) states objects stay at rest unless acted upon.',1,4),(145,29,'Which has more inertia?','Feather','Truck','Paper','Balloon','B','More massive objects have more inertia. A truck is most massive.',1,5),(146,30,'Ohm\'s law states V = ?','I/R','I × R','R/I','I + R','B','Ohm\'s Law: Voltage = Current × Resistance (V = IR)',1,1),(147,30,'The SI unit of electric current is?','Volt','Ohm','Ampere','Watt','C','Current is measured in Amperes (A).',1,2),(148,30,'Like poles of a magnet will?','Attract','Repel','Do nothing','Stick together','B','Like poles (N-N or S-S) repel each other.',1,3),(149,30,'What material is a good conductor?','Wood','Rubber','Copper','Glass','C','Copper is an excellent electrical conductor.',1,4),(150,30,'Power (P) = ?','V × I','V + I','V / I','V - I','A','Electrical power P = Voltage × Current',1,5),(151,31,'What are the 3 states of matter?','Hot, cold, warm','Solid, liquid, gas','Earth, water, fire','Hard, soft, flexible','B','Matter exists as solid, liquid, or gas.',1,1),(152,31,'Water boils at what temperature?','50°C','100°C','200°C','0°C','B','Water boils at 100°C (212°F) at sea level.',1,2),(153,31,'The chemical formula for water is?','CO2','NaCl','H2O','O2','C','Water is H2O — 2 hydrogen atoms and 1 oxygen atom.',1,3),(154,31,'An atom consists of?','Only protons','Protons, neutrons, electrons','Only electrons','Only neutrons','B','Atoms have protons and neutrons in the nucleus, with electrons orbiting.',1,4),(155,31,'Which is a chemical change?','Cutting paper','Melting ice','Burning wood','Breaking glass','C','Burning creates new substances — it is a chemical change.',1,5),(156,32,'Who created the periodic table?','Newton','Einstein','Mendeleev','Bohr','C','Dmitri Mendeleev created the first periodic table in 1869.',1,1),(157,32,'How many elements are in the periodic table?','100','118','92','108','B','There are currently 118 confirmed elements.',1,2),(158,32,'Elements in the same column are called?','Periods','Groups','Rows','Series','B','Vertical columns are called groups or families.',1,3),(159,32,'What is the atomic number of Carbon?','12','14','6','8','C','Carbon has atomic number 6 (6 protons).',1,4),(160,32,'Noble gases are in group?','1','7','17','18','D','Noble gases (He, Ne, Ar, etc.) are in Group 18.',1,5),(161,33,'How many bones does an adult human have?','106','206','306','150','B','An adult human skeleton has 206 bones.',1,1),(162,33,'Which organ pumps blood?','Brain','Lungs','Heart','Kidney','C','The heart pumps blood throughout the body.',1,2),(163,33,'The largest organ in the human body is?','Liver','Brain','Heart','Skin','D','Skin is the largest organ by surface area.',1,3),(164,33,'Blood is filtered by the?','Heart','Lungs','Kidneys','Stomach','C','Kidneys filter blood and produce urine.',1,4),(165,33,'Oxygen is carried by?','White blood cells','Red blood cells','Platelets','Plasma','B','Red blood cells contain hemoglobin which carries oxygen.',1,5),(166,34,'The Aksumite Kingdom was located in?','West Africa','Northern Ethiopia','Southern Africa','Central Asia','B','The Aksumite Kingdom was in northern Ethiopia and Eritrea.',1,1),(167,34,'The Aksumite obelisks are found in?','Lalibela','Axum','Gondar','Harar','B','The famous obelisks (stelae) are in Axum.',1,2),(168,34,'King Ezana was known for?','Building pyramids','Converting to Christianity','Inventing writing','Exploring space','B','King Ezana made Christianity the state religion of Aksum.',1,3),(169,34,'Ethiopia\'s ancient script is called?','Arabic','Latin','Ge\'ez','Greek','C','Ge\'ez is the ancient Ethiopian script, still used in the church.',1,4),(170,34,'The rock-hewn churches of Lalibela were built by?','King Lalibela','King Menelik','King Tewodros','Emperor Haile Selassie','A','King Lalibela ordered the construction of the 11 rock-hewn churches.',1,5),(171,35,'The Battle of Adwa was fought in?','1886','1896','1906','1916','B','The Battle of Adwa was fought on March 1, 1896.',1,1),(172,35,'Ethiopia defeated which country at Adwa?','Britain','France','Italy','Germany','C','Ethiopia defeated Italy at the Battle of Adwa.',1,2),(173,35,'Who led Ethiopia at the Battle of Adwa?','Haile Selassie','Menelik II','Tewodros II','Yohannes IV','B','Emperor Menelik II led Ethiopia to victory at Adwa.',1,3),(174,35,'Ethiopia was the only African country that was never?','Visited','Colonized','Traded with','Named','B','Ethiopia was never colonized (briefly occupied by Italy 1936-41).',1,4),(175,35,'The Ethiopian calendar has how many months?','12','14','13','10','C','The Ethiopian calendar has 13 months (12 months of 30 days + Pagume).',1,5),(176,36,'What is the capital of Ethiopia?','Adama','Bahir Dar','Addis Ababa','Hawassa','C','Addis Ababa is the capital and largest city of Ethiopia.',1,1),(177,36,'The highest mountain in Ethiopia is?','Mount Kenya','Ras Dashen','Kilimanjaro','Mount Entoto','B','Ras Dashen (4,550m) is Ethiopia\'s highest peak.',1,2),(178,36,'Ethiopia is located in which continent?','Asia','Europe','Africa','South America','C','Ethiopia is in East Africa, in the Horn of Africa.',1,3),(179,36,'The Blue Nile originates from?','Lake Victoria','Lake Tana','Red Sea','Lake Turkana','B','The Blue Nile originates from Lake Tana in northern Ethiopia.',1,4),(180,36,'How many regional states does Ethiopia have?','9','10','11','12','C','Ethiopia currently has 11 regional states and 2 chartered cities.',1,5),(181,37,'Every child has the right to?','Drive a car','Education','Work in a factory','Vote','B','Every child has the right to free education.',1,1),(182,37,'Being a good citizen means?','Breaking rules','Respecting others','Being selfish','Ignoring laws','B','Good citizens respect others and follow rules.',1,2),(183,37,'Who makes laws in Ethiopia?','Teachers','Parliament','Students','Police','B','The Parliament (House of Peoples\' Representatives) makes laws.',1,3),(184,37,'The Ethiopian flag colors are?','Red, blue, white','Green, yellow, red','Black, red, gold','Blue, white, green','B','The Ethiopian flag is green, yellow, and red.',1,4),(185,37,'Democracy means?','Rule by one person','Rule by the military','Rule by the people','No rules at all','C','Democracy = government by the people.',1,5),(186,38,'What does \"scarcity\" mean?','Having too much','Limited resources with unlimited wants','Free goods','No demand','B','Scarcity means resources are limited relative to our unlimited wants.',1,1),(187,38,'The term \"GDP\" stands for?','General Domestic Price','Gross Domestic Product','Government Development Plan','General Development Policy','B','GDP = Gross Domestic Product, the total value of goods produced.',1,2),(188,38,'Supply and demand determine?','Weight','Temperature','Price','Distance','C','The interaction of supply and demand determines market price.',1,3),(189,38,'What is inflation?','Decrease in prices','Increase in general price level','Stable prices','Free goods','B','Inflation is a sustained increase in the general price level.',1,4),(190,38,'Ethiopia\'s currency is called?','Dollar','Birr','Shilling','Pound','B','The Ethiopian currency is the Birr (ETB).',1,5),(191,39,'CPU stands for?','Central Processing Unit','Computer Personal Unit','Central Program Utility','Core Processing Unit','A','CPU = Central Processing Unit, the brain of the computer.',1,1),(192,39,'Which is an input device?','Monitor','Printer','Keyboard','Speaker','C','A keyboard is used to input data into the computer.',1,2),(193,39,'1 kilobyte (KB) = ?','100 bytes','1000 bytes','1024 bytes','500 bytes','C','1 KB = 1024 bytes (2^10 bytes).',1,3),(194,39,'RAM stands for?','Read Access Memory','Random Access Memory','Run Active Memory','Readable Active Mode','B','RAM = Random Access Memory, temporary fast storage.',1,4),(195,39,'Which is an operating system?','Microsoft Word','Google Chrome','Windows','PowerPoint','C','Windows is an operating system that manages computer hardware.',1,5),(196,40,'The Amharic alphabet is called?','Arabic','Latin','Fidel (ፊደል)','Greek','C','The Amharic writing system is called Fidel (ፊደል).',1,1),(197,40,'How many base characters (ፊደሎች) are in the Amharic alphabet?','26','33','30','28','B','There are 33 base characters with 7 forms each.',1,2),(198,40,'Which is the first letter of the Amharic alphabet?','ሀ','ለ','ሠ','በ','A','ሀ (Ha) is the first letter of the Amharic alphabet.',1,3),(199,40,'\"እናት\" means?','Father','Mother','Brother','Sister','B','እናት means mother in Amharic.',1,4),(200,40,'\"ውሃ\" means?','Food','Fire','Water','Air','C','ውሃ means water in Amharic.',1,5);
+/*!40000 ALTER TABLE `lms_questions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `menu_items`
+--
+
+DROP TABLE IF EXISTS `menu_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `menu_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `hotel_id` int(11) DEFAULT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `is_available` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `hotel_id` (`hotel_id`),
+  KEY `category_id` (`category_id`),
+  CONSTRAINT `menu_items_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `menu_items_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=211 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `menu_items`
+--
+
+LOCK TABLES `menu_items` WRITE;
+/*!40000 ALTER TABLE `menu_items` DISABLE KEYS */;
+INSERT INTO `menu_items` VALUES (2,1,2,'Beyaynetu','Large assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=300&q=80',1),(3,2,2,'Special Kitfo','Minced beef seasoned with mitmita and kibbeh.',950.00,'https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=300&q=80',1),(4,2,4,'Buna (Coffee)','Traditional Ethiopian coffee ceremony style.',150.00,'https://images.unsplash.com/photo-1547825407-2d060104b7f8?auto=format&fit=crop&w=300&q=80',1),(5,3,1,'Special Injera Firfir','Spicy beef firfir with fresh injera and awaze.',280.00,NULL,1),(6,3,2,'Doro Wot','Classic Ethiopian chicken stew with hard-boiled eggs.',450.00,NULL,1),(7,3,2,'Tibs Special','Sauteed beef tips with onions and peppers.',380.00,NULL,1),(8,3,3,'Kitfo','Fresh minced beef with mitmita and kibbeh.',520.00,NULL,1),(9,3,4,'Fresh Juice Combo','Mango, avocado, and papaya layered juice.',120.00,NULL,1),(10,3,5,'Baklava','Sweet pastry with honey and pistachios.',150.00,NULL,1),(11,4,1,'Special Injera Firfir','Spicy beef firfir with fresh injera and awaze.',280.00,NULL,1),(12,4,2,'Doro Wot','Classic Ethiopian chicken stew with hard-boiled eggs.',450.00,NULL,1),(13,4,2,'Tibs Special','Sauteed beef tips with onions and peppers.',380.00,NULL,1),(14,4,3,'Kitfo','Fresh minced beef with mitmita and kibbeh.',520.00,NULL,1),(15,4,4,'Fresh Juice Combo','Mango, avocado, and papaya layered juice.',120.00,NULL,1),(16,4,5,'Baklava','Sweet pastry with honey and pistachios.',150.00,NULL,1),(17,5,1,'Special Injera Firfir','Spicy beef firfir with fresh injera and awaze.',280.00,NULL,1),(18,5,2,'Doro Wot','Classic Ethiopian chicken stew with hard-boiled eggs.',450.00,NULL,1),(19,5,2,'Tibs Special','Sauteed beef tips with onions and peppers.',380.00,NULL,1),(20,5,3,'Kitfo','Fresh minced beef with mitmita and kibbeh.',520.00,NULL,1),(21,5,4,'Fresh Juice Combo','Mango, avocado, and papaya layered juice.',120.00,NULL,1),(22,5,5,'Baklava','Sweet pastry with honey and pistachios.',150.00,NULL,1),(23,10,2,'Kitfo - L','Minced beef top side with seasoned butter, caper served with local cottage cheese and collard greens on injera.',1304.35,'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?auto=format&fit=crop&w=400&q=80',1),(24,10,2,'Gomen Kitfo - L','Local cabbage cooked with seasoned butter & caper served with cottage cheese and injera.',790.51,'https://images.unsplash.com/photo-1556909114-44e3e70034e2?auto=format&fit=crop&w=400&q=80',1),(25,10,2,'Zemamujet - L','Local cabbage with seasoned butter, caper served with false banana bread and cottage cheese.',830.04,'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=400&q=80',1),(26,10,3,'Doro Wott - L','Local chicken cooked with onion, red pepper, seasoned butter served with injera and boiled egg.',1304.35,'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80',1),(27,10,2,'Tegabino - L','Ground beans, oil served with injera — a creamy chickpea-based fasting dish.',434.78,'https://images.unsplash.com/photo-1536304929831-ee1ca9d44726?auto=format&fit=crop&w=400&q=80',1),(28,10,2,'Bozena Shero - L','Ground beans mixed with meat, seasoned butter served with injera — hearty and flavorful.',869.57,'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=400&q=80',1),(29,10,2,'Yod Special Beyaynetu','Grand vegan platter with 7 types of wot (stews) — misir, gomen, atkilt, shiro, and more on fresh injera.',650.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(30,10,4,'Buna Ceremony Coffee','Full traditional Ethiopian coffee ceremony — roasted, ground, and brewed fresh at your table with popcorn.',180.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(31,11,3,'Kitfo Special','Freshly minced premium beef seasoned with mitmita spice and Ethiopian herbed butter (kibbeh). Served raw, medium, or well done.',750.00,'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?auto=format&fit=crop&w=400&q=80',1),(32,11,2,'Tibs Derek (Dry-Fried Beef)','Cubed beef sautéed with rosemary, hot peppers, onions, and tomatoes — served sizzling on a clay plate.',680.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(33,11,3,'Doro Wot','Slow-cooked chicken drumstick in rich berbere sauce with hard-boiled egg — Ethiopia\'s national dish.',950.00,'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80',1),(34,11,2,'Beyaynetu (Fasting Platter)','Colorful vegan platter with 8 different wots including misir, shiro, gomen, tikil gomen, atkilt, and azifa.',580.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(35,11,3,'Gored Gored','Cubed raw beef tossed in mitmita spice and awaze pepper paste — for the adventurous palate.',820.00,'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?auto=format&fit=crop&w=400&q=80',1),(36,11,2,'Shiro Wot','Creamy chickpea powder stew simmered with garlic, onions, tomato, and Ethiopian spice blend.',380.00,'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=400&q=80',1),(37,11,4,'Tej (Honey Wine)','Traditional Ethiopian honey wine, delicately sweet and refreshing — served in a classic berele glass.',220.00,'https://images.unsplash.com/photo-1474722883778-792e7990302f?auto=format&fit=crop&w=400&q=80',1),(38,11,4,'Spriss (Layered Juice)','Beautiful three-layer fresh fruit juice — mango, avocado, and papaya blended separately.',150.00,'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=400&q=80',1),(39,12,3,'Lucy Special Combination','A luxurious platter with kitfo, tibs, gomen, and ayib served together on a large injera — chef\'s recommendation.',980.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(40,12,2,'Shiro Wot','Creamy chickpea flour stew simmered with garlic, tomatoes, and Ethiopian spice blend — a beloved comfort food.',350.00,'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=400&q=80',1),(41,12,3,'Lamb Tibs Firfir','Tender lamb pieces sautéed with butter, onion, rosemary and served on torn injera soaked in juices.',880.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(42,12,2,'Misir Wot (Red Lentil)','Split red lentils slow-cooked in berbere sauce — rich, spicy, and deeply satisfying vegan option.',320.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(43,12,2,'Derek Tibs - Beef','Dry-fried cubed beef seasoned with rosemary, jalapeño, garlic, and onions on a sizzling pan.',750.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(44,12,1,'Enkulal Firfir','Ethiopian-style scrambled eggs with tomatoes, onions, green peppers, and shredded injera.',350.00,'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&q=80',1),(45,12,4,'Fresh Avocado Juice','Thick, creamy layered avocado and mango juice topped with a drizzle of lime — an Ethiopian café classic.',150.00,'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=400&q=80',1),(46,13,1,'Kategna Special','Toasted injera generously topped with Ethiopian spiced butter (kibbeh) and berbere — crunchy, warm, and addictive.',280.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(47,13,1,'Chechebsa (Kita Firfir)','Shredded pan-fried flatbread mixed with Ethiopian spiced butter and berbere — a hearty traditional breakfast.',320.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(48,13,1,'Enkulal Firfir (Egg Scramble)','Ethiopian-style scrambled eggs with tomatoes, onions, green peppers and a touch of berbere with bread.',280.00,'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&q=80',1),(49,13,1,'Firfir Be Siga','Shredded injera soaked in spicy meat sauce with tender beef chunks — perfect morning energy.',420.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(50,13,1,'Ful Medames','Mashed fava beans topped with cumin, olive oil, fresh tomato, egg, jalapeño, and warm bread.',350.00,'https://images.unsplash.com/photo-1536304929831-ee1ca9d44726?auto=format&fit=crop&w=400&q=80',1),(51,13,1,'Kinche (Cracked Wheat)','Ethiopian porridge made with cracked wheat or oats cooked in spiced butter — simple and nutritious.',220.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(52,13,1,'Genfo','Thick barley flour porridge with a well of spiced butter and berbere in the center — an ancient Ethiopian breakfast.',250.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(53,13,4,'Buna (Coffee)','Freshly roasted and brewed Ethiopian coffee served with popcorn — the morning ritual.',80.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(54,14,3,'Totot Special Kitfo','Premium-grade minced raw beef with freshly ground mitmita and warm kibbeh — the house specialty.',850.00,'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?auto=format&fit=crop&w=400&q=80',1),(55,14,2,'Gomen Be Siga','Tender beef slow-cooked with collard greens, garlic, and ginger — a Southern Ethiopian classic.',580.00,'https://images.unsplash.com/photo-1556909114-44e3e70034e2?auto=format&fit=crop&w=400&q=80',1),(56,14,2,'Ayib Be Gomen','Fresh homemade Ethiopian cottage cheese mixed with finely chopped collard greens and spices.',320.00,'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=400&q=80',1),(57,14,3,'Kurt (Raw Beef Cubes)','Fresh cubed raw beef dipped in mitmita and awaze — a delicacy for meat lovers.',920.00,'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?auto=format&fit=crop&w=400&q=80',1),(58,14,3,'Kitfo Leb Leb','Lightly cooked kitfo (medium rare) with cottage cheese and gomen — the perfect balance.',780.00,'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?auto=format&fit=crop&w=400&q=80',1),(59,14,2,'Kocho Be Kitfo','False banana bread served alongside special kitfo, ayib, and gomen — authentic Gurage meal.',950.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(60,14,1,'Bula (Porridge)','Smooth porridge made from false banana starch, served with kibbeh butter — a Gurage staple.',280.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(61,15,2,'Four Sisters Combo Plate','Generous beyaynetu with 9 different wots including misir, shiro, gomen, and special alicha — feeds two.',550.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(62,15,3,'Tere Siga (Raw Beef)','Fresh-cut raw beef served with awaze paste, senafich (mustard), and traditional accompaniments.',720.00,'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?auto=format&fit=crop&w=400&q=80',1),(63,15,3,'Doro Wot Special','Slowly simmered chicken in rich berbere sauce with boiled eggs — the queens favorite recipe.',880.00,'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80',1),(64,15,2,'Yebeg Alicha','Mild lamb stew cooked with turmeric, garlic, and ginger — gentle spiced Northern style.',750.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(65,15,2,'Asa Tibs (Fish Tibs)','Fresh Tana Lake fish sautéed with onions, tomatoes, peppers, and rosemary herbs.',620.00,'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&q=80',1),(66,15,3,'Enjera Be Wot Sampler','A sampler plate of key wot, yebeg wot, and misir wot on a large injera — taste everything!',680.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(67,15,4,'Tella (Traditional Beer)','Homemade traditional Ethiopian barley beer — mildly fermented, smoky, and refreshing.',80.00,'https://images.unsplash.com/photo-1474722883778-792e7990302f?auto=format&fit=crop&w=400&q=80',1),(68,16,3,'Makush Signature Lamb Tibs','Tender lamb cubes sautéed with rosemary, jalapeño, and caramelized onions on a sizzling clay pot.',920.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(69,16,2,'Injera Lasagna','Creative fusion: layers of injera with spiced minced beef, tomato sauce, and Ethiopian cheese — a Makush original.',780.00,'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80',1),(70,16,2,'Avocado Tartare','Fresh avocado layered with spiced kitfo, cherry tomatoes, and microgreens — a modern Ethiopian starter.',520.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(71,16,3,'Grilled Nile Perch','Pan-seared Nile perch fillet with lemon-berbere butter, roasted vegetables, and injera crisps.',1100.00,'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&q=80',1),(72,16,2,'Mushroom Shiro','Elevated version of classic shiro with sautéed wild mushrooms, truffle oil, and fresh herbs.',480.00,'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=400&q=80',1),(73,16,2,'Tibs Salad Bowl','Warm beef tibs over mixed greens, cherry tomatoes, avocado, and house vinaigrette dressing.',620.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(74,16,4,'Ethiopian Honey Wine Cocktail','Signature cocktail mixing tej (honey wine) with fresh lime, ginger, and sparkling water.',350.00,'https://images.unsplash.com/photo-1474722883778-792e7990302f?auto=format&fit=crop&w=400&q=80',1),(75,16,5,'Bunna Brulee','Ethiopian coffee-infused crème brûlée with caramelized sugar top — a fusion dessert masterpiece.',420.00,'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&q=80',1),(76,17,2,'Mixed Wot Platter','A colorful spread of 6 traditional stews on injera — includes yebeg wot, misir, gomen, and more.',480.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(77,17,3,'Lamb Shank in Berbere','Slow-roasted lamb shank glazed with berbere-infused sauce, served with roasted vegetables and injera.',750.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(78,17,2,'Highland Shepherd Pie','Scottish classic made with spiced Ethiopian minced beef, topped with creamy mashed potatoes.',550.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(79,17,1,'Ben Abeba Breakfast','Full Ethiopian-Scottish breakfast with ful, eggs, toast, sausage, fresh juice, and coffee.',420.00,'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&q=80',1),(80,17,2,'Roasted Beet Salad','Roasted beetroot with goat cheese crumble, walnuts, and honey-lemon dressing.',380.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(81,17,2,'Vegetarian Beyaynetu','Full fasting platter with shiro, misir, azifa, gomen, atkilt, and tikil gomen on injera.',350.00,'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=400&q=80',1),(82,17,4,'Spris (Layered Juice)','Three layers of fresh fruit juices — mango, avocado, and papaya, beautifully layered.',120.00,'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=400&q=80',1),(83,18,2,'Zilzil Tibs','Tender strips of beef sautéed with onions, green peppers, and rosemary — served on a hot mitad.',620.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(84,18,2,'Misir Wot (Red Lentil)','Split red lentils simmered in rich berbere sauce — Ethiopia\'s most popular vegan dish.',280.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(85,18,3,'Key Wot (Spicy Beef Stew)','Cubed beef slow-cooked in a thick berbere sauce with onions and kibbeh butter.',720.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(86,18,3,'Alicha Yebeg (Mild Lamb)','Tender lamb cubes in a mild, turmeric-based sauce with potatoes and carrots.',680.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(87,18,2,'Azifa (Lentil Salad)','Cool green lentil salad with mustard, jalapeño, onion, and lemon juice — refreshing side.',180.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(88,18,2,'Timatim Salata','Fresh tomato salad with onion, green peppers, lemon juice, and olive oil — Ethiopian classic.',150.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(89,18,4,'Macchiato (Ethiopian Style)','Strong Ethiopian espresso topped with steamed milk foam — the daily ritual of every Ethiopian.',60.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(90,19,3,'Yebeg Tibs (Lamb Tibs)','Juicy cubes of lamb sautéed with jalapeños, onions, and tomatoes, seasoned with Ethiopian herbs.',780.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(91,19,1,'Firfir Be Siga','Shredded injera soaked in spicy berbere-based meat sauce with tender beef — hearty breakfast.',350.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(92,19,3,'Dulet','Minced tripe, liver, and lean beef sautéed with jalapeño, onion, and Ethiopian spices — a delicacy.',650.00,'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?auto=format&fit=crop&w=400&q=80',1),(93,19,2,'Quanta Firfir','Dried beef jerky (quanta) rehydrated and sautéed with injera, berbere sauce, and kibbeh butter.',520.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(94,19,3,'Shekla Tibs','Hot stone-grilled beef or lamb tibs served sizzling on a clay plate with onions and peppers.',850.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(95,19,2,'Fossolia (Green Beans)','Fresh green beans and carrots sautéed with garlic, onion, and turmeric — light fasting dish.',220.00,'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=400&q=80',1),(96,19,4,'Tena Adam Tea (Rue Tea)','Traditional Ethiopian herbal tea brewed with rue herb, known for health benefits and aromatic flavor.',50.00,'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=400&q=80',1),(97,20,3,'Saro-Maria Doro Wot','Premium chicken stew slow-simmered for 6 hours in berbere sauce, served with 2 hardboiled eggs and injera.',950.00,'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=400&q=80',1),(98,20,1,'Ful Medames','Mashed fava beans with cumin, olive oil, fresh tomatoes, green chili, egg, and warm bread.',320.00,'https://images.unsplash.com/photo-1536304929831-ee1ca9d44726?auto=format&fit=crop&w=400&q=80',1),(99,20,1,'Continental Breakfast','Toast, butter, jam, fresh fruits, scrambled eggs, sausage, and freshly brewed coffee.',450.00,'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&q=80',1),(100,20,2,'Goulash (Ethiopian Style)','Slow-cooked beef and vegetable stew with Ethiopian spices, served with fresh bread.',680.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(101,20,3,'Tibs Special Platter','A combination of beef, lamb, and chicken tibs served on a sizzling platter with vegetables.',1200.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(102,20,2,'Caesar Salad','Crispy romaine lettuce, parmesan, croutons with house-made dressing — Continental classic.',380.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(103,20,4,'Fresh Mango Smoothie','Thick and creamy blended mango smoothie with a hint of honey — refreshing and naturally sweet.',130.00,'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=400&q=80',1),(104,21,4,'Tomoca Special Roast','Single-origin, dark-roasted Ethiopian Arabica coffee — the legendary Tomoca blend since 1953.',80.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(105,21,4,'Macchiato Doppio','Double-shot Ethiopian espresso with a touch of steamed milk — rich, bold, and aromatic.',70.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(106,21,1,'Kolo & Popcorn Platter','Traditional roasted barley and peanut mix served with popcorn — the classic Ethiopian coffee companion.',100.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(107,21,4,'Cappuccino','Perfectly frothed Ethiopian Arabica cappuccino with velvety milk foam and cocoa dust.',90.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(108,21,4,'Espresso Con Panna','Rich Ethiopian espresso shot topped with fresh whipped cream — a classic indulgence.',100.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(109,21,4,'Bunna Spris','Layered iced coffee drink with milk, espresso, and chocolate — Tomoca\'s refreshing take.',120.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(110,21,5,'Himbasha (Sweet Bread)','Traditional Ethiopian celebration bread with cardamom — lightly sweet and perfect with coffee.',150.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(111,22,2,'Derek Tibs Special','Generously seasoned dry-fried beef cubes with rosemary, garlic, and jalapeño on a sizzling clay mitad.',720.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(112,22,2,'Atkilt Wot (Cabbage & Potato)','Mild-spiced cabbage, carrots, and potatoes cooked with turmeric and garlic — a fasting favorite.',250.00,'https://images.unsplash.com/photo-1556909114-44e3e70034e2?auto=format&fit=crop&w=400&q=80',1),(113,22,3,'Awaze Tibs','Beef cubes marinated in awaze (chili paste), then pan-fried with onions and green peppers.',680.00,'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80',1),(114,22,2,'Yatakilt Kilkil','Mixed vegetables (potato, carrot, green beans) cooked mild with turmeric and garlic.',280.00,'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?auto=format&fit=crop&w=400&q=80',1),(115,22,3,'Special Kitfo Combo','Kitfo served with kocho (false banana bread), ayib, gomen, and awaze on the side.',880.00,'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?auto=format&fit=crop&w=400&q=80',1),(116,22,2,'Suf Fitfit','Shredded injera tossed in sunflower seed sauce — a unique fasting dish from Eastern Ethiopia.',350.00,'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80',1),(117,22,4,'Kenetto','Fermented honey-based drink with herbs — a milder, refreshing version of Tej.',160.00,'https://images.unsplash.com/photo-1474722883778-792e7990302f?auto=format&fit=crop&w=400&q=80',1),(118,23,1,'Lime Tree Breakfast Platter','Mix of ful, scrambled eggs, fresh bread, avocado, and seasonal fruits — the ultimate brunch.',420.00,'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=400&q=80',1),(119,23,2,'Grilled Fish with Awaze','Fresh Nile tilapia grilled to perfection, topped with awaze (chili paste) and served with salad.',650.00,'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&q=80',1),(120,23,2,'Garden Pasta','Penne pasta with roasted vegetables, fresh basil pesto, and parmesan cheese — garden fresh.',480.00,'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80',1),(121,23,2,'Chicken Wrap','Grilled chicken breast with fresh vegetables, avocado, and garlic sauce in a warm tortilla wrap.',420.00,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80',1),(122,23,2,'Quinoa Bowl','Nutritious quinoa with roasted sweet potato, avocado, chickpeas, greens, and tahini dressing.',520.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(123,23,5,'Carrot Cake','Moist carrot cake with cream cheese frosting, walnuts, and a sprinkle of cinnamon.',280.00,'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&q=80',1),(124,23,4,'Fresh Strawberry Juice','Cold-pressed fresh strawberry juice blended with a squeeze of lime — seasonal and refreshing.',140.00,'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=400&q=80',1),(125,24,2,'Spaghetti alla Castelli','Classic Italian spaghetti with a unique Ethiopian twist — house-made sauce with berbere-infused meatballs.',580.00,'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80',1),(126,24,3,'Veal Scaloppine','Thin-sliced veal in white wine and lemon butter sauce, served with sautéed vegetables.',1100.00,'https://images.unsplash.com/photo-1529694157872-4e0c0f3b238b?auto=format&fit=crop&w=400&q=80',1),(127,24,2,'Lasagna al Forno','Classic layered lasagna with bolognese, béchamel, and parmesan — baked to golden perfection.',750.00,'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80',1),(128,24,3,'Grilled Lamb Chops','Premium lamb chops grilled medium-rare with rosemary and garlic, served with mint sauce.',1350.00,'https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&w=400&q=80',1),(129,24,2,'Minestrone Soup','Hearty Italian vegetable soup with pasta, beans, and fresh herbs — a perfect starter.',350.00,'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80',1),(130,24,2,'Caprese Salad','Fresh mozzarella, ripe tomatoes, and basil drizzled with extra virgin olive oil and balsamic.',420.00,'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80',1),(131,24,5,'Tiramisu Habesha Style','Classic Italian tiramisu infused with Ethiopian coffee — a perfect fusion dessert.',380.00,'https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&w=400&q=80',1),(132,24,4,'Espresso Italiano','Authentic Italian espresso made with premium Ethiopian Arabica beans — bold and smooth.',90.00,'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80',1),(133,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(134,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(135,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(136,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(137,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(138,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(139,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(140,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(141,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(142,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(143,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(144,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(145,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(146,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(147,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(148,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(149,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(150,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(151,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(152,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(153,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(154,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(155,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(156,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(157,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(158,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(159,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(160,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(161,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(162,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(163,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(164,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(165,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(166,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(167,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(168,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(169,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(170,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(171,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(172,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(173,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(174,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(175,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(176,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(177,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(178,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(179,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(180,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(181,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(183,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(184,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(185,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(186,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(187,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(188,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(189,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(190,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(191,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(192,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(193,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(194,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(195,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(196,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(197,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(198,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(199,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(200,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(201,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(202,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(203,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(204,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(205,1,1,'Injera with Firfir','Spicy beef firfir served with fresh injera.',350.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(206,1,6,'Special Kitfo','Premium minced beef seasoned with mitmita.',1200.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(207,1,6,'Doro Wot','Traditional Ethiopian spicy chicken stew.',950.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(208,1,6,'Beyaynetu','Assortment of vegan stews on injera.',450.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(209,1,2,'Shiro Tegabino','Thick chickpea stew in a traditional clay pot.',320.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1),(210,1,4,'Ethio Coffee','Traditional roasted coffee.',60.00,'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=500',1);
+/*!40000 ALTER TABLE `menu_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `movies`
+--
+
+DROP TABLE IF EXISTS `movies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `movies` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(200) NOT NULL,
+  `genre` varchar(100) DEFAULT NULL,
+  `cinema` varchar(200) DEFAULT NULL,
+  `showtime` datetime DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT 0.00,
+  `poster_url` varchar(500) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `status` enum('showing','upcoming','ended') DEFAULT 'showing',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `movies`
+--
+
+LOCK TABLES `movies` WRITE;
+/*!40000 ALTER TABLE `movies` DISABLE KEYS */;
+/*!40000 ALTER TABLE `movies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `order_items`
+--
+
+DROP TABLE IF EXISTS `order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `order_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) DEFAULT NULL,
+  `menu_item_id` int(11) DEFAULT NULL,
+  `quantity` int(11) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  KEY `menu_item_id` (`menu_item_id`),
+  CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`menu_item_id`) REFERENCES `menu_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `order_items`
+--
+
+LOCK TABLES `order_items` WRITE;
+/*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
+INSERT INTO `order_items` VALUES (2,1,2,2,450.00),(3,7,4,1,150.00),(4,8,65,2,620.00),(5,8,61,1,550.00),(7,9,2,1,450.00),(8,10,47,1,320.00),(9,10,48,1,280.00),(10,10,52,1,250.00),(12,11,2,1,450.00),(13,12,65,1,620.00),(14,12,61,1,550.00),(15,13,2,1,450.00),(16,13,155,1,320.00);
+/*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `orders`
+--
+
+DROP TABLE IF EXISTS `orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `customer_id` int(11) DEFAULT NULL,
+  `hotel_id` int(11) DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','preparing','on_delivery','delivered','cancelled') DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_status` enum('pending','paid','failed') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `hotel_id` (`hotel_id`),
+  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `orders`
+--
+
+LOCK TABLES `orders` WRITE;
+/*!40000 ALTER TABLE `orders` DISABLE KEYS */;
+INSERT INTO `orders` VALUES (1,10,1,1750.00,'delivered','chapa','pending','2026-02-15 09:51:52'),(2,10,1,500.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(3,10,1,600.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(4,10,1,700.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(5,10,1,800.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(6,10,1,900.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(7,1,2,300.00,'pending','chapa','pending','2026-02-15 10:30:11'),(8,1,15,1940.00,'pending','chapa','paid','2026-02-15 10:31:28'),(9,10,1,950.00,'delivered','chapa','paid','2026-02-15 10:48:46'),(10,1,13,1000.00,'pending','chapa','paid','2026-02-15 10:53:58'),(11,10,1,950.00,'delivered','chapa','paid','2026-02-15 10:57:25'),(12,10,15,1320.00,'pending','chapa','paid','2026-02-15 18:17:04'),(13,10,1,920.00,'delivered','chapa','paid','2026-02-15 19:33:47');
+/*!40000 ALTER TABLE `orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `referrals`
+--
+
+DROP TABLE IF EXISTS `referrals`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `referrals` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `broker_id` int(11) DEFAULT NULL,
+  `order_id` int(11) DEFAULT NULL,
+  `commission_amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','paid') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `broker_id` (`broker_id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `referrals_ibfk_1` FOREIGN KEY (`broker_id`) REFERENCES `brokers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `referrals_ibfk_2` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `referrals`
+--
+
+LOCK TABLES `referrals` WRITE;
+/*!40000 ALTER TABLE `referrals` DISABLE KEYS */;
+/*!40000 ALTER TABLE `referrals` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `rental_requests`
+--
+
+DROP TABLE IF EXISTS `rental_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `rental_requests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `listing_id` int(11) DEFAULT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `customer_name` varchar(100) DEFAULT NULL,
+  `customer_phone` varchar(20) DEFAULT NULL,
+  `customer_email` varchar(100) DEFAULT NULL,
+  `message` text DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `listing_id` (`listing_id`),
+  KEY `customer_id` (`customer_id`),
+  CONSTRAINT `rental_requests_ibfk_1` FOREIGN KEY (`listing_id`) REFERENCES `listings` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rental_requests_ibfk_2` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `rental_requests`
+--
+
+LOCK TABLES `rental_requests` WRITE;
+/*!40000 ALTER TABLE `rental_requests` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rental_requests` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `restaurant_menu`
+--
+
+DROP TABLE IF EXISTS `restaurant_menu`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `restaurant_menu` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `restaurant_id` int(11) DEFAULT NULL,
+  `category` varchar(50) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `is_available` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `restaurant_id` (`restaurant_id`),
+  CONSTRAINT `restaurant_menu_ibfk_1` FOREIGN KEY (`restaurant_id`) REFERENCES `restaurants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `restaurant_menu`
+--
+
+LOCK TABLES `restaurant_menu` WRITE;
+/*!40000 ALTER TABLE `restaurant_menu` DISABLE KEYS */;
+/*!40000 ALTER TABLE `restaurant_menu` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `restaurant_order_items`
+--
+
+DROP TABLE IF EXISTS `restaurant_order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `restaurant_order_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) DEFAULT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 1,
+  `price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `restaurant_order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `restaurant_orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `restaurant_order_items`
+--
+
+LOCK TABLES `restaurant_order_items` WRITE;
+/*!40000 ALTER TABLE `restaurant_order_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `restaurant_order_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `restaurant_orders`
+--
+
+DROP TABLE IF EXISTS `restaurant_orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `restaurant_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `customer_id` int(11) DEFAULT NULL,
+  `restaurant_id` int(11) DEFAULT NULL,
+  `order_reference` varchar(30) DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `status` enum('pending','preparing','ready','on_delivery','delivered','cancelled') DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `payment_status` enum('pending','paid','failed') DEFAULT 'pending',
+  `delivery_address` text DEFAULT NULL,
+  `special_instructions` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `order_reference` (`order_reference`),
+  KEY `customer_id` (`customer_id`),
+  KEY `restaurant_id` (`restaurant_id`),
+  CONSTRAINT `restaurant_orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `restaurant_orders_ibfk_2` FOREIGN KEY (`restaurant_id`) REFERENCES `restaurants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `restaurant_orders`
+--
+
+LOCK TABLES `restaurant_orders` WRITE;
+/*!40000 ALTER TABLE `restaurant_orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `restaurant_orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `restaurants`
+--
+
+DROP TABLE IF EXISTS `restaurants`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `restaurants` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `cuisine_type` varchar(100) DEFAULT NULL,
+  `opening_hours` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `min_order` decimal(10,2) DEFAULT 0.00,
+  `delivery_time` varchar(50) DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `logo_url` varchar(255) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `restaurants_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `restaurants`
+--
+
+LOCK TABLES `restaurants` WRITE;
+/*!40000 ALTER TABLE `restaurants` DISABLE KEYS */;
+/*!40000 ALTER TABLE `restaurants` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `routes`
+--
+
+DROP TABLE IF EXISTS `routes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `routes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) DEFAULT NULL,
+  `origin` varchar(100) NOT NULL,
+  `destination` varchar(100) NOT NULL,
+  `distance_km` decimal(10,2) DEFAULT NULL,
+  `estimated_hours` decimal(4,1) DEFAULT NULL,
+  `base_price` decimal(10,2) NOT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `routes_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `transport_companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `routes`
+--
+
+LOCK TABLES `routes` WRITE;
+/*!40000 ALTER TABLE `routes` DISABLE KEYS */;
+INSERT INTO `routes` VALUES (1,1,'Addis Ababa','Hawassa',275.00,5.0,650.00,1),(2,1,'Addis Ababa','Bahir Dar',565.00,10.0,950.00,1),(3,1,'Addis Ababa','Dire Dawa',515.00,9.0,900.00,1),(4,2,'Addis Ababa','Hawassa',275.00,5.0,550.00,1),(5,2,'Addis Ababa','Jimma',352.00,6.0,700.00,1),(6,2,'Addis Ababa','Gondar',738.00,12.0,1100.00,1),(7,3,'Addis Ababa','Hawassa',275.00,5.0,850.00,1),(8,3,'Addis Ababa','Mekelle',783.00,12.0,1200.00,1),(9,4,'Addis Ababa','Hawassa',275.00,5.0,450.00,1),(10,4,'Addis Ababa','Adama',99.00,2.0,250.00,1),(11,4,'Addis Ababa','Bahir Dar',565.00,10.0,750.00,1),(12,5,'Addis Ababa','Hawassa',275.00,5.0,500.00,1),(13,5,'Addis Ababa','Dire Dawa',515.00,9.0,800.00,1);
+/*!40000 ALTER TABLE `routes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `schedules`
+--
+
+DROP TABLE IF EXISTS `schedules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `schedules` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `bus_id` int(11) DEFAULT NULL,
+  `route_id` int(11) DEFAULT NULL,
+  `departure_time` time NOT NULL,
+  `arrival_time` time DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `operating_days` varchar(50) DEFAULT 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `bus_id` (`bus_id`),
+  KEY `route_id` (`route_id`),
+  CONSTRAINT `schedules_ibfk_1` FOREIGN KEY (`bus_id`) REFERENCES `buses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `schedules_ibfk_2` FOREIGN KEY (`route_id`) REFERENCES `routes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `schedules`
+--
+
+LOCK TABLES `schedules` WRITE;
+/*!40000 ALTER TABLE `schedules` DISABLE KEYS */;
+INSERT INTO `schedules` VALUES (1,1,1,'06:00:00','11:00:00',750.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(2,1,1,'14:00:00','19:00:00',750.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(3,2,2,'20:00:00','06:00:00',1100.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(4,3,4,'07:00:00','12:00:00',600.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(5,3,4,'15:00:00','20:00:00',600.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(6,4,5,'08:00:00','14:00:00',800.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(7,5,7,'06:30:00','11:30:00',950.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(8,6,8,'18:00:00','06:00:00',1400.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(9,7,9,'05:00:00','10:00:00',500.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(10,7,9,'12:00:00','17:00:00',500.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(11,8,10,'06:00:00','08:00:00',300.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(12,8,10,'10:00:00','12:00:00',300.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(13,8,10,'14:00:00','16:00:00',300.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(14,9,12,'07:00:00','12:00:00',550.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(15,9,12,'16:00:00','21:00:00',550.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01'),(16,10,13,'06:00:00','15:00:00',900.00,'Mon,Tue,Wed,Thu,Fri,Sat,Sun',1,'2026-02-15 09:28:01');
+/*!40000 ALTER TABLE `schedules` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `seat_bookings`
+--
+
+DROP TABLE IF EXISTS `seat_bookings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `seat_bookings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `booking_id` int(11) DEFAULT NULL,
+  `seat_number` varchar(10) NOT NULL,
+  `passenger_name` varchar(100) DEFAULT NULL,
+  `passenger_phone` varchar(20) DEFAULT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `booking_id` (`booking_id`),
+  CONSTRAINT `seat_bookings_ibfk_1` FOREIGN KEY (`booking_id`) REFERENCES `bus_bookings` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `seat_bookings`
+--
+
+LOCK TABLES `seat_bookings` WRITE;
+/*!40000 ALTER TABLE `seat_bookings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `seat_bookings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `taxi_companies`
+--
+
+DROP TABLE IF EXISTS `taxi_companies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `taxi_companies` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `company_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `logo_url` varchar(255) DEFAULT NULL,
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `total_vehicles` int(11) DEFAULT 0,
+  `license_number` varchar(50) DEFAULT NULL,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `taxi_companies_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `taxi_companies`
+--
+
+LOCK TABLES `taxi_companies` WRITE;
+/*!40000 ALTER TABLE `taxi_companies` DISABLE KEYS */;
+INSERT INTO `taxi_companies` VALUES (1,21,'Ride Ethiopia','Taxi service provider','+2518291','ride@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:39'),(2,23,'Feres Transport','Taxi service provider','+2516090','feres@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:39'),(3,25,'Yango Ethiopia','Taxi service provider','+251115170003','yango@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:39'),(4,39,'Safe Ride','Taxi service provider','+2518210','safe@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:39'),(5,40,'Little Ride','Taxi service provider','+2516000','little@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:39'),(6,41,'ZayRide','Taxi service provider','+2518199','zay@ethioserve.com',NULL,NULL,0.0,0,NULL,'approved','2026-02-15 10:20:40');
+/*!40000 ALTER TABLE `taxi_companies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `taxi_rides`
+--
+
+DROP TABLE IF EXISTS `taxi_rides`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `taxi_rides` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ride_reference` varchar(20) DEFAULT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `taxi_company_id` int(11) DEFAULT NULL,
+  `pickup_location` varchar(255) DEFAULT NULL,
+  `dropoff_location` varchar(255) DEFAULT NULL,
+  `fare` decimal(10,2) DEFAULT NULL,
+  `status` enum('requested','accepted','in_progress','completed','cancelled') DEFAULT 'requested',
+  `payment_status` enum('pending','paid','failed') DEFAULT 'pending',
+  `payment_method` varchar(50) DEFAULT NULL,
+  `passenger_name` varchar(100) DEFAULT NULL,
+  `passenger_phone` varchar(20) DEFAULT NULL,
+  `driver_name` varchar(100) DEFAULT NULL,
+  `vehicle_plate` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ride_reference` (`ride_reference`),
+  KEY `customer_id` (`customer_id`),
+  KEY `taxi_company_id` (`taxi_company_id`),
+  CONSTRAINT `taxi_rides_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `taxi_rides_ibfk_2` FOREIGN KEY (`taxi_company_id`) REFERENCES `taxi_companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `taxi_rides`
+--
+
+LOCK TABLES `taxi_rides` WRITE;
+/*!40000 ALTER TABLE `taxi_rides` DISABLE KEYS */;
+INSERT INTO `taxi_rides` VALUES (1,NULL,10,1,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(2,NULL,10,1,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(3,NULL,10,1,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(4,NULL,10,2,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(5,NULL,10,2,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(6,NULL,10,2,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(7,NULL,10,3,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(8,NULL,10,3,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(9,NULL,10,3,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(10,NULL,10,4,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(11,NULL,10,4,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(12,NULL,10,4,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(13,NULL,10,5,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(14,NULL,10,5,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:13'),(15,NULL,10,5,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:14'),(16,NULL,10,6,'Location A1','Location B1',300.00,'completed','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:14'),(17,NULL,10,6,'Location A2','Location B2',350.00,'in_progress','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:14'),(18,NULL,10,6,'Location A3','Location B3',400.00,'requested','paid',NULL,NULL,NULL,NULL,NULL,'2026-02-15 10:26:14'),(19,'RIDE-0C334D',24,3,'Addis Ababa, Addis Ababa','Bole International Airport',140.00,'requested','pending','cash','Mequannent Worku','0918592028','','','2026-02-15 10:56:32'),(20,'RIDE-B23BA9',24,1,'Addis Ababa, Addis Ababa','Bole International Airport',165.00,'requested','pending','cash','abebe','0918592028','','','2026-02-15 19:31:39');
+/*!40000 ALTER TABLE `taxi_rides` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `taxi_vehicles`
+--
+
+DROP TABLE IF EXISTS `taxi_vehicles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `taxi_vehicles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) DEFAULT NULL,
+  `driver_name` varchar(100) DEFAULT NULL,
+  `driver_phone` varchar(20) DEFAULT NULL,
+  `vehicle_type` varchar(50) DEFAULT NULL,
+  `plate_number` varchar(20) DEFAULT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `color` varchar(50) DEFAULT NULL,
+  `is_available` tinyint(1) DEFAULT 1,
+  PRIMARY KEY (`id`),
+  KEY `company_id` (`company_id`),
+  CONSTRAINT `taxi_vehicles_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `taxi_companies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `taxi_vehicles`
+--
+
+LOCK TABLES `taxi_vehicles` WRITE;
+/*!40000 ALTER TABLE `taxi_vehicles` DISABLE KEYS */;
+/*!40000 ALTER TABLE `taxi_vehicles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `transport_companies`
+--
+
+DROP TABLE IF EXISTS `transport_companies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `transport_companies` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `company_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `logo_url` varchar(255) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `address` varchar(255) DEFAULT NULL,
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `total_buses` int(11) DEFAULT 0,
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `transport_companies_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `transport_companies`
+--
+
+LOCK TABLES `transport_companies` WRITE;
+/*!40000 ALTER TABLE `transport_companies` DISABLE KEYS */;
+INSERT INTO `transport_companies` VALUES (1,5,'Golden Bus','Premium intercity bus service with modern fleet. Comfortable seats, AC, and entertainment.',NULL,'+251911000001','golden@ethioserve.com','Lamberet Bus Station, Addis Ababa',4.5,25,'approved','2026-02-15 09:28:00'),(2,6,'Walya Bus','Reliable and affordable transport across Ethiopia. Known for punctuality.',NULL,'+251911000002','walya@ethioserve.com','Meskel Square Terminal, Addis Ababa',4.3,30,'approved','2026-02-15 09:28:00'),(3,7,'Gion Bus','Luxury travel experience with VIP and sleeper options.',NULL,'+251911000003','gion@ethioserve.com','Bole International Airport Area',4.7,20,'approved','2026-02-15 09:28:00'),(4,8,'Geda Bus','Budget-friendly travel with extensive route network.',NULL,'+251911000004','geda@ethioserve.com','Mercato Bus Terminal',4.1,35,'approved','2026-02-15 09:28:00'),(5,9,'Awash Bus','Connecting major cities with comfortable standard buses.',NULL,'+251911000005','awash@ethioserve.com','Kazanchis Bus Station',4.2,28,'approved','2026-02-15 09:28:00'),(6,18,'Selam Bus Express','Fast and comfortable intercity travel.',NULL,'+251999999999','selam_bus@ethioserve.com','Autobus Tera, Addis Ababa',4.5,15,'approved','2026-02-15 09:28:59');
+/*!40000 ALTER TABLE `transport_companies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `full_name` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `role` enum('admin','hotel','broker','transport','customer','restaurant','taxi','student') DEFAULT 'customer',
+  `grade` int(11) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'admin','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','admin@ethioserve.com','System Admin',NULL,'admin',0,'2026-02-15 09:28:00'),(2,'hilton_owner','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','hilton@ethioserve.com','Hilton Addis',NULL,'hotel',0,'2026-02-15 09:28:00'),(3,'sheraton_owner','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','sheraton@ethioserve.com','Sheraton Addis',NULL,'hotel',0,'2026-02-15 09:28:00'),(4,'broker1','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','broker1@ethioserve.com','Abebe Bikila',NULL,'broker',0,'2026-02-15 09:28:00'),(5,'golden_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','golden@ethioserve.com','Golden Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(6,'walya_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','walya@ethioserve.com','Walya Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(7,'gion_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','gion@ethioserve.com','Gion Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(8,'geda_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','geda@ethioserve.com','Geda Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(9,'awash_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','awash@ethioserve.com','Awash Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(10,'customer1','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','customer1@ethioserve.com','Abeba Tadesse','+251911111111','customer',0,'2026-02-15 09:28:56'),(11,'customer2','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','customer2@ethioserve.com','Dawit Mekonnen','+251922222222','customer',0,'2026-02-15 09:28:56'),(12,'customer3','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','customer3@ethioserve.com','Selam Hailu','+251933333333','customer',0,'2026-02-15 09:28:56'),(13,'hotel_lucy','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','lucy@ethioserve.com','Lucy Hotel','+251944444444','hotel',0,'2026-02-15 09:28:56'),(14,'hotel_getfam','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','getfam@ethioserve.com','Getfam Hotel','+251955555555','hotel',0,'2026-02-15 09:28:57'),(15,'hotel_eliana','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','eliana@ethioserve.com','Eliana Hotel','+251966666666','hotel',0,'2026-02-15 09:28:57'),(16,'broker_abel','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','abel@ethioserve.com','Abel Kebede','+251977777777','broker',0,'2026-02-15 09:28:58'),(17,'broker_marta','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','marta@ethioserve.com','Marta Solomon','+251988888888','broker',0,'2026-02-15 09:28:58'),(18,'transport_selam','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','selam_bus@ethioserve.com','Selam Bus','+251999999999','transport',0,'2026-02-15 09:28:58'),(19,'hotel_owner','$2y$10$IKk5hVopHDQFk/dYiIxF2.UP3EmQEfw28Ii09dVi57MiULvC9NiAS','hotels@ethioserve.com','Ethiopia Hotel Services',NULL,'hotel',0,'2026-02-15 09:29:00'),(20,'eth_rest_owner','$2y$10$ifVUtwjnQj9ljLddyOJA1eO3qtARi1vK3c/rmTHNHj5zU5cYIPrZ6','restaurants@ethioserve.com','Ethiopian Restaurant Services',NULL,'hotel',0,'2026-02-15 09:29:01'),(21,'ride_ethiopia','$2y$10$VDXfggb.i1BStAxeewVv9ed/QidgIlk/XWOJ7c3XT44c6N/B1dNsS','ride@ethioserve.com','Ride Ethiopia','+251911100100','',0,'2026-02-15 09:29:17'),(23,'feres','$2y$10$ObS3crijaW8ibrwSY9YOMuVi9ARUY9lfhEOuNNWOA6clbDoFIqNzm','feres@ethioserve.com','Feres Transport','+251911200200','',0,'2026-02-15 09:29:28'),(24,'rider_0918592028','$2y$10$dL.bUCEfeH9e.3lj1H1T0eubtxh5uhrFxsaaZ.aS.vCdHaUO4iKhy','rider_0918592028@ethioserve.temp','Mequannent Worku','0918592028','customer',0,'2026-02-15 09:43:50'),(25,'yango','$2y$10$VjPBJVe3TncPndlv6HT.GuYRFnQFLBlTHtjJsg1UAWVyL.k4b35Gi','yango@ethioserve.com','Yango Ethiopia','+251911300300','',0,'2026-02-15 10:04:19'),(26,'cust1','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust1@test.com','Abebe Kabede',NULL,'customer',0,'2026-02-15 10:19:48'),(27,'cust2','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust2@test.com','Tadesse Lemma',NULL,'customer',0,'2026-02-15 10:19:49'),(28,'cust3','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust3@test.com','Mulugeta Tesfaye',NULL,'customer',0,'2026-02-15 10:19:49'),(29,'cust4','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust4@test.com','Sara Hagos',NULL,'customer',0,'2026-02-15 10:19:49'),(30,'cust5','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust5@test.com','Daniel Girma',NULL,'customer',0,'2026-02-15 10:19:49'),(31,'cust6','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust6@test.com','Lidya Solomon',NULL,'customer',0,'2026-02-15 10:19:49'),(32,'haile_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','haile@hailehotels.com','Haile Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(33,'kuriftu_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@kurifturesort.com','Kuriftu Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(34,'skylight_hotel_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@ethiopianskylighthotel.com','Skylight Hotel Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(35,'elilly_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@elillyhotel.com','Elilly International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(36,'jupiter_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@jupiterhotel.com','Jupiter International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(37,'golden_tulip_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@goldentuliptana.com','Golden Tulip Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(39,'safe_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','safe@ethioserve.com','Safe Ride','+2518210','taxi',0,'2026-02-15 10:20:39'),(40,'little_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','little@ethioserve.com','Little Ride','+2516000','taxi',0,'2026-02-15 10:20:39'),(41,'zayride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','zay@ethioserve.com','ZayRide','+2518199','taxi',0,'2026-02-15 10:20:39'),(47,'student1','$2y$10$C/jCm/HKg788pV.pJNka/u.u/o8BwkTseIutyyf3knFmYaHhovqDS','student@ethioserve.com','Abebe Student',NULL,'student',0,'2026-02-15 11:26:52');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-02-15 22:59:15

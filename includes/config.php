@@ -37,11 +37,7 @@ define('DB_CHARSET', 'utf8mb4');
 if (ENVIRONMENT === 'production') {
     define('BASE_URL', getenv('BASE_URL') !== false ? getenv('BASE_URL') : '');
 } else {
-<<<<<<< HEAD
     define('BASE_URL', '/Ethioserve-main');
-=======
-    define('BASE_URL', '/ethioserve');
->>>>>>> 6e436db773e71c6388afebebeb3d1102776a1fd1
 }
 
 // ==================== SITE INFO ====================
