@@ -34,3 +34,6 @@ error_log
 
 # Uploads (if any local uploads)
 /uploads/temp/
+
+# Generated Tickets
+/temp/Ticket_*.html
