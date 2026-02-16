@@ -48,8 +48,8 @@ define('SITE_DESCRIPTION', 'Food delivery, hotel booking, transport & broker ser
 // Uses environment variables on Render, or defaults for local testing
 define('SMTP_HOST', getenv('SMTP_HOST') ?: 'smtp.gmail.com');
 define('SMTP_PORT', getenv('SMTP_PORT') ?: 587);
-define('SMTP_USER', getenv('SMTP_USER') ?: (getenv('MAIL_USERNAME') ?: 'your-email@gmail.com'));
-define('SMTP_PASS', getenv('SMTP_PASS') ?: (getenv('MAIL_PASSWORD') ?: 'your-app-password'));
+define('SMTP_USER', getenv('SMTP_USER') ?: (getenv('MAIL_USERNAME') ?: 'mequannentgashaw12@gmail.com'));
+define('SMTP_PASS', getenv('SMTP_PASS') ?: (getenv('MAIL_PASSWORD') ?: 'awrs rpzj qnia cucn'));
 define('SMTP_FROM_EMAIL', getenv('SMTP_FROM_EMAIL') ?: 'noreply@ethioserve.com');
 define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'EthioServe');
 ?>

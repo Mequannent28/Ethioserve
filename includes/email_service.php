@@ -82,12 +82,14 @@ function sendEmailWithAttachment($to_email, $to_name, $subject, $html_body, $fil
     }
 
     // 2. Fallback to PHP mail()
-    // Read file content
-    if (!file_exists($file_path)) {
+    $has_attachment = false;
+    $file_content = '';
+    if ($file_path && file_exists($file_path)) {
+        $has_attachment = true;
+        $file_content = chunk_split(base64_encode(file_get_contents($file_path)));
+    } elseif ($file_path && !file_exists($file_path)) {
         return ['success' => false, 'message' => 'Attachment file not found'];
     }
-
-    $file_content = chunk_split(base64_encode(file_get_contents($file_path)));
 
     // Email headers
     $boundary = md5(time());
@@ -103,11 +105,13 @@ function sendEmailWithAttachment($to_email, $to_name, $subject, $html_body, $fil
     $body .= $html_body . "\r\n\r\n";
 
     // Attachment part
-    $body .= "--{$boundary}\r\n";
-    $body .= "Content-Type: {$mime_type}; name=\"{$file_name}\"\r\n";
-    $body .= "Content-Transfer-Encoding: base64\r\n";
-    $body .= "Content-Disposition: attachment; filename=\"{$file_name}\"\r\n\r\n";
-    $body .= $file_content . "\r\n\r\n";
+    if ($has_attachment) {
+        $body .= "--{$boundary}\r\n";
+        $body .= "Content-Type: {$mime_type}; name=\"{$file_name}\"\r\n";
+        $body .= "Content-Transfer-Encoding: base64\r\n";
+        $body .= "Content-Disposition: attachment; filename=\"{$file_name}\"\r\n\r\n";
+        $body .= $file_content . "\r\n\r\n";
+    }
     $body .= "--{$boundary}--\r\n";
 
     // Send email

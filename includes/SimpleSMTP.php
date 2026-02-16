@@ -24,16 +24,28 @@ class SimpleSMTP
     public function send($to, $subject, $body, $fromName, $fromEmail, $attachments = [])
     {
         try {
+            $protocol = ($this->port == 465) ? "ssl://" : "tcp://";
             if ($this->debug)
-                error_log("Connecting to SMTP: {$this->host}:{$this->port}");
+                error_log("Connecting to SMTP: {$protocol}{$this->host}:{$this->port}");
 
-            $this->conn = fsockopen("tls://" . $this->host, $this->port, $errno, $errstr, 15);
+            $this->conn = stream_socket_client($protocol . $this->host . ":" . $this->port, $errno, $errstr, 15);
             if (!$this->conn) {
                 throw new Exception("Could not connect to SMTP host: $errstr ($errno)");
             }
             $this->read();
 
-            $this->cmd("EHLO " . $_SERVER['SERVER_NAME']);
+            $serverName = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost';
+            $this->cmd("EHLO " . $serverName);
+
+            // STARTTLS for port 587
+            if ($this->port == 587) {
+                $this->cmd("STARTTLS");
+                if (!stream_socket_enable_crypto($this->conn, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                    throw new Exception("TLS negotiation failed");
+                }
+                $this->cmd("EHLO " . $serverName);
+            }
+
             $this->cmd("AUTH LOGIN");
             $this->cmd(base64_encode($this->user));
             $this->cmd(base64_encode($this->pass));
