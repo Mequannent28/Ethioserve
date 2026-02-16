@@ -3,6 +3,8 @@ require_once '../includes/functions.php';
 requireLogin();
 requireRole('transport');
 require_once '../includes/db.php';
+require_once '../includes/email_service.php';
+require_once '../includes/pdf_generator.php';
 
 $user_id = getCurrentUserId();
 
@@ -56,16 +58,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
                         INSERT INTO booking_notifications (booking_id, user_id, type, title, message)
                         VALUES (?, ?, 'seats_assigned', ?, ?)
                     ");
+
                     $message = "Your booking #{$booking['booking_reference']} has been confirmed! Seat number(s): $seat_numbers.";
                     if (!empty($owner_response)) {
                         $message .= " Message from {$company['company_name']}: $owner_response";
                     }
+
                     $stmt->execute([
                         $booking_id,
                         $booking['customer_id'],
                         'Seats Assigned - Booking Confirmed',
                         $message
                     ]);
+
+                    // --- SEND EMAIL TICKET ATTACHMENT ---
+                    try {
+                        // 1. Fetch full booking details needed for ticket generation
+                        $ticketStmt = $pdo->prepare("
+                            SELECT bb.*, 
+                                   s.departure_time, s.arrival_time,
+                                   r.origin, r.destination,
+                                   b.bus_number, bt.name as bus_type,
+                                   tc.company_name
+                            FROM bus_bookings bb
+                            JOIN schedules s ON bb.schedule_id = s.id
+                            JOIN routes r ON s.route_id = r.id
+                            JOIN buses b ON s.bus_id = b.id
+                            JOIN bus_types bt ON b.bus_type_id = bt.id
+                            JOIN transport_companies tc ON b.company_id = tc.id
+                            WHERE bb.id = ?
+                        ");
+                        $ticketStmt->execute([$booking_id]);
+                        $ticketData = $ticketStmt->fetch(PDO::FETCH_ASSOC);
+
+                        if ($ticketData) {
+                            // 2. Generate Ticket File (HTML)
+                            $ticketFile = generateHTMLTicketFile($ticketData);
+
+                            // 3. Get customer email
+                            $customerStmt = $pdo->prepare("SELECT email, full_name FROM users WHERE id = ?");
+                            $customerStmt->execute([$booking['customer_id']]);
+                            $customer = $customerStmt->fetch();
+
+                            if ($customer && !empty($customer['email'])) {
+                                $subject = "Booking Confirmed - Ticket #{$ticketData['booking_reference']}";
+                                $body = "
+                                <h2>Your Journey is Confirmed!</h2>
+                                <p>Dear " . htmlspecialchars($customer['full_name']) . ",</p>
+                                <p>Great news! The transport provider <strong>" . htmlspecialchars($company['company_name']) . "</strong> has confirmed your booking.</p>
+                                <p><strong>Seat Number(s):</strong> <span style='font-size: 18px; font-weight: bold; color: #1B5E20;'>$seat_numbers</span></p>
+                                <p>Your updated ticket is attached to this email. Please use this for boarding.</p>
+                                <p>Safe travels!</p>
+                                ";
+
+                                sendEmailWithAttachment(
+                                    $customer['email'],
+                                    $customer['full_name'],
+                                    $subject,
+                                    $body,
+                                    $ticketFile['filepath'],
+                                    $ticketFile['filename'],
+                                    'text/html'
+                                );
+                            }
+                        }
+                    } catch (Exception $e) {
+                        error_log("Failed to send transport confirmation email: " . $e->getMessage());
+                    }
+                    // ------------------------------------
 
                     redirectWithMessage('bookings.php', 'success', 'Booking #' . $booking['booking_reference'] . ' confirmed with seat(s): ' . $seat_numbers);
                     break;
