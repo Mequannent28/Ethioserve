@@ -111,7 +111,7 @@ include('../includes/header.php');
                             <div class="form-floating">
                                 <input type="text" name="origin" class="form-control border-0 bg-light rounded-4"
                                     id="originField" placeholder="From" value="<?php echo htmlspecialchars($origin); ?>"
-                                    required>
+                                    list="ethiopianCities" required>
                                 <label for="originField">Origin City (e.g. Addis Ababa)</label>
                             </div>
                         </div>
@@ -119,7 +119,8 @@ include('../includes/header.php');
                             <div class="form-floating">
                                 <input type="text" name="destination" class="form-control border-0 bg-light rounded-4"
                                     id="destField" placeholder="To"
-                                    value="<?php echo htmlspecialchars($destination); ?>" required>
+                                    value="<?php echo htmlspecialchars($destination); ?>" list="ethiopianCities"
+                                    required>
                                 <label for="destField">Destination City (e.g. Hawassa)</label>
                             </div>
                         </div>
@@ -138,6 +139,40 @@ include('../includes/header.php');
                         </div>
                     </div>
                 </form>
+
+                <!-- Ethiopian Cities Datalist for Autocomplete -->
+                <datalist id="ethiopianCities">
+                    <option value="Addis Ababa">Capital City</option>
+                    <option value="Adama (Nazret)">Oromia Region</option>
+                    <option value="Adwa">Tigray Region</option>
+                    <option value="Arba Minch">Southern Nations</option>
+                    <option value="Asosa">Benishangul-Gumuz</option>
+                    <option value="Awasa (Hawassa)">Southern Nations</option>
+                    <option value="Axum">Tigray Region</option>
+                    <option value="Bahir Dar">Amhara Region</option>
+                    <option value="Debre Birhan">Amhara Region</option>
+                    <option value="Debre Markos">Amhara Region</option>
+                    <option value="Debre Tabor">Amhara Region</option>
+                    <option value="Dessie">Amhara Region</option>
+                    <option value="Dire Dawa">Dire Dawa City</option>
+                    <option value="Dilla">Southern Nations</option>
+                    <option value="Gambela">Gambela Region</option>
+                    <option value="Gondar">Amhara Region</option>
+                    <option value="Harar">Harari Region</option>
+                    <option value="Hawassa">Southern Nations</option>
+                    <option value="Hosaena">Southern Nations</option>
+                    <option value="Jijiga">Somali Region</option>
+                    <option value="Jimma">Oromia Region</option>
+                    <option value="Kombolcha">Amhara Region</option>
+                    <option value="Lalibela">Amhara Region</option>
+                    <option value="Mekelle">Tigray Region</option>
+                    <option value="Nekemte">Oromia Region</option>
+                    <option value="Semera">Afar Region</option>
+                    <option value="Shashamane">Oromia Region</option>
+                    <option value="Wolaita Sodo">Southern Nations</option>
+                    <option value="Wolkite">Southern Nations</option>
+                    <option value="Ziway">Oromia Region</option>
+                </datalist>
             </div>
         </div>
     </div>
@@ -213,37 +248,171 @@ include('../includes/header.php');
                 <div class="col-lg-6">
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="row g-0">
-                            <div class="col-md-4 bg-light d-flex align-items-center justify-content-center p-4">
-                                <div class="text-center">
-                                    <img src="<?php echo $schedule['logo_url'] ?: '../assets/img/bus-placeholder.png'; ?>"
-                                        class="img-fluid rounded-3 mb-2" style="max-height: 60px;">
-                                    <h5 class="fw-bold mb-1 text-dark"><?php echo htmlspecialchars($schedule['company_name']); ?></h5>
-                                    <span
-                                        class="badge bg-white text-dark small border"><?php echo htmlspecialchars($schedule['bus_type']); ?></span>
+                            <div class="col-md-4 position-relative"
+                                style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                                <div class="text-center p-4 position-relative">
+                                    <!-- Bus Type Icon/Image -->
+                                    <div class="bus-icon-container mb-3">
+                                        <?php
+                                        // Dynamic bus image based on bus type
+                                        $bus_type_lower = strtolower($schedule['bus_type']);
+                                        $bus_icon_color = '#1B5E20';
+
+                                        if (strpos($bus_type_lower, 'luxury') !== false || strpos($bus_type_lower, 'vip') !== false) {
+                                            $bus_icon_color = '#FFD700'; // Gold for luxury
+                                        } elseif (strpos($bus_type_lower, 'standard') !== false) {
+                                            $bus_icon_color = '#2196F3'; // Blue for standard
+                                        } elseif (strpos($bus_type_lower, 'economy') !== false) {
+                                            $bus_icon_color = '#4CAF50'; // Green for economy
+                                        }
+                                        ?>
+
+                                        <!-- Beautiful SVG Bus Icon -->
+                                        <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                            <defs>
+                                                <linearGradient id="busGradient<?php echo $schedule['id']; ?>" x1="0%" y1="0%"
+                                                    x2="0%" y2="100%">
+                                                    <stop offset="0%"
+                                                        style="stop-color:<?php echo $bus_icon_color; ?>;stop-opacity:1" />
+                                                    <stop offset="100%"
+                                                        style="stop-color:<?php echo $bus_icon_color; ?>CC;stop-opacity:1" />
+                                                </linearGradient>
+                                            </defs>
+                                            <!-- Bus Body -->
+                                            <rect x="10" y="30" width="80" height="45" rx="8"
+                                                fill="url(#busGradient<?php echo $schedule['id']; ?>)" />
+                                            <!-- Windows -->
+                                            <rect x="15" y="35" width="15" height="12" rx="2" fill="rgba(255,255,255,0.9)" />
+                                            <rect x="35" y="35" width="15" height="12" rx="2" fill="rgba(255,255,255,0.9)" />
+                                            <rect x="55" y="35" width="15" height="12" rx="2" fill="rgba(255,255,255,0.9)" />
+                                            <rect x="75" y="35" width="10" height="12" rx="2" fill="rgba(255,255,255,0.9)" />
+                                            <!-- Wheels -->
+                                            <circle cx="25" cy="75" r="8" fill="#333" />
+                                            <circle cx="25" cy="75" r="4" fill="#666" />
+                                            <circle cx="75" cy="75" r="8" fill="#333" />
+                                            <circle cx="75" cy="75" r="4" fill="#666" />
+                                            <!-- Front Light -->
+                                            <circle cx="85" cy="60" r="3" fill="#FFD700" opacity="0.8" />
+                                            <!-- Door -->
+                                            <rect x="15" y="52" width="12" height="18" rx="2" fill="rgba(255,255,255,0.7)" />
+                                        </svg>
+                                    </div>
+
+                                    <!-- Company Logo (if available) -->
+                                    <?php if (!empty($schedule['logo_url'])): ?>
+                                        <img src="<?php echo $schedule['logo_url']; ?>"
+                                            class="img-fluid rounded-circle mb-2 shadow-sm"
+                                            style="max-height: 50px; max-width: 50px; background: white; padding: 5px;">
+                                    <?php endif; ?>
+
+                                    <h5 class="fw-bold mb-1 text-dark">
+                                        <?php echo htmlspecialchars($schedule['company_name']); ?>
+                                    </h5>
+
+                                    <!-- Enhanced Bus Type Badge -->
+                                    <span class="badge px-3 py-2 fw-bold"
+                                        style="background: <?php echo $bus_icon_color; ?>; color: white;">
+                                        <i class="fas fa-bus me-1"></i>
+                                        <?php echo htmlspecialchars($schedule['bus_type']); ?>
+                                    </span>
+
+                                    <!-- Bus Number -->
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-hashtag"></i>
+                                            <?php echo htmlspecialchars($schedule['bus_number']); ?>
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
+
                             <div class="col-md-8 p-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h3 class="fw-bold text-primary-green mb-0">
-                                        <?php echo date('H:i', strtotime($schedule['departure_time'])); ?>
-                                    </h3>
+                                    <div>
+                                        <h3 class="fw-bold text-primary-green mb-0 d-flex align-items-center">
+                                            <i class="fas fa-clock me-2"></i>
+                                            <?php echo date('H:i', strtotime($schedule['departure_time'])); ?>
+                                        </h3>
+                                        <small class="text-muted">Departure Time</small>
+                                    </div>
                                     <div class="text-end">
-                                        <h4 class="fw-bold mb-0"><?php echo number_format($schedule['price']); ?> ETB</h4>
+                                        <h4 class="fw-bold mb-0 text-success">
+                                            <i class="fas fa-tag me-1"></i>
+                                            <?php echo number_format($schedule['price']); ?> ETB
+                                        </h4>
                                         <small class="text-muted">Per Passenger</small>
                                     </div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mb-4">
-                                    <span class="text-muted"><?php echo htmlspecialchars($schedule['origin']); ?></span>
-                                    <i class="fas fa-long-arrow-alt-right text-muted mx-2"></i>
-                                    <span
-                                        class="text-muted fw-bold"><?php echo htmlspecialchars($schedule['destination']); ?></span>
+
+                                <!-- Route Visualization -->
+                                <div class="route-visual d-flex align-items-center gap-2 mb-3 p-3"
+                                    style="background: #f8f9fa; border-radius: 12px;">
+                                    <div class="flex-shrink-0">
+                                        <div style="width: 12px; height: 12px; background: #4CAF50; border-radius: 50%;"></div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong><?php echo htmlspecialchars($schedule['origin']); ?></strong>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-bus text-primary-green fa-lg"></i>
+                                    </div>
+                                    <div class="flex-shrink-0" style="flex-basis: 40px;">
+                                        <div style="border-top: 2px dashed #ccc; width: 100%;"></div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-flag-checkered text-danger fa-lg"></i>
+                                    </div>
+                                    <div class="flex-grow-1 text-end">
+                                        <strong><?php echo htmlspecialchars($schedule['destination']); ?></strong>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <div style="width: 12px; height: 12px; background: #f44336; border-radius: 50%;"></div>
+                                    </div>
                                 </div>
+
+                                <!-- Amenities (if available) -->
+                                <?php if (!empty($schedule['amenities'])): ?>
+                                    <div class="mb-3">
+                                        <small class="text-muted d-flex flex-wrap gap-2">
+                                            <?php
+                                            $amenities = explode(',', $schedule['amenities']);
+                                            foreach (array_slice($amenities, 0, 4) as $amenity):
+                                                $amenity = trim($amenity);
+                                                $icon = match (strtolower($amenity)) {
+                                                    'wifi', 'wi-fi' => 'wifi',
+                                                    'ac', 'air conditioning' => 'snowflake',
+                                                    'tv', 'entertainment' => 'tv',
+                                                    'usb charging' => 'charging-station',
+                                                    'reclining seats' => 'couch',
+                                                    default => 'check-circle'
+                                                };
+                                                ?>
+                                                <span class="badge bg-light text-dark border">
+                                                    <i class="fas fa-<?php echo $icon; ?> me-1"></i>
+                                                    <?php echo htmlspecialchars($amenity); ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </small>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-muted small"><i class="fas fa-chair me-1"></i>
-                                        <?php echo $schedule['available_seats']; ?> Seats Left</span>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <span class="text-muted small">
+                                            <i class="fas fa-chair me-1 text-primary-green"></i>
+                                            <strong class="text-success"><?php echo $schedule['available_seats']; ?></strong>
+                                            Seats
+                                        </span>
+                                        <?php if (!empty($schedule['estimated_hours'])): ?>
+                                            <span class="text-muted small">
+                                                <i class="fas fa-hourglass-half me-1 text-warning"></i>
+                                                ~<?php echo $schedule['estimated_hours']; ?>h
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                     <a href="book_bus.php?schedule=<?php echo $schedule['id']; ?>&date=<?php echo $travel_date; ?>"
-                                        class="btn btn-primary-green rounded-pill px-4">
-                                        Book Ticket
+                                        class="btn btn-primary-green rounded-pill px-4 shadow-sm">
+                                        <i class="fas fa-ticket-alt me-2"></i>Book Ticket
                                     </a>
                                 </div>
                             </div>

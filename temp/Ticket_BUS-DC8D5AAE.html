@@ -1,0 +1,240 @@
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bus Ticket - BUS-DC8D5AAE</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: 'Arial', sans-serif; 
+                background: #f5f5f5; 
+                padding: 40px 20px;
+                color: #333;
+            }
+            .ticket-container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            }
+            .ticket-header {
+                background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+                color: white;
+                padding: 40px;
+                text-align: center;
+            }
+            .ticket-header h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+            .ticket-header .tagline {
+                opacity: 0.9;
+                font-size: 14px;
+            }
+            .booking-ref {
+                background: white;
+                color: #1B5E20;
+                padding: 20px;
+                text-align: center;
+                font-size: 24px;
+                font-weight: bold;
+                letter-spacing: 2px;
+                border-bottom: 2px dashed #e0e0e0;
+            }
+            .status-badge {
+                background: #FF9800;
+                color: white;
+                padding: 5px 15px;
+                border-radius: 15px;
+                display: inline-block;
+                font-size: 12px;
+                font-weight: bold;
+                margin-top: 5px;
+                text-transform: uppercase;
+            }
+            .ticket-body {
+                padding: 40px;
+            }
+            .section {
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .section:last-child {
+                border-bottom: none;
+            }
+            .section-title {
+                color: #1B5E20;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 15px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            .info-grid {
+                display: table;
+                width: 100%;
+            }
+            .info-row {
+                display: table-row;
+            }
+            .info-label {
+                display: table-cell;
+                padding: 5px 10px 5px 0;
+                font-weight: bold;
+                color: #666;
+                width: 180px;
+            }
+            .info-value {
+                display: table-cell;
+                padding: 5px 0;
+                color: #333;
+            }
+            .journey-visual {
+                background: #f9f9f9;
+                padding: 20px;
+                border-radius: 10px;
+                margin: 20px 0;
+                text-align: center;
+            }
+            .journey-route {
+                font-size: 18px;
+                font-weight: bold;
+                color: #1B5E20;
+                margin-bottom: 5px;
+            }
+            .journey-time {
+                color: #666;
+                font-size: 14px;
+            }
+            .important-box {
+                background: #FFF9C4;
+                border-left: 4px solid #FBC02D;
+                padding: 15px;
+                margin-top: 20px;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+            .footer {
+                background: #f9f9f9;
+                padding: 20px;
+                text-align: center;
+                color: #999;
+                font-size: 11px;
+                border-top: 1px solid #eee;
+            }
+            @media print {
+                body { padding: 0; background: white; }
+                .ticket-container { border: none; box-shadow: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="ticket-container">
+            <div class="ticket-header">
+                <h1>EthioServe Bus Ticket</h1>
+                <p class="tagline">Safe Journey with Awash Bus</p>
+            </div>
+            
+            <div class="booking-ref">
+                BUS-DC8D5AAE                <br>
+                <span class="status-badge">PENDING</span>
+            </div>
+            
+            <div class="ticket-body">
+                <!-- Journey Route Visual -->
+                <div class="journey-visual">
+                    <div class="journey-route">
+                        Addis Ababa 
+                        <span style="margin: 0 10px; color: #999;">✈</span> 
+                        Asosa                    </div>
+                    <div class="journey-time">
+                        12:00 PM 
+                        - 
+                        11:00 PM                    </div>
+                </div>
+                
+                <!-- Journey Details -->
+                <div class="section">
+                    <div class="section-title">Journey Details</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Travel Date:</div>
+                            <div class="info-value">Monday, February 16, 2026</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Bus Company:</div>
+                            <div class="info-value">Awash Bus</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Bus Number:</div>
+                            <div class="info-value">AW-002 (VIP)</div>
+                        </div>
+                                            </div>
+                </div>
+                
+                <!-- Passenger Info -->
+                <div class="section">
+                    <div class="section-title">Passengers</div>
+                    <div class="info-grid">
+                                                <div class="info-row">
+                            <div class="info-label">Passenger 1:</div>
+                            <div class="info-value">
+                                Telahun abebe Mamo<br>
+                                <small style="color: #666;">+251911111111</small>
+                            </div>
+                        </div>
+                                            </div>
+                </div>
+                
+                <!-- Pickup & Dropoff -->
+                <div class="section">
+                    <div class="section-title">Locations</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Pickup Point:</div>
+                            <div class="info-value">Megenagna</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Drop-off Point:</div>
+                            <div class="info-value">Asosa Bus Station</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment -->
+                <div class="section">
+                    <div class="section-title">Payment</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Total Amount:</div>
+                            <div class="info-value"><strong>2,500 ETB</strong></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Method:</div>
+                            <div class="info-value">CASH <span style="color: green; margin-left: 5px;">(PAID)</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Important -->
+                <div class="important-box">
+                    <strong>⚠️ Important Information:</strong><br>
+                    • Arrive at pickup point 30 minutes before departure.<br>
+                    • Carry a valid ID for verification.<br>
+                    • This digital ticket is valid for boarding. You can print it or show it on your phone.
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Thank you for choosing EthioServe.</p>
+                <p>Ticket Generated: 2026-02-16 06:40:25</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    

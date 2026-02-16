@@ -27,12 +27,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_booking_status
     if (verifyCSRFToken($_POST['csrf_token'] ?? '')) {
         $booking_id = (int) $_POST['booking_id'];
         $new_status = sanitize($_POST['status']);
+        $seat_numbers = sanitize($_POST['seat_numbers'] ?? '');
 
         $valid_statuses = ['pending', 'confirmed', 'cancelled'];
         if (in_array($new_status, $valid_statuses)) {
-            $stmt = $pdo->prepare("UPDATE bus_bookings SET status = ? WHERE id = ? AND schedule_id IN (SELECT id FROM schedules WHERE bus_id IN (SELECT id FROM buses WHERE company_id = ?))");
-            $stmt->execute([$new_status, $booking_id, $company_id]);
-            redirectWithMessage('dashboard.php', 'success', 'Booking status updated');
+            if ($new_status === 'confirmed' && !empty($seat_numbers)) {
+                $stmt = $pdo->prepare("UPDATE bus_bookings SET status = ?, seat_numbers = ? WHERE id = ? AND schedule_id IN (SELECT id FROM schedules WHERE bus_id IN (SELECT id FROM buses WHERE company_id = ?))");
+                $stmt->execute([$new_status, $seat_numbers, $booking_id, $company_id]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE bus_bookings SET status = ? WHERE id = ? AND schedule_id IN (SELECT id FROM schedules WHERE bus_id IN (SELECT id FROM buses WHERE company_id = ?))");
+                $stmt->execute([$new_status, $booking_id, $company_id]);
+            }
+            $msg = $new_status === 'confirmed' && !empty($seat_numbers)
+                ? "Booking confirmed with seat(s): $seat_numbers"
+                : "Booking status updated to $new_status";
+            redirectWithMessage('dashboard.php', 'success', $msg);
         }
     }
 }
@@ -264,19 +273,30 @@ $recent_bookings = $stmt->fetchAll();
                                                     <td><strong><?php echo number_format($booking['total_amount']); ?>
                                                             ETB</strong></td>
                                                     <td>
-                                                        <form method="POST" class="d-flex gap-1">
+                                                        <form method="POST">
                                                             <?php echo csrfField(); ?>
                                                             <input type="hidden" name="booking_id"
                                                                 value="<?php echo $booking['id']; ?>">
                                                             <input type="hidden" name="update_booking_status" value="1">
-                                                            <button type="submit" name="status" value="confirmed"
-                                                                class="btn btn-sm btn-success rounded-pill">
-                                                                <i class="fas fa-check"></i> Confirm
-                                                            </button>
-                                                            <button type="submit" name="status" value="cancelled"
-                                                                class="btn btn-sm btn-outline-danger rounded-pill">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
+                                                            <div class="d-flex flex-column gap-1">
+                                                                <small class="text-muted"><?php echo $booking['num_passengers']; ?> passenger(s)</small>
+                                                                <input type="text" name="seat_numbers" 
+                                                                    class="form-control form-control-sm rounded-pill" 
+                                                                    placeholder="Seat #s (e.g. 12,13)" 
+                                                                    style="min-width:120px;"
+                                                                    value="<?php echo htmlspecialchars($booking['seat_numbers'] ?? ''); ?>">
+                                                                <div class="d-flex gap-1">
+                                                                    <button type="submit" name="status" value="confirmed"
+                                                                        class="btn btn-sm btn-success rounded-pill flex-grow-1">
+                                                                        <i class="fas fa-check"></i> Approve
+                                                                    </button>
+                                                                    <button type="submit" name="status" value="cancelled"
+                                                                        class="btn btn-sm btn-outline-danger rounded-pill"
+                                                                        onclick="return confirm('Reject this booking?')">
+                                                                        <i class="fas fa-times"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </form>
                                                     </td>
                                                 </tr>
