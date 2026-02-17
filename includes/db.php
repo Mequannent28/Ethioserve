@@ -8,6 +8,7 @@ $pass = DB_PASS;
 $port = DB_PORT;
 $charset = DB_CHARSET;
 
+// MySQL DSN
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 $options = [
      PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

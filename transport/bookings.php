@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
                                     $body,
                                     $ticketFile['filepath'],
                                     $ticketFile['filename'],
-                                    'text/html'
+                                    'application/pdf'
                                 );
                             }
                         }

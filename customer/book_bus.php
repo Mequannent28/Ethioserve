@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
                         $body,
                         $ticketFile['filepath'],
                         $ticketFile['filename'],
-                        'text/html'
+                        'application/pdf'
                     );
                 }
             }

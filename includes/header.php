@@ -406,6 +406,12 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
 
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
+                        <a class="nav-link px-3" href="<?php echo $base_url; ?>/realestate/index.php">
+                            <i class="fas fa-building fs-5 text-primary-green"></i>
+                            <span class="d-none d-sm-inline ms-1">Real Estate</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link px-3" href="<?php echo $base_url; ?>/customer/booking.php">
                             <i class="fas fa-calendar-check fs-5 text-primary-green"></i>
                             <span class="d-none d-sm-inline ms-1">Book</span>
@@ -442,6 +448,9 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
                                     <span class="dropdown-header text-muted">
                                         <small>Logged in as <strong><?php echo ucfirst($user_role); ?></strong></small>
                                     </span>
+                                </li>
+                                <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/profile.php">
+                                        <i class="fas fa-user-circle me-2"></i> My Profile</a>
                                 </li>
                                 <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/track_order.php">
                                         <i class="fas fa-receipt me-2"></i> My Orders</a>
@@ -480,8 +489,68 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
                             <a class="btn btn-primary-green rounded-pill px-4"
                                 href="<?php echo $base_url; ?>/register.php">Sign Up</a>
                         </li>
+                        <!-- DEMO CREDENTIALS TOOLTIP -->
+                        <li class="nav-item ms-2">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-warning rounded-circle shadow-sm" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Demo Credentials">
+                                    <i class="fas fa-key text-white"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end p-3 shadow border-0" style="min-width: 250px;">
+                                    <li>
+                                        <h6 class="dropdown-header text-primary-green fw-bold">Demo Accounts</h6>
+                                    </li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <!-- Admin -->
+                                    <li class="mb-2">
+                                        <small class="d-block text-muted fw-bold">Admin</small>
+                                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                            <small class="text-dark">admin@ethioserve.com</small>
+                                            <button onclick="copyToClipboard('admin@ethioserve.com')"
+                                                class="btn btn-xs text-primary"><i class="far fa-copy"></i></button>
+                                        </div>
+                                        <small class="text-muted fst-italic ms-1" style="font-size:0.75rem">Pass:
+                                            admin123</small>
+                                    </li>
+                                    <!-- Transport Owner -->
+                                    <li class="mb-2">
+                                        <small class="d-block text-muted fw-bold">Transport Owner</small>
+                                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                            <small class="text-dark">transport@ethioserve.com</small>
+                                            <button onclick="copyToClipboard('transport@ethioserve.com')"
+                                                class="btn btn-xs text-primary"><i class="far fa-copy"></i></button>
+                                        </div>
+                                        <small class="text-muted fst-italic ms-1" style="font-size:0.75rem">Pass:
+                                            transport123</small>
+                                    </li>
+                                    <!-- Customer -->
+                                    <li class="mb-2">
+                                        <small class="d-block text-muted fw-bold">Customer</small>
+                                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                            <small class="text-dark">customer1@ethioserve.com</small>
+                                            <button onclick="copyToClipboard('customer1@ethioserve.com')"
+                                                class="btn btn-xs text-primary"><i class="far fa-copy"></i></button>
+                                        </div>
+                                        <small class="text-muted fst-italic ms-1" style="font-size:0.75rem">Pass:
+                                            customer123</small>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
                     <?php endif; ?>
                 </ul>
             </div>
         </div>
     </nav>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function () {
+                // Optional: Show a small toast success message
+            }, function (err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>

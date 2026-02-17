@@ -35,6 +35,7 @@ $count_hotels = 0;
 $count_brokers = 0;
 $count_education = 0;
 $count_listings = 0;
+$count_real_estate = 0;
 
 try {
     $count_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies WHERE status='approved'")->fetchColumn();
@@ -62,6 +63,10 @@ try {
 }
 try {
     $count_listings = $pdo->query("SELECT COUNT(*) FROM listings WHERE status='approved'")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_real_estate = $pdo->query("SELECT COUNT(*) FROM real_estate_properties WHERE status='available'")->fetchColumn();
 } catch (Exception $e) {
 }
 
@@ -146,6 +151,18 @@ include('../includes/header.php');
                     <i class="fas fa-taxi"></i>
                 </div>
                 <p class="service-label">Taxi</p>
+            </a>
+
+            <!-- Real Estate -->
+            <a href="../realestate/index.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_real_estate > 0): ?>
+                    <span class="count-badge" style="background:#5D4037;"><i class="fas fa-circle me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_real_estate; ?> Homes</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background-color: #5D4037; color: white;">
+                    <i class="fas fa-building"></i>
+                </div>
+                <p class="service-label">Real Estate</p>
             </a>
 
             <!-- Food Delivery -->
