@@ -49,21 +49,10 @@ GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1' IDENTIFIED BY '
 FLUSH PRIVILEGES;
 EOF
 
-# Check if tables exist, if not import schema
-TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
-echo "  → Current table count in 'ethioserve' database: $TABLE_COUNT"
-
-if [ "$TABLE_COUNT" -le "5" ]; then
-    echo "  → Database appears empty or incomplete. Importing schema..."
-    if [ -f "/var/www/html/database.sql" ]; then
-        mysql -u root ethioserve < /var/www/html/database.sql
-        echo "  ✓ Database import completed!"
-    else
-        echo "  ✗ ERROR: database.sql not found at /var/www/html/database.sql"
-    fi
-else
-    echo "  ✓ Database already initialized with $TABLE_COUNT tables, skipping import."
-fi
+# Initialize via PHP for consistent connection/execution
+echo "  → Running database initialization via PHP CLI..."
+ENVIRONMENT=production DB_NAME=ethioserve DB_USER=ethioserve DB_PASS=ethioserve_pass_2024 php /var/www/html/force_db.php
+echo "  ✓ Database initialization step completed."
 
 # ---- Start Apache ----
 echo "[4/4] Starting Apache on port $PORT..."
