@@ -11,7 +11,7 @@
  */
 
 // ==================== ENVIRONMENT ====================
-define('ENVIRONMENT', 'local'); // Force local for XAMPP
+define('ENVIRONMENT', getenv('ENVIRONMENT') ?: 'local');
 
 // ==================== DATABASE ====================
 if (ENVIRONMENT === 'production') {
@@ -38,7 +38,6 @@ if (ENVIRONMENT === 'production') {
 if (!defined('DB_TYPE')) {
     define('DB_TYPE', 'mysql'); // Default to mysql for existing production setups unless overridden
 }
-
 define('DB_CHARSET', 'utf8mb4');
 
 // ==================== BASE URL ====================
