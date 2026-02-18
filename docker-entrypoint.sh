@@ -51,16 +51,18 @@ EOF
 
 # Check if tables exist, if not import schema
 TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
+echo "  → Current table count in 'ethioserve' database: $TABLE_COUNT"
 
-if [ "$TABLE_COUNT" -eq "0" ] || [ "$TABLE_COUNT" = "0" ]; then
-    echo "  → Importing database schema and seed data..."
-    # Remove the CREATE DATABASE and USE lines from SQL since DB already exists
-    sed 's/CREATE DATABASE IF NOT EXISTS ethioserve;//g' /var/www/html/database.sql | \
-    sed 's/USE ethioserve;//g' | \
-    mysql -u root ethioserve 2>/dev/null || true
-    echo "  ✓ Database imported successfully!"
+if [ "$TABLE_COUNT" -le "5" ]; then
+    echo "  → Database appears empty or incomplete. Importing schema..."
+    if [ -f "/var/www/html/database.sql" ]; then
+        mysql -u root ethioserve < /var/www/html/database.sql
+        echo "  ✓ Database import completed!"
+    else
+        echo "  ✗ ERROR: database.sql not found at /var/www/html/database.sql"
+    fi
 else
-    echo "  ✓ Database already has $TABLE_COUNT tables, skipping import."
+    echo "  ✓ Database already initialized with $TABLE_COUNT tables, skipping import."
 fi
 
 # ---- Start Apache ----
