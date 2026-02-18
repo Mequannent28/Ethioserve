@@ -115,6 +115,26 @@ require_once '../includes/header.php';
 <!-- Hero Section -->
 <div class="hero-real-estate">
     <div class="container">
+        <div class="d-flex justify-content-end gap-2 mb-4">
+            <?php if (!isLoggedIn()): ?>
+                <a href="../login.php" class="btn btn-outline-light rounded-pill px-4 fw-bold"><i
+                        class="fas fa-sign-in-alt me-2"></i>Login</a>
+                <a href="../register.php?role=broker" class="btn btn-light text-success rounded-pill px-4 fw-bold"><i
+                        class="fas fa-user-plus me-2"></i>Join as Agent</a>
+            <?php else: ?>
+                <?php if (hasRole('admin')): ?>
+                    <a href="../admin/manage_realestate.php"
+                        class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow"><i
+                            class="fas fa-cogs me-2"></i>Manage Real Estate</a>
+                <?php elseif (hasRole('broker')): ?>
+                    <a href="../broker/dashboard.php" class="btn btn-light text-success rounded-pill px-4 fw-bold shadow"><i
+                            class="fas fa-tachometer-alt me-2"></i>Agent Dashboard</a>
+                <?php else: ?>
+                    <a href="../register.php?role=broker" class="btn btn-outline-light rounded-pill px-4 fw-bold">Become an
+                        Agent</a>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
         <h1 class="display-3 fw-bold mb-4">Find Your Perfect Place</h1>
         <p class="lead mb-5 opacity-75">Discover the best properties for sale and rent across Ethiopia.</p>
 

@@ -67,7 +67,7 @@ if (!function_exists('hexToRgb')) {
 }
 
 // Handle Download Request
-if (isset($_GET['download']) && $_GET['download'] === 'true') {
+if (isset($_GET['download']) && $_GET['download'] === 'true' && isset($res_data['file_path'])) {
     $file_path = '../uploads/education/' . $res_data['file_path'];
     if (file_exists($file_path)) {
         // Log download
@@ -120,7 +120,7 @@ if (isset($subject_colors[$res_data['subject']])) {
     $color = $subject_colors[$res_data['subject']];
 }
 
-$pdf_url = '../uploads/education/' . $res_data['file_path'];
+$pdf_url = isset($res_data['file_path']) ? '../uploads/education/' . $res_data['file_path'] : '';
 $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
 ?>
 

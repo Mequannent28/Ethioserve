@@ -140,6 +140,15 @@
                     </a>
                 </li>
 
+                <!-- Manage Real Estate -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_realestate.php' ? 'active' : ''; ?>"
+                        href="manage_realestate.php">
+                        <i class="fas fa-city"></i>
+                        <span>Manage Real Estate</span>
+                    </a>
+                </li>
+
                 <!-- Manage Rent -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo $current_page == 'manage_rent.php' ? 'active' : ''; ?>"
@@ -157,6 +166,25 @@
                         <span>Manage Home</span>
                     </a>
                 </li>
+
+                <!-- Manage Exchange -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_exchange.php' ? 'active' : ''; ?>"
+                        href="manage_exchange.php">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Manage Exchange</span>
+                    </a>
+                </li>
+
+                <!-- Manage Health -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_health.php' ? 'active' : ''; ?>"
+                        href="manage_health.php">
+                        <i class="fas fa-heartbeat"></i>
+                        <span>Manage Health</span>
+                    </a>
+                </li>
+
 
                 <!-- SYSTEM Section -->
                 <li class="nav-section-title">

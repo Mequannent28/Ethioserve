@@ -211,7 +211,16 @@ try {
     }
 
 } catch (Exception $e) {
-    // Silently return empty on error
+    $results[] = [
+        'id' => 0,
+        'name' => 'Error: ' . $e->getMessage(),
+        'description' => '',
+        'extra' => '',
+        'category' => 'System',
+        'icon' => 'fas fa-exclamation-triangle',
+        'color' => 'red',
+        'link' => '#'
+    ];
 }
 
 echo json_encode(['results' => $results, 'query' => $query]);

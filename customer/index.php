@@ -22,6 +22,42 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $hotels = $stmt->fetchAll();
 
+// Initialize other results
+$restaurants = [];
+$taxis = [];
+$buses = [];
+$health_results = [];
+$dating_results = [];
+
+if (!empty($search)) {
+    // Search Restaurants
+    $resSql = "SELECT * FROM restaurants WHERE status = 'approved' AND (name LIKE ? OR address LIKE ? OR cuisine_type LIKE ?)";
+    $resStmt = $pdo->prepare($resSql);
+    $resStmt->execute(["%$search%", "%$search%", "%$search%"]);
+    $restaurants = $resStmt->fetchAll();
+
+    // Search Taxis
+    $taxiSql = "SELECT * FROM taxi_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)";
+    $taxiStmt = $pdo->prepare($taxiSql);
+    $taxiStmt->execute(["%$search%", "%$search%"]);
+    $taxis = $taxiStmt->fetchAll();
+
+    // Search Buses
+    $busStmt = $pdo->prepare("SELECT * FROM transport_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)");
+    $busStmt->execute(["%$search%", "%$search%"]);
+    $buses = $busStmt->fetchAll();
+
+    // Search Health
+    $healthStmt = $pdo->prepare("SELECT * FROM health_providers WHERE is_available = 1 AND (name LIKE ? OR location LIKE ? OR bio LIKE ?)");
+    $healthStmt->execute(["%$search%", "%$search%", "%$search%"]);
+    $health_results = $healthStmt->fetchAll();
+
+    // Search Dating
+    $datingStmt = $pdo->prepare("SELECT p.*, u.full_name FROM dating_profiles p JOIN users u ON p.user_id = u.id WHERE (u.full_name LIKE ? OR p.bio LIKE ? OR p.location_name LIKE ?)");
+    $datingStmt->execute(["%$search%", "%$search%", "%$search%"]);
+    $dating_results = $datingStmt->fetchAll();
+}
+
 // Get cart count for display
 $cart_count = getCartCount();
 
@@ -36,6 +72,11 @@ $count_brokers = 0;
 $count_education = 0;
 $count_listings = 0;
 $count_real_estate = 0;
+$count_exchange = 0;
+$count_home_services = 0;
+$count_health = 0;
+$count_dating = 0;
+$count_community = 0;
 
 try {
     $count_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies WHERE status='approved'")->fetchColumn();
@@ -67,6 +108,26 @@ try {
 }
 try {
     $count_real_estate = $pdo->query("SELECT COUNT(*) FROM real_estate_properties WHERE status='available'")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_exchange = $pdo->query("SELECT COUNT(*) FROM exchange_materials WHERE status='available'")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_home_services = $pdo->query("SELECT COUNT(*) FROM home_service_categories")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_health = $pdo->query("SELECT COUNT(*) FROM health_providers WHERE is_available=1")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_dating = $pdo->query("SELECT COUNT(*) FROM dating_profiles")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_community = $pdo->query("SELECT (SELECT COUNT(*) FROM comm_news) + (SELECT COUNT(*) FROM comm_events) + (SELECT COUNT(*) FROM comm_marketplace WHERE status='available') as total")->fetchColumn();
 } catch (Exception $e) {
 }
 
@@ -199,6 +260,36 @@ include('../includes/header.php');
                 <p class="service-label">Flights</p>
             </a>
 
+            <!-- Dating Services -->
+            <a href="dating.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_dating > 0): ?>
+                    <span class="count-badge" style="background:#E91E63;"><i class="fas fa-heart me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_dating; ?> Active</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#E91E63;"><i class="fas fa-heart me-1"
+                            style="font-size:0.4rem;"></i> Find Love</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background-color: #E91E63; color: white;">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <p class="service-label">Dating</p>
+            </a>
+
+            <!-- Community Hub -->
+            <a href="community.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_community > 0): ?>
+                    <span class="count-badge" style="background:#0288D1;"><i class="fas fa-bullhorn me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_community; ?> Updates</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#0288D1;"><i class="fas fa-users me-1"
+                            style="font-size:0.4rem;"></i> My Comm</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background-color: #0288D1; color: white;">
+                    <i class="fas fa-users"></i>
+                </div>
+                <p class="service-label">Community</p>
+            </a>
+
             <!-- Movies -->
             <a href="coming_soon.php?service=Movies" class="service-card shadow-sm position-relative">
                 <span class="count-badge" style="background:#AD1457;"><i class="fas fa-clock me-1"
@@ -231,21 +322,29 @@ include('../includes/header.php');
                 <p class="service-label">Hotels</p>
             </a>
 
-            <!-- Experiences -->
-            <a href="coming_soon.php?service=Experiences" class="service-card shadow-sm position-relative">
-                <span class="count-badge" style="background:#C62828;"><i class="fas fa-clock me-1"
-                        style="font-size:0.5rem;"></i> Soon</span>
-                <div class="service-icon bg-experiences">
-                    <i class="fas fa-skating"></i>
+            <!-- Health Services -->
+            <a href="health_services.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_health > 0): ?>
+                    <span class="count-badge" style="background:#2E7D32;"><i class="fas fa-circle me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_health; ?> Pros</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#2E7D32;"><i class="fas fa-heartbeat me-1"
+                            style="font-size:0.4rem;"></i> Healthcare</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background-color: #2E7D32; color: white;">
+                    <i class="fas fa-heartbeat"></i>
                 </div>
-                <p class="service-label">Experiences</p>
+                <p class="service-label">Health</p>
             </a>
 
             <!-- Home Services -->
-            <a href="listings.php?type=home_service" class="service-card shadow-sm position-relative">
-                <?php if ($count_listings > 0): ?>
+            <a href="home_services.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_home_services > 0): ?>
                     <span class="count-badge" style="background:#4527A0;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_listings; ?> Services</span>
+                            style="font-size:0.4rem;"></i> <?php echo $count_home_services; ?> Categories</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#4527A0;"><i class="fas fa-wrench me-1"
+                            style="font-size:0.4rem;"></i> Pro Help</span>
                 <?php endif; ?>
                 <div class="service-icon bg-home-services">
                     <i class="fas fa-wrench"></i>
@@ -301,6 +400,21 @@ include('../includes/header.php');
                     <i class="fas fa-graduation-cap"></i>
                 </div>
                 <p class="service-label">Education</p>
+            </a>
+
+            <!-- Exchange Material -->
+            <a href="exchange_material.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_exchange > 0): ?>
+                    <span class="count-badge" style="background:#5C6BC0;"><i class="fas fa-circle me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_exchange; ?> Items</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#5C6BC0;"><i class="fas fa-sync-alt me-1"
+                            style="font-size:0.5rem;"></i> Buy/Sell</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background-color: #5C6BC0; color: white;">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <p class="service-label">Exchange</p>
             </a>
         </div>
     </section>
@@ -363,63 +477,223 @@ include('../includes/header.php');
             <?php endif; ?>
         </div>
 
-        <?php if (empty($hotels)): ?>
+        <?php if (empty($hotels) && empty($restaurants) && empty($taxis) && empty($buses) && empty($health_results) && empty($dating_results)): ?>
             <div class="card border-0 shadow-sm p-5 text-center">
                 <i class="fas fa-search text-muted mb-3" style="font-size: 4rem;"></i>
-                <h4 class="text-muted">No restaurants found</h4>
-                <p class="text-muted">Try a different search term or browse all restaurants</p>
-                <a href="index.php" class="btn btn-primary-green rounded-pill px-4">View All Restaurants</a>
+                <h4 class="text-muted">No results found</h4>
+                <p class="text-muted">Try a different search term or browse all services</p>
+                <a href="index.php" class="btn btn-primary-green rounded-pill px-4">View All Services</a>
             </div>
         <?php else: ?>
-            <div class="row g-4">
-                <?php foreach ($hotels as $hotel): ?>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100 hover-lift border-0 shadow-sm">
-                            <div class="position-absolute top-0 end-0 m-3 z-1">
-                                <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2">
-                                    <i class="fas fa-star text-warning me-1"></i>
-                                    <?php echo number_format($hotel['rating'], 1); ?>
-                                </span>
-                            </div>
-                            <img src="<?php echo htmlspecialchars($hotel['image_url'] ?: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'); ?>"
-                                class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>"
-                                style="height: 220px; object-fit: cover;">
-                            <div class="card-body p-4">
-                                <h5 class="card-title fw-bold mb-1"><?php echo htmlspecialchars($hotel['name']); ?></h5>
-                                <p class="text-muted small mb-2">
-                                    <i
-                                        class="fas fa-map-marker-alt me-2 text-danger"></i><?php echo htmlspecialchars($hotel['location']); ?>
-                                </p>
-                                <?php if ($hotel['cuisine_type']): ?>
-                                    <p class="text-muted small mb-2">
-                                        <i
-                                            class="fas fa-utensils me-2 text-primary-green"></i><?php echo htmlspecialchars($hotel['cuisine_type']); ?>
-                                    </p>
-                                <?php endif; ?>
-                                <div class="d-flex align-items-center gap-3 mb-3">
-                                    <span class="text-muted small">
-                                        <i
-                                            class="fas fa-clock me-1"></i><?php echo htmlspecialchars($hotel['delivery_time'] ?? '30-45 min'); ?>
-                                    </span>
-                                    <span class="text-muted small">
-                                        <i class="fas fa-shopping-bag me-1"></i>Min:
-                                        <?php echo number_format($hotel['min_order']); ?> ETB
+
+            <!-- HOTELS RESULTS -->
+            <?php if (!empty($hotels)): ?>
+                <?php if (!empty($search)): ?>
+                    <h4 class="mb-3 text-primary-green"><i class="fas fa-hotel me-2"></i>Hotels</h4><?php endif; ?>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($hotels as $hotel): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm">
+                                <div class="position-absolute top-0 end-0 m-3 z-1">
+                                    <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2">
+                                        <i class="fas fa-star text-warning me-1"></i>
+                                        <?php echo number_format($hotel['rating'], 1); ?>
                                     </span>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center mt-auto">
-                                    <span class="text-primary-green fw-bold">Min Order:
-                                        <?php echo number_format($hotel['min_order']); ?> ETB</span>
-                                    <a href="menu.php?id=<?php echo $hotel['id']; ?>"
-                                        class="btn btn-primary-green rounded-pill px-4">
-                                        View Menu
-                                    </a>
+                                <img src="<?php echo htmlspecialchars($hotel['image_url'] ?: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80'); ?>"
+                                    class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>"
+                                    style="height: 220px; object-fit: cover;">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title fw-bold mb-1"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                                    <p class="text-muted small mb-2">
+                                        <i
+                                            class="fas fa-map-marker-alt me-2 text-danger"></i><?php echo htmlspecialchars($hotel['location']); ?>
+                                    </p>
+                                    <?php if ($hotel['cuisine_type']): ?>
+                                        <p class="text-muted small mb-2">
+                                            <i
+                                                class="fas fa-utensils me-2 text-primary-green"></i><?php echo htmlspecialchars($hotel['cuisine_type']); ?>
+                                        </p>
+                                    <?php endif; ?>
+                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                        <span class="text-muted small">
+                                            <i
+                                                class="fas fa-clock me-1"></i><?php echo htmlspecialchars($hotel['delivery_time'] ?? '30-45 min'); ?>
+                                        </span>
+                                        <span class="text-muted small">
+                                            <i class="fas fa-shopping-bag me-1"></i>Min:
+                                            <?php echo number_format($hotel['min_order']); ?> ETB
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <span class="text-primary-green fw-bold">Min Order:
+                                            <?php echo number_format($hotel['min_order']); ?> ETB</span>
+                                        <a href="menu.php?id=<?php echo $hotel['id']; ?>"
+                                            class="btn btn-primary-green rounded-pill px-4">
+                                            View Menu
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- RESTAURANTS RESULTS -->
+            <?php if (!empty($restaurants)): ?>
+                <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-utensils me-2"></i>Restaurants</h4>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($restaurants as $res): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm">
+                                <div class="position-absolute top-0 end-0 m-3 z-1">
+                                    <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2">
+                                        <i class="fas fa-star text-warning me-1"></i> New
+                                    </span>
+                                </div>
+                                <img src="<?php echo htmlspecialchars($res['image_url'] ?: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=800&q=80'); ?>"
+                                    class="card-img-top" alt="<?php echo htmlspecialchars($res['name']); ?>"
+                                    style="height: 220px; object-fit: cover;">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title fw-bold mb-1"><?php echo htmlspecialchars($res['name']); ?></h5>
+                                    <p class="text-muted small mb-2">
+                                        <i
+                                            class="fas fa-map-marker-alt me-2 text-danger"></i><?php echo htmlspecialchars($res['address']); ?>
+                                    </p>
+                                    <p class="text-muted small mb-2">
+                                        <i
+                                            class="fas fa-utensils me-2 text-primary-green"></i><?php echo htmlspecialchars($res['cuisine_type']); ?>
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <span class="text-muted small"><i class="fas fa-clock me-1"></i> Open Now</span>
+                                        <a href="restaurants.php" class="btn btn-primary-green rounded-pill px-4">
+                                            Visit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- TAXI RESULTS -->
+            <?php if (!empty($taxis)): ?>
+                <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-taxi me-2"></i>Taxis</h4>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($taxis as $taxi): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3"
+                                            style="width: 50px; height: 50px;">
+                                            <i class="fas fa-taxi"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title fw-bold mb-0">
+                                                <?php echo htmlspecialchars($taxi['company_name']); ?>
+                                            </h5>
+                                            <small class="text-muted"><?php echo htmlspecialchars($taxi['address']); ?></small>
+                                        </div>
+                                    </div>
+                                    <p class="mb-3">
+                                        <?php echo htmlspecialchars($taxi['description'] ?? 'Reliable taxi service.'); ?>
+                                    </p>
+                                    <a href="taxi.php" class="btn btn-warning w-100 rounded-pill fw-bold">Book Ride</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- BUS RESULTS -->
+            <?php if (!empty($buses)): ?>
+                <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-bus me-2"></i>Bus Companies</h4>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($buses as $bus): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-primary-green text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                            style="width: 50px; height: 50px;">
+                                            <i class="fas fa-bus"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title fw-bold mb-0">
+                                                <?php echo htmlspecialchars($bus['company_name']); ?>
+                                            </h5>
+                                            <small class="text-muted"><?php echo htmlspecialchars($bus['address']); ?></small>
+                                        </div>
+                                    </div>
+                                    <p class="mb-3">
+                                        <?php echo htmlspecialchars($bus['description'] ?? 'Comfortable bus travel.'); ?>
+                                    </p>
+                                    <a href="buses.php" class="btn btn-outline-primary-green w-100 rounded-pill fw-bold">Buy
+                                        Ticket</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- HEALTH RESULTS -->
+            <?php if (!empty($health_results)): ?>
+                <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-heartbeat me-2"></i>Medical Providers
+                </h4>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($health_results as $h): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                            style="width: 50px; height: 50px;">
+                                            <i class="fas fa-user-md"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="fw-bold mb-1"><?php echo htmlspecialchars($h['name']); ?></h5>
+                                            <span
+                                                class="badge bg-light text-success border-success border"><?php echo ucfirst($h['type']); ?></span>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted small mb-3"><?php echo htmlspecialchars($h['location']); ?></p>
+                                    <a href="health_services.php" class="btn btn-outline-success w-100 rounded-pill">Book Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- DATING RESULTS -->
+            <?php if (!empty($dating_results)): ?>
+                <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-heart me-2 text-danger"></i>Find Love
+                </h4>
+                <div class="row g-4 mb-4">
+                    <?php foreach ($dating_results as $d): ?>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="card h-100 hover-lift border-0 shadow-sm overflow-hidden">
+                                <img src="<?php echo htmlspecialchars($d['profile_pic']); ?>" class="card-img-top"
+                                    style="height: 180px; object-fit: cover;">
+                                <div class="card-body p-3">
+                                    <h6 class="fw-bold mb-1"><?php echo htmlspecialchars($d['full_name']); ?>,
+                                        <?php echo $d['age']; ?></h6>
+                                    <p class="text-muted small text-truncate mb-3"><?php echo htmlspecialchars($d['bio']); ?></p>
+                                    <a href="dating.php" class="btn btn-danger btn-sm w-100 rounded-pill">View Profile</a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
         <?php endif; ?>
+
     </section>
 
     <!-- How It Works Section -->
