@@ -10,18 +10,38 @@ if (!isset($_SESSION['id'])) {
 $user_id = $_SESSION['id'];
 $other_user_id = intval($_GET['user_id'] ?? 0);
 
-// Verify Match
-$stmt = $pdo->prepare("SELECT id FROM dating_matches WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)");
-$stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
-if (!$stmt->fetch()) {
-    header("Location: dating_matches.php");
+if (!$other_user_id) {
+    header("Location: dating.php");
     exit();
 }
 
-// Fetch Other User
-$stmt = $pdo->prepare("SELECT u.full_name, p.profile_pic, p.last_active FROM users u JOIN dating_profiles p ON u.id = p.user_id WHERE u.id = ?");
-$stmt->execute([$other_user_id]);
-$other_user = $stmt->fetch();
+// Fetch Other User (no match required — any logged-in user can message)
+try {
+    $stmt = $pdo->prepare("
+        SELECT u.full_name, u.email, u.phone, p.profile_pic, p.age, p.location_name, p.bio, p.last_active
+        FROM users u
+        LEFT JOIN dating_profiles p ON u.id = p.user_id
+        WHERE u.id = ?
+    ");
+    $stmt->execute([$other_user_id]);
+    $other_user = $stmt->fetch();
+} catch (Exception $e) {
+    $other_user = null;
+}
+
+if (!$other_user) {
+    header("Location: dating.php");
+    exit();
+}
+
+// Check if mutual match (for contact reveal)
+$is_matched = false;
+try {
+    $stmt = $pdo->prepare("SELECT id FROM dating_matches WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)");
+    $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
+    $is_matched = (bool) $stmt->fetch();
+} catch (Exception $e) {
+}
 
 // Handle Message Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['message'])) {
@@ -78,8 +98,9 @@ include '../includes/header.php';
                     <div class="chat-body p-4 bg-light" style="height: 500px; overflow-y: auto;">
                         <?php if (empty($messages)): ?>
                             <div class="text-center py-5 text-muted">
-                                <i class="fas fa-hand-sparkles mb-2 fs-2"></i>
-                                <p>You matched! Say something nice.</p>
+                                <div style="font-size:2.5rem;" class="mb-2">👋</div>
+                                <p class="fw-bold mb-1">Start the conversation!</p>
+                                <p class="small">Say hi to <?php echo htmlspecialchars($other_user['full_name']); ?></p>
                             </div>
                         <?php endif; ?>
 

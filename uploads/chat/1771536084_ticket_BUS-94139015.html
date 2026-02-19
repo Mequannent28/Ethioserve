@@ -1,0 +1,257 @@
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bus Ticket - BUS-94139015</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: 'Arial', sans-serif; 
+                background: #f5f5f5; 
+                padding: 40px 20px;
+            }
+            .ticket-container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 15px;
+                overflow: hidden;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            }
+            .ticket-header {
+                background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+                color: white;
+                padding: 40px;
+                text-align: center;
+            }
+            .ticket-header h1 {
+                font-size: 32px;
+                margin-bottom: 10px;
+            }
+            .ticket-header .tagline {
+                opacity: 0.9;
+                font-size: 14px;
+            }
+            .booking-ref {
+                background: white;
+                color: #1B5E20;
+                padding: 20px;
+                text-align: center;
+                font-size: 28px;
+                font-weight: bold;
+                letter-spacing: 3px;
+                border-bottom: 3px dashed #e0e0e0;
+            }
+            .status-badge {
+                background: #4CAF50;
+                color: white;
+                padding: 8px 20px;
+                border-radius: 20px;
+                display: inline-block;
+                font-weight: bold;
+                margin-top: 10px;
+            }
+            .ticket-body {
+                padding: 40px;
+            }
+            .section {
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            .section:last-child {
+                border-bottom: none;
+            }
+            .section-title {
+                color: #1B5E20;
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #1B5E20;
+            }
+            .info-grid {
+                display: grid;
+                grid-template-columns: 200px 1fr;
+                gap: 15px;
+            }
+            .info-label {
+                font-weight: 600;
+                color: #666;
+            }
+            .info-value {
+                color: #333;
+            }
+            .journey-visual {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 20px;
+                background: #f9f9f9;
+                border-radius: 10px;
+                margin: 20px 0;
+            }
+            .journey-point {
+                text-align: center;
+                flex: 1;
+            }
+            .journey-point h3 {
+                color: #1B5E20;
+                margin-bottom: 5px;
+            }
+            .journey-arrow {
+                flex: 0 0 100px;
+                text-align: center;
+                font-size: 30px;
+                color: #1B5E20;
+            }
+            .important-box {
+                background: #FFF9C4;
+                border-left: 4px solid #FBC02D;
+                padding: 20px;
+                margin: 20px 0;
+            }
+            .important-box h4 {
+                color: #F57F17;
+                margin-bottom: 10px;
+            }
+            .qr-placeholder {
+                width: 150px;
+                height: 150px;
+                background: #f0f0f0;
+                border: 2px dashed #999;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 20px auto;
+                font-size: 12px;
+                color: #999;
+                text-align: center;
+            }
+            .footer {
+                background: #f5f5f5;
+                padding: 20px;
+                text-align: center;
+                color: #888;
+                font-size: 12px;
+            }
+            @media print {
+                body { background: white; padding: 0; }
+                .ticket-container { box-shadow: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="ticket-container">
+            <div class="ticket-header">
+                <h1>🚌 EthioServe Bus Ticket</h1>
+                <p class="tagline">Your Journey Begins Here</p>
+            </div>
+            
+            <div class="booking-ref">
+                BUS-94139015                <br>
+                <span class="status-badge">CONFIRMED</span>
+            </div>
+            
+            <div class="ticket-body">
+                <!-- Journey Route Visual -->
+                <div class="journey-visual">
+                    <div class="journey-point">
+                        <h3>Addis Ababa</h3>
+                        <p>08:00 PM</p>
+                    </div>
+                    <div class="journey-arrow">
+                        ✈️ →
+                    </div>
+                    <div class="journey-point">
+                        <h3>Bahir Dar</h3>
+                        <p>06:00 AM</p>
+                    </div>
+                </div>
+                
+                <!-- Journey Details Section -->
+                <div class="section">
+                    <div class="section-title">📋 Journey Details</div>
+                    <div class="info-grid">
+                        <div class="info-label">Travel Date:</div>
+                        <div class="info-value"><strong>Thursday, February 19, 2026</strong></div>
+                        
+                        <div class="info-label">Bus Company:</div>
+                        <div class="info-value">Golden Bus</div>
+                        
+                        <div class="info-label">Bus Number:</div>
+                        <div class="info-value">GB-002 (Standard)</div>
+                        
+                                                <div class="info-label">Seat Number(s):</div>
+                        <div class="info-value"><strong style="color: #1B5E20; font-size: 20px;">12</strong></div>
+                                            </div>
+                </div>
+                
+                <!-- Passenger Information -->
+                <div class="section">
+                    <div class="section-title">👤 Passenger Information</div>
+                    <div class="info-grid">
+                                                <div class="info-label">Passenger 1:</div>
+                        <div class="info-value">
+                            <strong>Mequannent Gashaw Mequannent</strong><br>
+                            <small>📞 +251911111111</small>
+                        </div>
+                                            </div>
+                </div>
+                
+                <!-- Pickup & Drop-off -->
+                <div class="section">
+                    <div class="section-title">📍 Pickup & Drop-off</div>
+                    <div class="info-grid">
+                        <div class="info-label">Pickup Point:</div>
+                        <div class="info-value">Megenagna</div>
+                        
+                        <div class="info-label">Drop-off Point:</div>
+                        <div class="info-value">Bahir Dar Bus Station</div>
+                    </div>
+                </div>
+                
+                <!-- Payment Information -->
+                <div class="section">
+                    <div class="section-title">💰 Payment Information</div>
+                    <div class="info-grid">
+                        <div class="info-label">Payment Method:</div>
+                        <div class="info-value">CASH</div>
+                        
+                        <div class="info-label">Total Amount:</div>
+                        <div class="info-value"><strong style="color: #1B5E20; font-size: 24px;">1,100 ETB</strong></div>
+                        
+                        <div class="info-label">Payment Status:</div>
+                        <div class="info-value"><span style="color: green; font-weight: bold;">✓ PAID</span></div>
+                    </div>
+                </div>
+                
+                <!-- QR Code Placeholder -->
+                <div class="qr-placeholder">
+                    QR CODE<br>
+                    BUS-94139015                </div>
+                
+                <!-- Important Information -->
+                <div class="important-box">
+                    <h4>⚠️ Important Information</h4>
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li>Please arrive at the pickup point at least 30 minutes before departure time</li>
+                        <li>Carry a valid ID for verification at boarding</li>
+                        <li>This ticket is non-transferable and non-refundable</li>
+                        <li>Show this ticket (printed or digital) at boarding</li>
+                        <li>Contact the bus company for any changes or inquiries</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Thank you for choosing EthioServe</p>
+                <p>For support, visit www.ethioserve.com or call our helpline</p>
+                <p>Ticket generated on: February 19, 2026 12:52 PM</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    

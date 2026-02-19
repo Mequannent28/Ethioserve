@@ -305,7 +305,8 @@ include '../includes/header.php';
                                     <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
                                         style="background:linear-gradient(transparent,rgba(0,0,0,0.75));">
                                         <div class="fw-bold small"><?php echo htmlspecialchars($gp['full_name']); ?>,
-                                            <?php echo intval($gp['age']); ?></div>
+                                            <?php echo intval($gp['age']); ?>
+                                        </div>
                                         <div style="font-size:0.7rem;opacity:0.85;"><i
                                                 class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($gp['location_name'] ?? 'Addis Ababa'); ?>
                                         </div>
@@ -323,11 +324,12 @@ include '../includes/header.php';
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>
-                                    <!-- Contact locked: need profile + match -->
-                                    <div class="rounded-3 p-2 text-center" style="background:#fff5f7;border:1px dashed #ffc2cc;">
-                                        <span style="font-size:0.7rem;color:#ff4b6e;font-weight:600;"><i
-                                                class="fas fa-lock me-1"></i> Setup profile &amp; match to unlock contact</span>
-                                    </div>
+                                    <!-- Chat button for logged-in users -->
+                                    <a href="dating_chat.php?user_id=<?php echo $gp['user_id']; ?>"
+                                        class="btn btn-danger btn-sm rounded-pill w-100 fw-bold">
+                                        <i class="fas fa-comment me-1"></i> Chat with
+                                        <?php echo htmlspecialchars(explode(' ', $gp['full_name'])[0]); ?>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -360,7 +362,8 @@ include '../includes/header.php';
                                     <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
                                         style="background:linear-gradient(transparent,rgba(0,0,0,0.75));">
                                         <div class="fw-bold small"><?php echo htmlspecialchars($gp['full_name']); ?>,
-                                            <?php echo intval($gp['age']); ?></div>
+                                            <?php echo intval($gp['age']); ?>
+                                        </div>
                                         <div style="font-size:0.7rem;opacity:0.85;"><i
                                                 class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($gp['location_name'] ?? 'Addis Ababa'); ?>
                                         </div>
@@ -550,7 +553,8 @@ include '../includes/header.php';
                                 <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
                                     style="background:linear-gradient(transparent,rgba(0,0,0,0.8));">
                                     <div class="fw-bold small"><?php echo htmlspecialchars($bp['full_name']); ?>,
-                                        <?php echo intval($bp['age']); ?></div>
+                                        <?php echo intval($bp['age']); ?>
+                                    </div>
                                     <div style="font-size:0.7rem;opacity:0.85;"><i
                                             class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($bp['location_name'] ?? 'Addis Ababa'); ?>
                                     </div>
@@ -608,8 +612,8 @@ include '../includes/header.php';
                         </div>
                     </div>
                 <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
     </div><!-- /container -->
 

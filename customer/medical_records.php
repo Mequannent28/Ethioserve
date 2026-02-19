@@ -106,7 +106,21 @@ include '../includes/header.php';
                             </div>
 
                             <?php if ($a['status'] == 'confirmed' && $a['appointment_type'] == 'virtual'): ?>
-                                <a href="#" class="btn btn-primary w-100 rounded-pill fw-bold">Join Video Call</a>
+                                <div class="d-flex gap-2 mt-2">
+                                    <a href="doctor_video_call.php?doctor_id=<?php echo $a['provider_id']; ?>"
+                                        class="btn btn-primary flex-grow-1 rounded-pill fw-bold">
+                                        <i class="fas fa-video me-1"></i>Join Video Call
+                                    </a>
+                                    <a href="doctor_chat.php?doctor_id=<?php echo $a['provider_id']; ?>"
+                                        class="btn btn-outline-primary rounded-pill" title="Chat">
+                                        <i class="fas fa-comments"></i>
+                                    </a>
+                                </div>
+                            <?php elseif ($a['status'] == 'confirmed'): ?>
+                                <a href="doctor_chat.php?doctor_id=<?php echo $a['provider_id']; ?>"
+                                    class="btn btn-outline-primary w-100 rounded-pill fw-bold mt-2">
+                                    <i class="fas fa-comments me-1"></i>Chat with Doctor
+                                </a>
                             <?php endif; ?>
                         </div>
                     </div>

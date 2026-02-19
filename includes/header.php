@@ -9,6 +9,7 @@ $is_logged_in = isLoggedIn();
 $user_name = $is_logged_in ? getCurrentUserName() : 'Guest';
 $user_role = $is_logged_in ? getCurrentUserRole() : '';
 $cart_count = $is_logged_in ? getCartCount() : 0;
+$unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -441,7 +442,16 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
                                 role="button" data-bs-toggle="dropdown">
                                 <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user_name); ?>&background=1B5E20&color=fff"
                                     class="rounded-circle" width="32" height="32" alt="Profile">
-                                <span class="d-none d-sm-inline"><?php echo htmlspecialchars($user_name); ?></span>
+                                <span class="d-none d-sm-inline position-relative">
+                                    <?php echo htmlspecialchars($user_name); ?>
+                                    <?php if ($unread_count > 0): ?>
+                                        <span
+                                            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
+                                            style="left: 105% !important; top: 0 !important;">
+                                            <span class="visually-hidden">New messages</span>
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                                 <li>
@@ -451,6 +461,14 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
                                 </li>
                                 <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/profile.php">
                                         <i class="fas fa-user-circle me-2"></i> My Profile</a>
+                                </li>
+                                <li><a class="dropdown-item py-2 d-flex justify-content-between align-items-center"
+                                        href="<?php echo $base_url; ?>/customer/messages.php">
+                                        <span><i class="fas fa-envelope me-2"></i> Messages</span>
+                                        <?php if ($unread_count > 0): ?>
+                                            <span class="badge rounded-pill bg-danger"><?php echo $unread_count; ?></span>
+                                        <?php endif; ?>
+                                    </a>
                                 </li>
                                 <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/track_order.php">
                                         <i class="fas fa-receipt me-2"></i> My Orders</a>
@@ -463,14 +481,53 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
                                 </li>
 
                                 <?php if ($user_role == 'hotel'): ?>
-                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/hotel/dashboard.php">
-                                            <i class="fas fa-hotel me-2"></i> Hotel Dashboard</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/hotel/dashboard.php">
+                                            <i class="fas fa-hotel me-2 text-primary"></i> My Dashboard</a></li>
                                 <?php elseif ($user_role == 'broker'): ?>
-                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/broker/dashboard.php">
-                                            <i class="fas fa-handshake me-2"></i> Broker Dashboard</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/broker/dashboard.php">
+                                            <i class="fas fa-handshake me-2 text-success"></i> My Dashboard</a></li>
                                 <?php elseif ($user_role == 'admin'): ?>
-                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/admin/dashboard.php">
-                                            <i class="fas fa-user-shield me-2"></i> Admin Panel</a></li>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/admin/dashboard.php">
+                                            <i class="fas fa-user-shield me-2 text-danger"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'doctor'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/doctor/dashboard.php">
+                                            <i class="fas fa-stethoscope me-2 text-info"></i> My Dashboard</a></li>
+                                    <li><a class="dropdown-item py-1"
+                                            href="<?php echo $base_url; ?>/doctor/dashboard.php#appointments">
+                                            <i class="fas fa-calendar-check me-2 text-muted" style="width: 20px;"></i>
+                                            Appointments</a></li>
+                                    <li><a class="dropdown-item py-1"
+                                            href="<?php echo $base_url; ?>/doctor/dashboard.php#chats">
+                                            <i class="fas fa-comments me-2 text-muted" style="width: 20px;"></i> Patient
+                                            Chats</a></li>
+                                <?php elseif ($user_role == 'employer'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php">
+                                            <i class="fas fa-user-tie me-2 text-warning"></i> My Dashboard</a></li>
+                                    <li><a class="dropdown-item py-1"
+                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php?view=applications">
+                                            <i class="fas fa-users me-2 text-muted" style="width: 20px;"></i> All Applicants</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-1"
+                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php">
+                                            <i class="fas fa-comments me-2 text-muted" style="width: 20px;"></i> Candidate
+                                            Chats</a></li>
+                                <?php elseif ($user_role == 'restaurant'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/restaurant/dashboard.php">
+                                            <i class="fas fa-utensils me-2 text-danger"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'taxi'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/taxi/dashboard.php">
+                                            <i class="fas fa-taxi me-2 text-warning"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'transport'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/transport/dashboard.php">
+                                            <i class="fas fa-bus me-2 text-success"></i> My Dashboard</a></li>
                                 <?php endif; ?>
 
                                 <li>
@@ -545,12 +602,164 @@ $cart_count = $is_logged_in ? getCartCount() : 0;
         </div>
     </nav>
 
-    <script>
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function () {
-                // Optional: Show a small toast success message
-            }, function (err) {
-                console.error('Could not copy text: ', err);
-            });
-        }
     </script>
+
+    <!-- Incoming Call Modal -->
+    <div class="modal fade" id="incomingCallModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        style="z-index: 9999;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-5 shadow-lg bg-dark text-white text-center p-4">
+                <div class="modal-body">
+                    <div class="position-relative d-inline-block mb-4">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg"
+                            style="width:100px;height:100px;">
+                            <i class="fas fa-video display-4 text-white"></i>
+                        </div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 rounded-circle border border-4 border-primary animate-ping"
+                            style="animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                    </div>
+                    <h4 class="fw-bold mb-1" id="callerNameDisp">Incoming Call...</h4>
+                    <p class="text-white-50 mb-4" id="callerDetailDisp">Someone is calling you for a video consultation.
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-4">
+                        <button id="declineCallBtn" class="btn btn-danger rounded-circle p-3 shadow-lg"
+                            style="width:70px;height:70px;" title="Decline">
+                            <i class="fas fa-phone-slash fs-3"></i>
+                        </button>
+                        <button id="acceptCallBtn" class="btn btn-success rounded-circle p-3 shadow-lg"
+                            style="width:70px;height:70px;" title="Accept">
+                            <i class="fas fa-phone fs-3"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="ringtoneIncoming" loop preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-marimba-ringtone-1359.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="ringtoneOutgoing" loop preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3"
+            type="audio/mpeg">
+    </audio>
+
+    <style>
+        @keyframes ping {
+
+            75%,
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        #incomingCallModal .modal-content {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
+        }
+    </style>
+
+    <?php if ($is_logged_in): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                let activeIncomingCall = null;
+                const ringtoneIn = document.getElementById('ringtoneIncoming');
+                const ringtoneOut = document.getElementById('ringtoneOutgoing');
+                const incModalEl = document.getElementById('incomingCallModal');
+                let audioEnabled = false;
+
+                console.log("EthioServe Call System: Initialized for <?php echo $user_role; ?>");
+
+                const getModal = () => {
+                    if (typeof bootstrap !== 'undefined') {
+                        return bootstrap.Modal.getOrCreateInstance(incModalEl);
+                    }
+                    return null;
+                };
+
+                // Unlock audio on first user interaction
+                const unlockAudio = () => {
+                    if (ringtoneIn) ringtoneIn.play().then(() => { ringtoneIn.pause(); ringtoneIn.currentTime = 0; }).catch(() => { });
+                    if (ringtoneOut) ringtoneOut.play().then(() => { ringtoneOut.pause(); ringtoneOut.currentTime = 0; }).catch(() => { });
+                    audioEnabled = true;
+                    console.log("EthioServe Call System: Audio Unlocked");
+                    document.removeEventListener('click', unlockAudio);
+                    document.removeEventListener('touchstart', unlockAudio);
+                };
+                document.addEventListener('click', unlockAudio);
+                document.addEventListener('touchstart', unlockAudio);
+
+                function checkIncomingCalls() {
+                    const formData = new FormData();
+                    formData.append('action', 'check_incoming');
+
+                    fetch('<?php echo $base_url; ?>/includes/signaling.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.call && (!activeIncomingCall || activeIncomingCall.id != data.call.id)) {
+                                console.log("%c[CALL SYSTEM] Incoming call detected", "color: white; background: #2E7D32; padding: 5px; border-radius: 5px; font-weight: bold;");
+                                activeIncomingCall = data.call;
+                                document.getElementById('callerNameDisp').textContent = data.call.caller_name;
+                                document.getElementById('callerDetailDisp').textContent = "Incoming video call...";
+                                
+                                const modal = getModal();
+                                if (modal) modal.show();
+                                
+                                if (audioEnabled && ringtoneIn) {
+                                    setTimeout(() => {
+                                        ringtoneIn.play().catch(e => console.warn("Audio play deferred", e));
+                                    }, 200);
+                                }
+                            }
+                        })
+                        .catch(err => {
+                            // Silently ignore or log connection drops
+                        });
+                }
+
+                document.getElementById('acceptCallBtn').onclick = () => {
+                    if (!activeIncomingCall) return;
+                    const fd = new FormData();
+                    fd.append('action', 'respond_call');
+                    fd.append('call_id', activeIncomingCall.id);
+                    fd.append('status', 'accepted');
+
+                    fetch('<?php echo $base_url; ?>/includes/signaling.php', { method: 'POST', body: fd })
+                        .then(() => {
+                            if (ringtoneIn) ringtoneIn.pause();
+                            let redirectUrl = '';
+                            if ('<?php echo $user_role; ?>' === 'doctor') {
+                                redirectUrl = '<?php echo $base_url; ?>/doctor/video_call.php?customer_id=' + activeIncomingCall.caller_id;
+                            } else {
+                                redirectUrl = '<?php echo $base_url; ?>/customer/doctor_video_call.php?doctor_id=' + activeIncomingCall.provider_id;
+                            }
+                            window.location.href = redirectUrl;
+                        });
+                };
+
+                document.getElementById('declineCallBtn').onclick = () => {
+                    if (!activeIncomingCall) return;
+                    const fd = new FormData();
+                    fd.append('action', 'respond_call');
+                    fd.append('call_id', activeIncomingCall.id);
+                    fd.append('status', 'rejected');
+
+                    fetch('<?php echo $base_url; ?>/includes/signaling.php', { method: 'POST', body: fd })
+                        .then(() => {
+                            if (ringtoneIn) ringtoneIn.pause();
+                            const modal = getModal();
+                            if (modal) modal.hide();
+                            activeIncomingCall = null;
+                        });
+                };
+
+                // Check every 3 seconds for better responsiveness
+                setInterval(checkIncomingCalls, 3000);
+                setTimeout(checkIncomingCalls, 1000); // Initial check
+            });
+        </script>
+    <?php endif; ?>

@@ -97,6 +97,7 @@ $count_home_services = 0;
 $count_health = 0;
 $count_dating = 0;
 $count_community = 0;
+$count_jobs = 0;
 
 try {
     $count_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies WHERE status='approved'")->fetchColumn();
@@ -148,6 +149,10 @@ try {
 }
 try {
     $count_community = $pdo->query("SELECT (SELECT COUNT(*) FROM comm_news) + (SELECT COUNT(*) FROM comm_events) + (SELECT COUNT(*) FROM comm_marketplace WHERE status='available') as total")->fetchColumn();
+} catch (Exception $e) {
+}
+try {
+    $count_jobs = $pdo->query("SELECT COUNT(*) FROM job_listings WHERE status='active'")->fetchColumn();
 } catch (Exception $e) {
 }
 
@@ -278,6 +283,21 @@ include('../includes/header.php');
                     <i class="fas fa-plane"></i>
                 </div>
                 <p class="service-label">Flights</p>
+            </a>
+
+            <!-- Jobs & Freelance -->
+            <a href="jobs.php" class="service-card shadow-sm position-relative">
+                <?php if ($count_jobs > 0): ?>
+                    <span class="count-badge" style="background:#1565C0;"><i class="fas fa-circle me-1"
+                            style="font-size:0.4rem;"></i> <?php echo $count_jobs; ?> Jobs</span>
+                <?php else: ?>
+                    <span class="count-badge" style="background:#1565C0;"><i class="fas fa-briefcase me-1"
+                            style="font-size:0.4rem;"></i>NEW</span>
+                <?php endif; ?>
+                <div class="service-icon" style="background:linear-gradient(135deg,#1565C0,#0d47a1);color:white;">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <p class="service-label">Jobs</p>
             </a>
 
             <!-- Dating Services -->

@@ -17,6 +17,8 @@ if (isLoggedIn()) {
         header("Location: restaurant/dashboard.php");
     } elseif ($role == 'taxi') {
         header("Location: taxi/dashboard.php");
+    } elseif ($role == 'doctor') {
+        header("Location: doctor/dashboard.php");
     } else {
         header("Location: customer/index.php");
     }
@@ -86,6 +88,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             break;
                         case 'student':
                             header("Location: customer/education.php");
+                            break;
+                        case 'employer':
+                            header("Location: customer/employer_dashboard.php");
+                            break;
+                        case 'doctor':
+                            header("Location: doctor/dashboard.php");
                             break;
                         default:
                             header("Location: customer/index.php");
@@ -216,12 +224,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <i class="fas fa-graduation-cap me-1"></i>Student
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                    onclick="fillLogin('selam_dating','password123')">
+                                    onclick="fillLogin('selam_dating','password')">
                                     <i class="fas fa-heart me-1"></i>Dating (Selam)
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                    onclick="fillLogin('dawit_dating','password123')">
+                                    onclick="fillLogin('dawit_dating','password')">
                                     <i class="fas fa-heart me-1"></i>Dating (Dawit)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3"
+                                    onclick="fillLogin('cloud_company','password')">
+                                    <i class="fas fa-building me-1"></i>Employer (Jobs)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
+                                    onclick="fillLogin('dr_dawit','password')">
+                                    <i class="fas fa-stethoscope me-1"></i>Doctor
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                     onclick="fillLogin('admin','password')">

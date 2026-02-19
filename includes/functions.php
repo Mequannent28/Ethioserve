@@ -9,6 +9,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Ensure both session keys are set for compatibility across modules
+if (isset($_SESSION['user_id']) && !isset($_SESSION['id'])) {
+    $_SESSION['id'] = $_SESSION['user_id'];
+} elseif (isset($_SESSION['id']) && !isset($_SESSION['user_id'])) {
+    $_SESSION['user_id'] = $_SESSION['id'];
+}
+
+
 /**
  * Generate CSRF Token
  */
@@ -756,5 +764,50 @@ function time_ago($timestamp)
             return "$years years ago";
         }
     }
+}
+
+/**
+ * Get unread message count for current user
+ */
+function getUnreadMessageCount()
+{
+    global $pdo;
+    if (!isLoggedIn())
+        return 0;
+
+    $user_id = getCurrentUserId();
+    $role = getCurrentUserRole();
+    $total = 0;
+
+    // 1. Doctor Messages
+    try {
+        if ($role === 'doctor') {
+            // Check for unread messages SENT BY customers TO this doctor
+            $stmt = $pdo->prepare("SELECT id FROM health_providers WHERE user_id = ?");
+            $stmt->execute([$user_id]);
+            $provider = $stmt->fetch();
+            if ($provider) {
+                $s = $pdo->prepare("SELECT COUNT(*) FROM doctor_messages WHERE provider_id = ? AND sender_type = 'customer' AND is_read = 0");
+                $s->execute([$provider['id']]);
+                $total += (int) $s->fetchColumn();
+            }
+        } else {
+            // Check for unread messages SENT BY doctors TO this customer
+            $s = $pdo->prepare("SELECT COUNT(*) FROM doctor_messages WHERE customer_id = ? AND sender_type = 'doctor' AND is_read = 0");
+            $s->execute([$user_id]);
+            $total += (int) $s->fetchColumn();
+        }
+    } catch (Exception $e) {
+    }
+
+    // 2. Job Messages
+    try {
+        $s = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE receiver_id = ? AND is_read = 0");
+        $s->execute([$user_id]);
+        $total += (int) $s->fetchColumn();
+    } catch (Exception $e) {
+    }
+
+    return $total;
 }
 

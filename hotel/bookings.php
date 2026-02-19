@@ -43,7 +43,6 @@ if (!empty($status_filter) && in_array($status_filter, ['pending', 'approved', '
     $where_clause .= " AND b.status = ?";
     $params[] = $status_filter;
 }
-
 // Get all bookings
 $stmt = $pdo->prepare("
     SELECT b.*, u.full_name as customer_name, u.phone as customer_phone, u.email as customer_email
@@ -229,7 +228,6 @@ $bookings = $stmt->fetchAll();
             <?php endif; ?>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
