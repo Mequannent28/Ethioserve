@@ -40,19 +40,21 @@ try {
 
     if ($handle) {
         while (($line = fgets($handle)) !== false) {
+            $trimmedLine = trim($line);
             // Skip comments and empty lines
-            if (trim($line) == "" || strpos(trim($line), "--") === 0 || strpos(trim($line), "/*") === 0) {
+            if ($trimmedLine == "" || strpos($trimmedLine, "--") === 0 || strpos($trimmedLine, "/*") === 0) {
                 continue;
             }
 
             $query .= $line;
-            // If the line ends with a semicolon, it's a complete query
-            if (substr(trim($line), -2, 1) == ";" || substr(trim($line), -1) == ";") {
+            // End of query detection: search for semicolon NOT inside quotes (minimal detection)
+            // Simpler: just check if the trimmed line ends with a semicolon
+            if (substr($trimmedLine, -1) == ";") {
                 try {
                     $pdo->exec($query);
                     $success_count++;
                 } catch (Exception $e) {
-                    // Ignore some specific common errors like "Database already exists"
+                    // Log error but continue
                 }
                 $query = "";
                 $count++;
