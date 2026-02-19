@@ -10,6 +10,7 @@ try {
     $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'hotel', 'broker', 'transport', 'customer', 'restaurant', 'taxi', 'student') DEFAULT 'customer'");
     echo "   ✅ users.role ENUM updated\n\n";
 
+
     // Step 2: Seed demo student account
     echo "➡️ Step 2: Seeding demo student account...\n";
     $hashed = password_hash('password', PASSWORD_DEFAULT);

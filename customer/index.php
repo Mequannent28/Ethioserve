@@ -14,13 +14,18 @@ if (!empty($search)) {
 }
 
 // Fetch approved hotels from database with potential menu item search
-$sql = "SELECT DISTINCT h.* FROM hotels h 
-        LEFT JOIN menu_items m ON h.id = m.hotel_id 
-        WHERE h.status = 'approved' $searchCondition 
-        ORDER BY h.rating DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$hotels = $stmt->fetchAll();
+$hotels = [];
+try {
+    $sql = "SELECT DISTINCT h.* FROM hotels h 
+            LEFT JOIN menu_items m ON h.id = m.hotel_id 
+            WHERE h.status = 'approved' $searchCondition 
+            ORDER BY h.rating DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $hotels = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Table may not exist yet
+}
 
 // Initialize other results
 $restaurants = [];
@@ -31,31 +36,46 @@ $dating_results = [];
 
 if (!empty($search)) {
     // Search Restaurants
-    $resSql = "SELECT * FROM restaurants WHERE status = 'approved' AND (name LIKE ? OR address LIKE ? OR cuisine_type LIKE ?)";
-    $resStmt = $pdo->prepare($resSql);
-    $resStmt->execute(["%$search%", "%$search%", "%$search%"]);
-    $restaurants = $resStmt->fetchAll();
+    try {
+        $resSql = "SELECT * FROM restaurants WHERE status = 'approved' AND (name LIKE ? OR address LIKE ? OR cuisine_type LIKE ?)";
+        $resStmt = $pdo->prepare($resSql);
+        $resStmt->execute(["%$search%", "%$search%", "%$search%"]);
+        $restaurants = $resStmt->fetchAll();
+    } catch (Exception $e) {
+    }
 
     // Search Taxis
-    $taxiSql = "SELECT * FROM taxi_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)";
-    $taxiStmt = $pdo->prepare($taxiSql);
-    $taxiStmt->execute(["%$search%", "%$search%"]);
-    $taxis = $taxiStmt->fetchAll();
+    try {
+        $taxiSql = "SELECT * FROM taxi_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)";
+        $taxiStmt = $pdo->prepare($taxiSql);
+        $taxiStmt->execute(["%$search%", "%$search%"]);
+        $taxis = $taxiStmt->fetchAll();
+    } catch (Exception $e) {
+    }
 
     // Search Buses
-    $busStmt = $pdo->prepare("SELECT * FROM transport_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)");
-    $busStmt->execute(["%$search%", "%$search%"]);
-    $buses = $busStmt->fetchAll();
+    try {
+        $busStmt = $pdo->prepare("SELECT * FROM transport_companies WHERE status = 'approved' AND (company_name LIKE ? OR address LIKE ?)");
+        $busStmt->execute(["%$search%", "%$search%"]);
+        $buses = $busStmt->fetchAll();
+    } catch (Exception $e) {
+    }
 
     // Search Health
-    $healthStmt = $pdo->prepare("SELECT * FROM health_providers WHERE is_available = 1 AND (name LIKE ? OR location LIKE ? OR bio LIKE ?)");
-    $healthStmt->execute(["%$search%", "%$search%", "%$search%"]);
-    $health_results = $healthStmt->fetchAll();
+    try {
+        $healthStmt = $pdo->prepare("SELECT * FROM health_providers WHERE is_available = 1 AND (name LIKE ? OR location LIKE ? OR bio LIKE ?)");
+        $healthStmt->execute(["%$search%", "%$search%", "%$search%"]);
+        $health_results = $healthStmt->fetchAll();
+    } catch (Exception $e) {
+    }
 
     // Search Dating
-    $datingStmt = $pdo->prepare("SELECT p.*, u.full_name FROM dating_profiles p JOIN users u ON p.user_id = u.id WHERE (u.full_name LIKE ? OR p.bio LIKE ? OR p.location_name LIKE ?)");
-    $datingStmt->execute(["%$search%", "%$search%", "%$search%"]);
-    $dating_results = $datingStmt->fetchAll();
+    try {
+        $datingStmt = $pdo->prepare("SELECT p.*, u.full_name FROM dating_profiles p JOIN users u ON p.user_id = u.id WHERE (u.full_name LIKE ? OR p.bio LIKE ? OR p.location_name LIKE ?)");
+        $datingStmt->execute(["%$search%", "%$search%", "%$search%"]);
+        $dating_results = $datingStmt->fetchAll();
+    } catch (Exception $e) {
+    }
 }
 
 // Get cart count for display
@@ -682,7 +702,8 @@ include('../includes/header.php');
                                     style="height: 180px; object-fit: cover;">
                                 <div class="card-body p-3">
                                     <h6 class="fw-bold mb-1"><?php echo htmlspecialchars($d['full_name']); ?>,
-                                        <?php echo $d['age']; ?></h6>
+                                        <?php echo $d['age']; ?>
+                                    </h6>
                                     <p class="text-muted small text-truncate mb-3"><?php echo htmlspecialchars($d['bio']); ?></p>
                                     <a href="dating.php" class="btn btn-danger btn-sm w-100 rounded-pill">View Profile</a>
                                 </div>

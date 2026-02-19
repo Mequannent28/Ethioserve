@@ -4,7 +4,7 @@
 set -e
 
 echo "========================================="
-echo "  EthioServe - System Booting..."
+echo "  EthioServe - Starting System..."
 echo "========================================="
 
 # 1. Setup Apache Port
@@ -19,17 +19,17 @@ mkdir -p /var/run/mysqld /var/lib/mysql
 chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "  → Initializing raw data directory..."
+    echo "  → Fresh database init..."
     mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null 2>&1
 fi
 
-# Start MariaDB in background (allow startup logs to go to stderr for debugging)
-mysqld_safe --user=mysql --skip-syslog --skip-networking=0 &
+# Start MariaDB in background
+mysqld_safe --user=mysql --skip-syslog --skip-networking=0 --max-allowed-packet=128M &
 
 # Wait for it to be ready
 echo "  → Waiting for database availability..."
-RETRIES=45
-while ! mysqladmin ping --silent && [ $RETRIES -gt 0 ]; do
+RETRIES=60
+until mysqladmin ping --silent || [ $RETRIES -eq 0 ]; do
     sleep 1
     let RETRIES-=1
     echo -n "."
@@ -41,8 +41,8 @@ if [ $RETRIES -eq 0 ]; then
     exit 1
 fi
 
-# 3. Create Database & Fix Schema
-echo "[3/4] Verifying Data Integrity..."
+# 3. Create Schema and Users
+echo "[3/4] Auto-Configuring Database..."
 
 # Ensure DB and Users exist
 mysql -u root <<EOF
@@ -51,27 +51,25 @@ CREATE USER IF NOT EXISTS 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pas
 CREATE USER IF NOT EXISTS 'ethioserve'@'127.0.0.1' IDENTIFIED BY 'ethioserve_pass_2024';
 GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'localhost';
 GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1';
+SET GLOBAL max_allowed_packet=134217728;
 FLUSH PRIVILEGES;
 EOF
 
-# Check for 'hotels' table specifically as it's a core table
-HOTELS_EXIST=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve' AND table_name='hotels';")
+# CHECK IF DATA ALREADY EXISTS
+# We check the 'hotels' table which is essential.
+HOTELS_EXIST=$(mysql -u root -N -e "SELECT count(*) FROM information_schema.tables WHERE table_schema='ethioserve' AND table_name='hotels';")
 
 if [ "$HOTELS_EXIST" -eq "0" ]; then
-    echo "  → TABLES MISSING! Starting full import from database.sql..."
+    echo "  → DATA MISSING! Importing from database.sql..."
     if [ -f "/var/www/html/database.sql" ]; then
-        # Wrap import in foreign key disable/enable
-        (
-            echo "SET FOREIGN_KEY_CHECKS=0;"
-            grep -vE "CREATE DATABASE|USE " /var/www/html/database.sql
-            echo "SET FOREIGN_KEY_CHECKS=1;"
-        ) | mysql -u root ethioserve
-        echo "  ✓ Import successful!"
+        # Use a more aggressive import
+        mysql -u root ethioserve < /var/www/html/database.sql
+        echo "  ✓ Data imported successfully!"
     else
-        echo "  ✗ FAILURE: database.sql not found at /var/www/html/database.sql"
+        echo "  ✗ ERROR: database.sql not found!"
     fi
 else
-    echo "  ✓ Core tables detected. Skipping full import."
+    echo "  ✓ Data already present ($HOTELS_EXIST tables found)."
 fi
 
 # 4. Start Apache

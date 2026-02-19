@@ -3,7 +3,6 @@ require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 $id = intval($_GET['id'] ?? 0);
-
 $stmt = $pdo->prepare("SELECT em.*, u.username, u.full_name as seller_name, u.email as seller_email, u.created_at as seller_since 
                        FROM exchange_materials em 
                        JOIN users u ON em.user_id = u.id 
@@ -14,10 +13,8 @@ $item = $stmt->fetch();
 if (!$item) {
     redirectWithMessage('exchange_material.php', 'danger', 'Item not found.');
 }
-
 include '../includes/header.php';
 ?>
-
 <div class="container py-5">
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
@@ -28,7 +25,6 @@ include '../includes/header.php';
             </li>
         </ol>
     </nav>
-
     <div class="row g-5">
         <!-- Item Gallery -->
         <div class="col-lg-7">
@@ -38,7 +34,6 @@ include '../includes/header.php';
                         class="h-100 mw-100 object-fit-contain" alt="<?php echo htmlspecialchars($item['title']); ?>">
                 </div>
             </div>
-
             <div class="mt-5">
                 <h4 class="fw-bold mb-4">Description</h4>
                 <div class="card border-0 shadow-sm rounded-4 p-4">
@@ -48,7 +43,6 @@ include '../includes/header.php';
                 </div>
             </div>
         </div>
-
         <!-- Sticky Sidebar -->
         <div class="col-lg-5">
             <div class="sticky-top" style="top: 100px;">
@@ -65,7 +59,6 @@ include '../includes/header.php';
                             <?php echo ucfirst($item['condition']); ?> condition
                         </span>
                     </div>
-
                     <h2 class="display-5 fw-extrabold text-primary-green mb-4">
                         <?php echo number_format($item['price'], 2); ?> <small class="text-muted fs-4">ETB</small>
                     </h2>
@@ -86,7 +79,6 @@ include '../includes/header.php';
                             </span>
                         </div>
                     </div>
-
                     <div class="d-grid gap-3">
                         <button class="btn btn-primary-green btn-lg rounded-pill fw-bold py-3 shadow" id="show-contact">
                             <i class="fas fa-phone-alt me-2"></i> Show Contact Number
@@ -101,7 +93,6 @@ include '../includes/header.php';
                         </a>
                     </div>
                 </div>
-
                 <!-- Seller Profile -->
                 <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
                     <div class="mb-3">
