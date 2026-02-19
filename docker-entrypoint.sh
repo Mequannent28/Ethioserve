@@ -42,17 +42,32 @@ echo "  ✓ MariaDB is running!"
 echo "[3/4] Setting up database..."
 
 # Create database and user
+echo "  → Setting up database and users..."
 mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ethioserve CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pass_2024';
-GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1' IDENTIFIED BY 'ethioserve_pass_2024';
+CREATE USER IF NOT EXISTS 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pass_2024';
+CREATE USER IF NOT EXISTS 'ethioserve'@'127.0.0.1' IDENTIFIED BY 'ethioserve_pass_2024';
+GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'localhost';
+GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EOF
 
-# Initialize via PHP for consistent connection/execution
-echo "  → Running database initialization via PHP CLI..."
-ENVIRONMENT=production DB_NAME=ethioserve DB_USER=ethioserve DB_PASS=ethioserve_pass_2024 php /var/www/html/force_db.php
-echo "  ✓ Database initialization step completed."
+# Check if tables exist
+TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
+echo "  → Current table count in 'ethioserve': $TABLE_COUNT"
+
+if [ "$TABLE_COUNT" -le "5" ]; then
+    echo "  → Database empty or incomplete. Importing database.sql..."
+    if [ -f "/var/www/html/database.sql" ]; then
+        mysql -u root ethioserve < /var/www/html/database.sql
+        NEW_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
+        echo "  ✓ Import complete. New table count: $NEW_COUNT"
+    else
+        echo "  ✗ ERROR: database.sql not found!"
+    fi
+else
+    echo "  ✓ Database already initialized with $TABLE_COUNT tables."
+fi
 
 # ---- Start Apache ----
 echo "[4/4] Starting Apache on port $PORT..."
