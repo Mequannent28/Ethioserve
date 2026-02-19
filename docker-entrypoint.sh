@@ -2,47 +2,48 @@
 set -e
 
 echo "========================================="
-echo "  EthioServe - Starting Services"
+echo "  EthioServe - Production Entrypoint"
 echo "========================================="
 
-# ---- Configure Apache port for Render ----
+# ---- Config Apache Port ----
 PORT=${PORT:-80}
 echo "[1/4] Configuring Apache to listen on port $PORT..."
 sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
 sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/000-default.conf
 
-# ---- Start MariaDB ----
+# ---- Prepare MariaDB ----
 echo "[2/4] Starting MariaDB..."
 mkdir -p /var/run/mysqld
 chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
-# Initialize data directory if needed
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     echo "  → Initializing MariaDB data directory..."
     mysql_install_db --user=mysql --datadir=/var/lib/mysql 2>/dev/null
 fi
 
-# Start MariaDB in background
+# Start MariaDB
 mysqld_safe --skip-syslog &
 
-# Wait for MariaDB to be ready
+# Wait for MariaDB
 echo "  → Waiting for MariaDB to start..."
-RETRIES=30
-until mysqladmin ping --silent 2>/dev/null; do
-    RETRIES=$((RETRIES - 1))
-    if [ $RETRIES -le 0 ]; then
-        echo "  ✗ MariaDB failed to start!"
-        exit 1
+for i in {30..0}; do
+    if mysqladmin ping --silent; then
+        break
     fi
+    echo "  . Waiting ($i)..."
     sleep 1
 done
+
+if ! mysqladmin ping --silent; then
+    echo "  ✗ ERROR: MariaDB failed to start!"
+    exit 1
+fi
 echo "  ✓ MariaDB is running!"
 
-# ---- Setup Database ----
-echo "[3/4] Setting up database..."
+# ---- Database Setup ----
+echo "[3/4] Initializing Database Schema..."
 
-# Create database and user
-echo "  → Setting up database and users..."
+# Create DB and User (Standard MariaDB commands)
 mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS ethioserve CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pass_2024';
@@ -52,28 +53,28 @@ GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EOF
 
-# Check if tables exist
+# Check if we need to import data
 TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
-echo "  → Current table count in 'ethioserve': $TABLE_COUNT"
+echo "  → Current table count: $TABLE_COUNT"
 
 if [ "$TABLE_COUNT" -le "5" ]; then
-    echo "  → Database empty or incomplete. Importing database.sql..."
+    echo "  → Importing schema from database.sql..."
     if [ -f "/var/www/html/database.sql" ]; then
         mysql -u root ethioserve < /var/www/html/database.sql
-        NEW_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
-        echo "  ✓ Import complete. New table count: $NEW_COUNT"
+        echo "  ✓ Schema import successful!"
     else
-        echo "  ✗ ERROR: database.sql not found!"
+        echo "  ✗ WARNING: database.sql not found!"
     fi
-else
-    echo "  ✓ Database already initialized with $TABLE_COUNT tables."
 fi
 
+# Final Table Count
+FINAL_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
+echo "  ✓ Database ready with $FINAL_COUNT tables."
+
 # ---- Start Apache ----
-echo "[4/4] Starting Apache on port $PORT..."
+echo "[4/4] Starting Apache Web Server..."
 echo "========================================="
-echo "  ✓ EthioServe is LIVE!"
+echo "  ✓ EthioServe is ready at port $PORT"
 echo "========================================="
 
-# Start Apache in foreground (keeps container running)
 exec apache2-foreground
