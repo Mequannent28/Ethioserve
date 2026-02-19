@@ -40,7 +40,9 @@ RUN mkdir -p /var/run/mysqld \
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN tr -d '\r' < /usr/local/bin/docker-entrypoint.sh > /usr/local/bin/entrypoint.sh \
+    && mv /usr/local/bin/entrypoint.sh /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
 

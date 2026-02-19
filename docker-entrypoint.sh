@@ -1,51 +1,46 @@
 #!/bin/bash
-set -e
 
 echo "========================================="
-echo "  EthioServe - Production Entrypoint"
+echo "  EthioServe - Starting System..."
 echo "========================================="
 
-# ---- Config Apache Port ----
+# 1. Setup Apache Port
 PORT=${PORT:-80}
-echo "[1/4] Configuring Apache to listen on port $PORT..."
-sed -i "s/Listen 80/Listen $PORT/" /etc/apache2/ports.conf
-sed -i "s/:80/:$PORT/" /etc/apache2/sites-available/000-default.conf
+echo "[1/4] Setting Apache port to $PORT..."
+sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf
+sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf
 
-# ---- Prepare MariaDB ----
-echo "[2/4] Starting MariaDB..."
+# 2. Setup MySQL/MariaDB
+echo "[2/4] Initializing Database Engine..."
 mkdir -p /var/run/mysqld
 chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "  → Initializing MariaDB data directory..."
-    mysql_install_db --user=mysql --datadir=/var/lib/mysql 2>/dev/null
+    echo "  → Fresh database init..."
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null 2>&1
 fi
 
-# Start MariaDB
-mysqld_safe --skip-syslog &
+# Start MariaDB in background
+echo "  → Starting MariaDB Background Process..."
+mysqld_safe --user=mysql --skip-syslog --skip-networking=0 &
 
-# Wait for MariaDB
-echo "  → Waiting for MariaDB to start..."
-for i in {30..0}; do
-    if mysqladmin ping --silent; then
-        break
-    fi
-    echo "  . Waiting ($i)..."
+# Wait for it to be ready
+RETRIES=30
+until mysqladmin ping --silent || [ $RETRIES -eq 0 ]; do
+    echo "  . Waiting for database ($RETRIES)..."
     sleep 1
+    let RETRIES-=1
 done
 
-if ! mysqladmin ping --silent; then
-    echo "  ✗ ERROR: MariaDB failed to start!"
+if [ $RETRIES -eq 0 ]; then
+    echo "  ✗ ERROR: Database failed to start!"
     exit 1
 fi
-echo "  ✓ MariaDB is running!"
 
-# ---- Database Setup ----
-echo "[3/4] Initializing Database Schema..."
-
-# Create DB and User (Standard MariaDB commands)
+# 3. Create Schema and Users
+echo "[3/4] Auto-Configuring Database..."
 mysql -u root <<EOF
-CREATE DATABASE IF NOT EXISTS ethioserve CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS ethioserve;
 CREATE USER IF NOT EXISTS 'ethioserve'@'localhost' IDENTIFIED BY 'ethioserve_pass_2024';
 CREATE USER IF NOT EXISTS 'ethioserve'@'127.0.0.1' IDENTIFIED BY 'ethioserve_pass_2024';
 GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'localhost';
@@ -53,28 +48,25 @@ GRANT ALL PRIVILEGES ON ethioserve.* TO 'ethioserve'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EOF
 
-# Check if we need to import data
-TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
-echo "  → Current table count: $TABLE_COUNT"
+# Check table count
+TABLE_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';")
+echo "  → Database currently has $TABLE_COUNT tables."
 
 if [ "$TABLE_COUNT" -le "5" ]; then
-    echo "  → Importing schema from database.sql..."
+    echo "  → Importing default data (database.sql)..."
     if [ -f "/var/www/html/database.sql" ]; then
-        mysql -u root ethioserve < /var/www/html/database.sql
-        echo "  ✓ Schema import successful!"
+        # Remove any database-switching lines from the file during import
+        grep -v "CREATE DATABASE" /var/www/html/database.sql | grep -v "USE " | mysql -u root ethioserve
+        echo "  ✓ Import finished!"
     else
-        echo "  ✗ WARNING: database.sql not found!"
+        echo "  ✗ WARNING: database.sql MISSION! Application might fail."
     fi
 fi
 
-# Final Table Count
-FINAL_COUNT=$(mysql -u root -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ethioserve';" 2>/dev/null || echo "0")
-echo "  ✓ Database ready with $FINAL_COUNT tables."
-
-# ---- Start Apache ----
-echo "[4/4] Starting Apache Web Server..."
+# 4. Final Handover to Apache
+echo "[4/4] Handing over to Apache Server..."
 echo "========================================="
-echo "  ✓ EthioServe is ready at port $PORT"
+echo "  🚀 ETHIOSERVE IS LIVE!"
 echo "========================================="
 
 exec apache2-foreground
