@@ -11,7 +11,7 @@ if (!$user_id) {
 // Fetch distinct conversations for the current user
 $stmt = $pdo->prepare("
     SELECT m.*, 
-    u.name as other_user_name,
+    u.full_name as other_user_name,
     CASE 
         WHEN m.item_type = 'marketplace' THEN (SELECT title FROM comm_marketplace WHERE id = m.item_id)
         ELSE (SELECT item_name FROM comm_lost_found WHERE id = m.item_id)

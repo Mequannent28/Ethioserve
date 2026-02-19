@@ -13,9 +13,9 @@ if (!$item_id) {
 
 // Fetch Item Details
 if ($type == 'marketplace') {
-    $stmt = $pdo->prepare("SELECT m.*, u.name as seller_name FROM comm_marketplace m LEFT JOIN users u ON m.user_id = u.id WHERE m.id = ?");
+    $stmt = $pdo->prepare("SELECT m.*, u.full_name as seller_name FROM comm_marketplace m LEFT JOIN users u ON m.user_id = u.id WHERE m.id = ?");
 } else {
-    $stmt = $pdo->prepare("SELECT lf.*, u.name as seller_name FROM comm_lost_found lf LEFT JOIN users u ON lf.user_id = u.id WHERE lf.id = ?");
+    $stmt = $pdo->prepare("SELECT lf.*, u.full_name as seller_name FROM comm_lost_found lf LEFT JOIN users u ON lf.user_id = u.id WHERE lf.id = ?");
 }
 $stmt->execute([$item_id]);
 $item = $stmt->fetch();
