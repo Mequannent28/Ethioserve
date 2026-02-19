@@ -52,11 +52,14 @@ if (isset($_GET['action']) && $user_id) {
 }
 
 // Load data
-$potential_matches = [];  // Queue of 5 cards for smooth swiping
-$guest_profiles = [];
+$potential_matches = [];  // Queue for swipe stack
+$guest_profiles = [];  // For non-logged-in guests
+$browse_profiles = [];  // Full browse grid for logged-in users
+$my_match_ids = [];  // IDs of mutual matches (contact revealed)
 $match_data = null;
 
 if ($user_id && $my_profile) {
+    // ── Swipe queue ──
     try {
         $stmt = $pdo->prepare("
             SELECT p.*, u.full_name, u.email, u.phone
@@ -73,7 +76,34 @@ if ($user_id && $my_profile) {
     } catch (Exception $e) {
     }
 
-    // Check pending match notification
+    // ── Browse all profiles (everyone, with contact) ──
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, u.full_name, u.email, u.phone
+            FROM dating_profiles p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.user_id != ?
+            ORDER BY p.created_at DESC
+            LIMIT 30
+        ");
+        $stmt->execute([$user_id]);
+        $browse_profiles = $stmt->fetchAll();
+    } catch (Exception $e) {
+    }
+
+    // ── My mutual match IDs (contact unlocked) ──
+    try {
+        $stmt = $pdo->prepare("
+            SELECT CASE WHEN user1_id = ? THEN user2_id ELSE user1_id END as other_id
+            FROM dating_matches
+            WHERE user1_id = ? OR user2_id = ?
+        ");
+        $stmt->execute([$user_id, $user_id, $user_id]);
+        $my_match_ids = array_column($stmt->fetchAll(), 'other_id');
+    } catch (Exception $e) {
+    }
+
+    // ── Match popup ──
     if (isset($_SESSION['match_found'])) {
         $mid = $_SESSION['match_found'];
         unset($_SESSION['match_found']);
@@ -81,12 +111,30 @@ if ($user_id && $my_profile) {
             $stmt = $pdo->prepare("SELECT u.full_name, p.profile_pic FROM users u JOIN dating_profiles p ON u.id = p.user_id WHERE u.id = ?");
             $stmt->execute([$mid]);
             $match_data = $stmt->fetch();
-            $match_data['user_id'] = $mid;
+            if ($match_data)
+                $match_data['user_id'] = $mid;
         } catch (Exception $e) {
         }
     }
+
+} elseif ($user_id && !$my_profile) {
+    // Logged-in but no profile yet — show all profiles UNBLURRED
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, u.full_name, u.email, u.phone
+            FROM dating_profiles p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.user_id != ?
+            ORDER BY p.created_at DESC
+            LIMIT 24
+        ");
+        $stmt->execute([$user_id]);
+        $browse_profiles = $stmt->fetchAll();
+    } catch (Exception $e) {
+    }
+
 } else {
-    // Guest: fetch all profiles (blurred previews)
+    // Pure guest — blurred previews
     try {
         $stmt = $pdo->query("
             SELECT p.*, u.full_name
@@ -99,7 +147,6 @@ if ($user_id && $my_profile) {
     } catch (Exception $e) {
     }
 }
-
 include '../includes/header.php';
 ?>
 
@@ -136,7 +183,8 @@ include '../includes/header.php';
                     <div class="mb-3" style="font-size:3rem;">💘</div>
                     <h1 class="fw-black mb-2" style="font-size:2.5rem;">It's a Match!</h1>
                     <p class="opacity-75 fs-5 mb-5">You and
-                        <strong><?php echo htmlspecialchars($match_data['full_name']); ?></strong> liked each other.</p>
+                        <strong><?php echo htmlspecialchars($match_data['full_name']); ?></strong> liked each other.
+                    </p>
                 </div>
                 <div class="d-flex flex-column gap-3 mx-auto" style="max-width:300px;">
                     <a href="dating_chat.php?user_id=<?php echo $match_data['user_id']; ?>"
@@ -195,7 +243,8 @@ include '../includes/header.php';
                     <h2 class="fw-black mb-2">Ethiopia's #1 Dating App</h2>
                     <p class="opacity-80 mb-4">Browse
                         <?php echo count($guest_profiles) > 0 ? count($guest_profiles) . '+' : 'thousands of'; ?> real
-                        profiles in Addis & beyond. Login to see full profiles & match!</p>
+                        profiles in Addis & beyond. Login to see full profiles & match!
+                    </p>
                     <div class="d-grid gap-3">
                         <?php if (!$user_id): ?>
                             <a href="../login.php?redirect=customer/dating.php" class="btn btn-white fw-bold rounded-pill py-3"
@@ -230,8 +279,63 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <!-- Browse Profiles (blurred for guests) -->
-            <?php if (!empty($guest_profiles)): ?>
+            <!-- ── BROWSE PROFILES for logged-in (no profile yet) OR guest blur ── -->
+
+            <?php if ($user_id && !$my_profile && !empty($browse_profiles)): ?>
+                <!-- Logged-in but profile not set up: unblurred browse + contact locked -->
+                <div class="alert border-0 rounded-4 mb-4" style="background:#fff3cd;">
+                    <i class="fas fa-info-circle text-warning me-2"></i>
+                    <strong>Set up your dating profile</strong> to start swiping and matching!
+                    <a href="dating_setup.php" class="btn btn-sm btn-warning rounded-pill ms-3 fw-bold">Setup Profile</a>
+                </div>
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Discover People</h5>
+                    <span class="badge bg-danger rounded-pill"><?php echo count($browse_profiles); ?> profiles</span>
+                </div>
+                <div class="row g-3">
+                    <?php foreach ($browse_profiles as $gp):
+                        $interests = array_filter(array_map('trim', explode(',', $gp['interests'] ?? '')));
+                        ?>
+                        <div class="col-6">
+                            <div class="profile-browse-card card border-0 shadow-sm rounded-4 overflow-hidden">
+                                <!-- Photo UNBLURRED for logged-in users -->
+                                <div class="position-relative" style="height:210px;overflow:hidden;">
+                                    <img src="<?php echo htmlspecialchars($gp['profile_pic'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400'); ?>"
+                                        class="w-100 h-100" style="object-fit:cover;">
+                                    <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
+                                        style="background:linear-gradient(transparent,rgba(0,0,0,0.75));">
+                                        <div class="fw-bold small"><?php echo htmlspecialchars($gp['full_name']); ?>,
+                                            <?php echo intval($gp['age']); ?></div>
+                                        <div style="font-size:0.7rem;opacity:0.85;"><i
+                                                class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($gp['location_name'] ?? 'Addis Ababa'); ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <p class="text-muted mb-2" style="font-size:0.78rem;line-height:1.4;">
+                                        <?php echo htmlspecialchars(mb_substr($gp['bio'] ?? '', 0, 70)) . (strlen($gp['bio'] ?? '') > 70 ? '...' : ''); ?>
+                                    </p>
+                                    <?php if (!empty($interests)): ?>
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            <?php foreach (array_slice($interests, 0, 3) as $tag): ?>
+                                                <span class="badge rounded-pill"
+                                                    style="background:#fff0f3;color:#ff4b6e;font-size:0.65rem;font-weight:600;border:1px solid #ffc2cc;"><?php echo htmlspecialchars($tag); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <!-- Contact locked: need profile + match -->
+                                    <div class="rounded-3 p-2 text-center" style="background:#fff5f7;border:1px dashed #ffc2cc;">
+                                        <span style="font-size:0.7rem;color:#ff4b6e;font-weight:600;"><i
+                                                class="fas fa-lock me-1"></i> Setup profile &amp; match to unlock contact</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+            <?php elseif (!$user_id && !empty($guest_profiles)): ?>
+                <!-- Pure guest: blurred photos -->
                 <div class="mb-3 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0">Discover People</h5>
                     <span class="badge bg-danger rounded-pill"><?php echo count($guest_profiles); ?> online</span>
@@ -244,53 +348,39 @@ include '../includes/header.php';
                             <div class="profile-guest-card card border-0 shadow-sm rounded-4 overflow-hidden position-relative"
                                 style="cursor:pointer;"
                                 onclick="document.querySelector('#loginPrompt').scrollIntoView({behavior:'smooth'})">
-                                <!-- Photo (blurred) -->
                                 <div class="position-relative" style="height:200px;overflow:hidden;">
                                     <img src="<?php echo htmlspecialchars($gp['profile_pic'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400'); ?>"
                                         class="w-100 h-100" style="object-fit:cover;filter:blur(8px);transform:scale(1.1);">
-                                    <!-- Login overlay on photo -->
                                     <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
                                         style="background:rgba(255,75,110,0.15);">
                                         <div class="bg-white rounded-pill px-3 py-1 shadow-sm"
-                                            style="font-size:0.7rem;font-weight:700;color:#ff4b6e;">
-                                            <i class="fas fa-lock me-1"></i> Login to View
-                                        </div>
+                                            style="font-size:0.7rem;font-weight:700;color:#ff4b6e;"><i class="fas fa-lock me-1"></i>
+                                            Login to View</div>
                                     </div>
-                                    <!-- Name/Age always visible -->
                                     <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
                                         style="background:linear-gradient(transparent,rgba(0,0,0,0.75));">
                                         <div class="fw-bold small"><?php echo htmlspecialchars($gp['full_name']); ?>,
                                             <?php echo intval($gp['age']); ?></div>
-                                        <div class="d-flex align-items-center" style="font-size:0.7rem;opacity:0.85;">
-                                            <i
+                                        <div style="font-size:0.7rem;opacity:0.85;"><i
                                                 class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($gp['location_name'] ?? 'Addis Ababa'); ?>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Profile highlights (visible) -->
-                                <div class="p-3" style="background:#fff;">
-                                    <!-- Bio preview (first 60 chars) -->
+                                <div class="p-3">
                                     <p class="text-muted mb-2" style="font-size:0.78rem;line-height:1.4;">
-                                        <?php echo htmlspecialchars(mb_substr($gp['bio'] ?? 'Interesting person looking for connection.', 0, 60)) . (strlen($gp['bio'] ?? '') > 60 ? '...' : ''); ?>
+                                        <?php echo htmlspecialchars(mb_substr($gp['bio'] ?? 'Interesting person.', 0, 60)) . (strlen($gp['bio'] ?? '') > 60 ? '...' : ''); ?>
                                     </p>
-                                    <!-- Interest tags -->
                                     <?php if (!empty($interests)): ?>
-                                        <div class="d-flex flex-wrap gap-1">
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
                                             <?php foreach (array_slice($interests, 0, 3) as $tag): ?>
                                                 <span class="badge rounded-pill"
-                                                    style="background:#fff0f3;color:#ff4b6e;font-size:0.65rem;font-weight:600;border:1px solid #ffc2cc;">
-                                                    <?php echo htmlspecialchars($tag); ?>
-                                                </span>
+                                                    style="background:#fff0f3;color:#ff4b6e;font-size:0.65rem;font-weight:600;border:1px solid #ffc2cc;"><?php echo htmlspecialchars($tag); ?></span>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>
-                                    <!-- Contact LOCKED banner -->
-                                    <div class="mt-2 rounded-3 p-2 text-center"
-                                        style="background:#fff5f7;border:1px dashed #ffc2cc;">
-                                        <span style="font-size:0.7rem;color:#ff4b6e;font-weight:600;">
-                                            <i class="fas fa-eye-slash me-1"></i> Contact hidden – Login to reveal
-                                        </span>
+                                    <div class="rounded-3 p-2 text-center" style="background:#fff5f7;border:1px dashed #ffc2cc;">
+                                        <span style="font-size:0.7rem;color:#ff4b6e;font-weight:600;"><i
+                                                class="fas fa-eye-slash me-1"></i> Login to reveal contact</span>
                                     </div>
                                 </div>
                             </div>
@@ -303,15 +393,13 @@ include '../includes/header.php';
                     style="background:linear-gradient(135deg,#ff4b6e,#ff8c69);color:#fff;">
                     <div class="mb-3" style="font-size:2.5rem;">🔓</div>
                     <h4 class="fw-black mb-2">Unlock Full Profiles</h4>
-                    <p class="opacity-80 mb-4">See photos, contact details, and start messaging!</p>
+                    <p class="opacity-80 mb-4">See full photos, contact details &amp; start messaging!</p>
                     <div class="d-flex justify-content-center gap-3 flex-wrap">
                         <a href="../login.php?redirect=customer/dating.php" class="btn btn-white fw-bold rounded-pill px-5 py-3"
                             style="color:#ff4b6e;">
                             <i class="fas fa-sign-in-alt me-2"></i> Login Now
                         </a>
-                        <a href="../register.php" class="btn btn-outline-light fw-bold rounded-pill px-5 py-3">
-                            Register Free
-                        </a>
+                        <a href="../register.php" class="btn btn-outline-light fw-bold rounded-pill px-5 py-3">Register Free</a>
                     </div>
                 </div>
             <?php endif; ?>
@@ -420,21 +508,108 @@ include '../includes/header.php';
             </div>
 
         <?php elseif ($user_id && $my_profile): ?>
-            <!-- No more matches -->
-            <div class="text-center py-5">
-                <div style="font-size:5rem;" class="mb-4">😴</div>
-                <h3 class="fw-black text-dark">You've seen everyone!</h3>
-                <p class="text-muted mb-5">Check back later, or update your preferences to discover more people.</p>
-                <div class="d-grid gap-3 mx-auto" style="max-width:300px;">
-                    <a href="dating_matches.php" class="btn btn-danger rounded-pill py-3 fw-bold shadow">
-                        <i class="fas fa-comments me-2"></i> View My Matches
+            <!-- No more swipe matches - show full browse grid -->
+            <div class="text-center py-4 mb-4">
+                <div style="font-size:4rem;">😴</div>
+                <h4 class="fw-black">You've swiped everyone nearby!</h4>
+                <p class="text-muted">Browse all profiles below, or check your matches.</p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <a href="dating_matches.php" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        <i class="fas fa-comments me-2"></i>My Matches
                     </a>
-                    <a href="dating_setup.php" class="btn btn-outline-danger rounded-pill py-3 fw-bold">
-                        <i class="fas fa-sliders-h me-2"></i> Update Preferences
+                    <a href="dating_setup.php" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+                        <i class="fas fa-sliders-h me-2"></i>Preferences
                     </a>
                 </div>
             </div>
         <?php endif; ?>
+
+        <!-- ── BROWSE ALL for logged-in users (below swipe or standalone) ── -->
+        <?php if ($user_id && $my_profile && !empty($browse_profiles)): ?>
+            <div class="mt-5 mb-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="fas fa-users text-danger me-2"></i>Browse All Profiles</h5>
+                <span class="badge bg-danger rounded-pill"><?php echo count($browse_profiles); ?> people</span>
+            </div>
+            <div class="row g-3">
+                <?php foreach ($browse_profiles as $bp):
+                    $interests = array_filter(array_map('trim', explode(',', $bp['interests'] ?? '')));
+                    $is_matched = in_array($bp['user_id'], $my_match_ids);
+                    ?>
+                    <div class="col-6">
+                        <div class="profile-browse-card card border-0 shadow-sm rounded-4 overflow-hidden">
+                            <!-- Full unblurred photo -->
+                            <div class="position-relative" style="height:210px;overflow:hidden;">
+                                <img src="<?php echo htmlspecialchars($bp['profile_pic'] ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400'); ?>"
+                                    class="w-100 h-100" style="object-fit:cover;">
+                                <?php if ($is_matched): ?>
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-danger rounded-pill shadow"><i
+                                                class="fas fa-heart me-1"></i>Matched</span>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white"
+                                    style="background:linear-gradient(transparent,rgba(0,0,0,0.8));">
+                                    <div class="fw-bold small"><?php echo htmlspecialchars($bp['full_name']); ?>,
+                                        <?php echo intval($bp['age']); ?></div>
+                                    <div style="font-size:0.7rem;opacity:0.85;"><i
+                                            class="fas fa-map-marker-alt me-1"></i><?php echo htmlspecialchars($bp['location_name'] ?? 'Addis Ababa'); ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-3">
+                                <!-- Full bio -->
+                                <p class="text-muted mb-2" style="font-size:0.78rem;line-height:1.5;">
+                                    <?php echo htmlspecialchars(mb_substr($bp['bio'] ?? '', 0, 80)) . (strlen($bp['bio'] ?? '') > 80 ? '...' : ''); ?>
+                                </p>
+
+                                <!-- Interest tags -->
+                                <?php if (!empty($interests)): ?>
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        <?php foreach (array_slice($interests, 0, 4) as $tag): ?>
+                                            <span class="badge rounded-pill"
+                                                style="background:#fff0f3;color:#ff4b6e;font-size:0.65rem;font-weight:600;border:1px solid #ffc2cc;">
+                                                <?php echo htmlspecialchars($tag); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Contact: revealed if matched, locked if not -->
+                                <?php if ($is_matched): ?>
+                                    <div class="rounded-3 p-2" style="background:#fff0f3;border:1px solid #ffc2cc;">
+                                        <div class="fw-bold text-danger mb-1" style="font-size:0.75rem;"><i
+                                                class="fas fa-unlock me-1"></i>Contact Unlocked!</div>
+                                        <?php if (!empty($bp['phone'])): ?>
+                                            <div style="font-size:0.8rem;"><i class="fas fa-phone me-1 text-success"></i>
+                                                <a href="tel:<?php echo htmlspecialchars($bp['phone']); ?>"
+                                                    class="text-dark text-decoration-none fw-bold"><?php echo htmlspecialchars($bp['phone']); ?></a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($bp['email'])): ?>
+                                            <div style="font-size:0.8rem;"><i class="fas fa-envelope me-1 text-primary"></i>
+                                                <a href="mailto:<?php echo htmlspecialchars($bp['email']); ?>"
+                                                    class="text-dark text-decoration-none"><?php echo htmlspecialchars($bp['email']); ?></a>
+                                            </div>
+                                        <?php endif; ?>
+                                        <a href="dating_chat.php?user_id=<?php echo $bp['user_id']; ?>"
+                                            class="btn btn-danger btn-sm rounded-pill w-100 mt-2 fw-bold">
+                                            <i class="fas fa-comment-heart me-1"></i>Message
+                                        </a>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="rounded-3 p-2 text-center" style="background:#fff5f7;border:1px dashed #ffc2cc;">
+                                        <span style="font-size:0.72rem;color:#ff4b6e;font-weight:600;">
+                                            <i class="fas fa-lock me-1"></i>Match to unlock contact
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 
     </div><!-- /container -->
 
