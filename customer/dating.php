@@ -44,6 +44,8 @@ if (isset($_GET['action']) && isset($_GET['target_id'])) {
 }
 
 $potential_match = null;
+$guest_previews = [];
+
 if ($user_id && $my_profile) {
     // Fetch potential matches (not swiped yet)
     $stmt = $pdo->prepare("
@@ -57,6 +59,16 @@ if ($user_id && $my_profile) {
     ");
     $stmt->execute([$user_id, $user_id, $my_profile['looking_for'], $my_profile['looking_for']]);
     $potential_match = $stmt->fetch();
+} else if (!$user_id) {
+    // Fetch a few random profiles for guest preview
+    $stmt = $pdo->query("
+        SELECT p.*, u.full_name 
+        FROM dating_profiles p
+        JOIN users u ON p.user_id = u.id
+        ORDER BY RAND()
+        LIMIT 3
+    ");
+    $guest_previews = $stmt->fetchAll();
 }
 
 include '../includes/header.php';
@@ -103,7 +115,7 @@ include '../includes/header.php';
             <div class="col-lg-5">
                 <?php if (!$user_id || !$my_profile): ?>
                     <!-- Landing / Join Card -->
-                    <div class="card border-0 shadow-lg rounded-5 overflow-hidden bg-white text-center p-5">
+                    <div class="card border-0 shadow-lg rounded-5 overflow-hidden bg-white text-center p-5 mb-5">
                         <div class="mb-4">
                             <div class="bg-danger bg-opacity-10 p-4 rounded-circle d-inline-flex">
                                 <i class="fas fa-heart text-danger display-4"></i>
@@ -119,7 +131,8 @@ include '../includes/header.php';
                                     class="btn btn-danger btn-lg rounded-pill fw-bold shadow">
                                     Login to Find Matches
                                 </a>
-                                <a href="../register.php" class="btn btn-outline-danger btn-lg rounded-pill fw-bold">
+                                <a href="../register.php?redirect=customer/dating_setup.php"
+                                    class="btn btn-outline-danger btn-lg rounded-pill fw-bold">
                                     Create New Account
                                 </a>
                             <?php else: ?>
@@ -146,6 +159,32 @@ include '../includes/header.php';
                             </div>
                         </div>
                     </div>
+
+                    <?php if (!$user_id && !empty($guest_previews)): ?>
+                        <div class="mt-4">
+                            <h5 class="fw-bold mb-4 text-center">Discover People in Addis</h5>
+                            <div class="row g-3">
+                                <?php foreach ($guest_previews as $gp): ?>
+                                    <div class="col-4">
+                                        <div class="preview-card position-relative rounded-4 overflow-hidden shadow-sm"
+                                            style="height: 180px;">
+                                            <img src="<?php echo htmlspecialchars($gp['profile_pic']); ?>" class="w-100 h-100"
+                                                style="object-fit: cover; filter: blur(4px);">
+                                            <div class="position-absolute bottom-0 start-0 w-100 p-2 text-white text-center"
+                                                style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
+                                                <small class="fw-bold"><?php echo htmlspecialchars($gp['full_name']); ?>,
+                                                    <?php echo $gp['age']; ?></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="text-center mt-4">
+                                <a href="../register.php" class="text-danger fw-bold text-decoration-none">And thousands more...
+                                    Join now <i class="fas fa-arrow-right ms-1"></i></a>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php elseif ($potential_match): ?>
                     <div class="card swipe-card border-0 shadow-lg rounded-5 overflow-hidden bg-white">
                         <div class="position-relative">

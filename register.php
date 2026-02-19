@@ -111,7 +111,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 $pdo->commit();
 
-                $success = "Registration successful! You can now login with your credentials.";
+                // Auto-login after registration
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                $_SESSION['role'] = $role;
+                $_SESSION['full_name'] = $full_name;
+                $_SESSION['email'] = $email;
+
+                // Handle redirect
+                $redirect = $_GET['redirect'] ?? '';
+                if (!empty($redirect)) {
+                    header("Location: " . $redirect);
+                } else {
+                    $success = "Registration successful! You are now logged in.";
+                }
 
                 // Clear form data
                 $_POST = [];
