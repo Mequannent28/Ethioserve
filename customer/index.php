@@ -159,305 +159,250 @@ try {
 include('../includes/header.php');
 ?>
 
-<main class="container py-4">
-    <?php echo displayFlashMessage(); ?>
+<style>
+    /* Premium Expedia Style Overrides */
+    body {
+        background-color: #06090f;
+        /* Pure deep dark */
+        color: #fff;
+    }
 
-    <!-- Hero Banner Slider -->
-    <div id="heroCarousel" class="carousel slide hero-slider mb-5" data-bs-ride="carousel">
-        <div class="carousel-indicators">
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+    .hero-immersive {
+        padding: 60px 20px 30px;
+        background: linear-gradient(to bottom, #0d121f, #06090f);
+    }
+
+    .app-logo-text {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+    }
+
+    .service-grid-premium {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 25px;
+    }
+
+    .service-premium-card {
+        background: #151b2b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 20px 10px;
+        text-align: center;
+        text-decoration: none !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .service-premium-card:active {
+        transform: scale(0.95);
+        background: #1c243a;
+    }
+
+    .service-premium-card i {
+        font-size: 2rem;
+        transition: 0.3s;
+    }
+
+    .service-label-p {
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .explore-section {
+        padding: 20px;
+    }
+
+    .explore-card {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        height: 280px;
+        margin-bottom: 20px;
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .explore-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 70%;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+        z-index: 1;
+    }
+
+    .explore-card>* {
+        position: relative;
+        z-index: 2;
+    }
+
+    .explore-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+
+    .explore-subtitle {
+        font-size: 0.85rem;
+        opacity: 0.8;
+    }
+
+    .search-bar-exp {
+        background: #fff;
+        border-radius: 50px;
+        padding: 12px 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-top: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .search-bar-exp input {
+        border: none;
+        outline: none;
+        width: 100%;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .search-bar-exp i {
+        color: #666;
+    }
+
+    /* Colors for icons matching Expedia's vibe */
+    .icon-stays {
+        color: #5091f2;
+    }
+
+    .icon-flights {
+        color: #5091f2;
+    }
+
+    .icon-cars {
+        color: #5091f2;
+    }
+
+    .icon-packages {
+        color: #5091f2;
+    }
+
+    .icon-things {
+        color: #e9ea54;
+    }
+
+    .icon-cruises {
+        color: #5091f2;
+    }
+
+    .section-header-p {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+
+    .section-subheader-p {
+        font-size: 0.9rem;
+        opacity: 0.7;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="hero-immersive">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <div class="bg-warning rounded-1 p-1 d-flex align-items-center justify-content-center"
+            style="width:28px;height:28px;">
+            <i class="fas fa-arrow-up-right-from-square text-dark" style="font-size:0.8rem;"></i>
         </div>
-        <div class="carousel-inner rounded-5 shadow">
-            <div class="carousel-item active">
-                <div class="p-5 bg-primary-green text-white text-center position-relative overflow-hidden"
-                    style="min-height: 350px; background-image: linear-gradient(rgba(27, 94, 32, 0.75), rgba(27, 94, 32, 0.85)), url('https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center;">
-                    <div class="position-relative z-1 py-4">
-                        <span class="badge bg-gold text-dark rounded-pill px-3 py-2 mb-3 fw-bold">PROMO OF THE
-                            DAY</span>
-                        <h1 class="display-5 fw-bold mb-3">Delicious Ethiopian Food</h1>
-                        <p class="lead mb-4 mx-auto" style="max-width: 600px;">Experience the authentic taste of
-                            Ethiopia delivered to your doorstep in minutes.</p>
-                        <a href="#hotels" class="btn btn-gold btn-lg px-5 rounded-pill fw-bold shadow">Order Now</a>
-                    </div>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="p-5 bg-warning text-dark text-center position-relative overflow-hidden"
-                    style="min-height: 350px; background-image: linear-gradient(rgba(249, 168, 37, 0.7), rgba(249, 168, 37, 0.75)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center;">
-                    <div class="position-relative z-1 py-4">
-                        <span class="badge bg-primary-green text-white rounded-pill px-3 py-2 mb-3 fw-bold">BEST
-                            RATES</span>
-                        <h1 class="display-5 fw-bold mb-3 text-dark">Book Your Perfect Stay</h1>
-                        <p class="lead mb-4 mx-auto text-dark" style="max-width: 600px;">Rent Halls, Rooms, or Book
-                            Tables at the finest hotels with exclusive rates.</p>
-                        <a href="booking.php"
-                            class="btn btn-primary-green btn-lg px-5 rounded-pill fw-bold shadow">Explore Booking</a>
-                    </div>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="p-5 bg-danger text-white text-center position-relative overflow-hidden"
-                    style="min-height: 350px; background-image: linear-gradient(rgba(198, 40, 40, 0.7), rgba(198, 40, 40, 0.8)), url('https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center;">
-                    <div class="position-relative z-1 py-4">
-                        <span class="badge bg-white text-danger rounded-pill px-3 py-2 mb-3 fw-bold">EARN
-                            COMMISSION</span>
-                        <h1 class="display-5 fw-bold mb-3">Professional Brokerage</h1>
-                        <p class="lead mb-4 mx-auto" style="max-width: 600px;">Join our elite network of brokers and
-                            connect users with premium services.</p>
-                        <a href="../register.php?role=broker"
-                            class="btn btn-gold btn-lg px-5 rounded-pill fw-bold shadow">Join as Broker</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon p-3 bg-dark bg-opacity-25 rounded-circle"></span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-            <span class="carousel-control-next-icon p-3 bg-dark bg-opacity-25 rounded-circle"></span>
-        </button>
+        <span class="app-logo-text">Ethioserve</span>
     </div>
 
-    <!-- Super App Service Grid -->
-    <section class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold mb-0">Our Services</h4>
-            <span class="text-muted small">Everything you need in one app</span>
+    <div class="service-grid-premium">
+        <a href="booking.php" class="service-premium-card">
+            <i class="fas fa-bed icon-stays"></i>
+            <p class="service-label-p">Stays</p>
+        </a>
+        <a href="flights.php" class="service-premium-card">
+            <i class="fas fa-plane icon-flights"></i>
+            <p class="service-label-p">Flights</p>
+        </a>
+        <a href="taxi.php" class="service-premium-card">
+            <i class="fas fa-car icon-cars"></i>
+            <p class="service-label-p">Cars</p>
+        </a>
+        <a href="jobs.php" class="service-premium-card">
+            <i class="fas fa-briefcase icon-packages"></i>
+            <p class="service-label-p">Jobs</p>
+        </a>
+        <a href="education.php" class="service-premium-card">
+            <i class="fas fa-graduation-cap icon-things"></i>
+            <p class="service-label-p">Learn</p>
+        </a>
+        <a href="buses.php" class="service-premium-card">
+            <i class="fas fa-bus icon-cruises"></i>
+            <p class="service-label-p">Transport</p>
+        </a>
+    </div>
+
+    <form action="index.php" method="GET" class="search-bar-exp" id="search">
+        <i class="fas fa-search"></i>
+        <input type="text" name="search" placeholder="Where to?" value="<?php echo htmlspecialchars($search); ?>">
+    </form>
+</div>
+
+<div class="explore-section">
+    <h3 class="section-header-p">Explore more with Local Shops</h3>
+    <p class="section-subheader-p">Inspiration curated by your local community</p>
+
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <div class="explore-card"
+                style="background-image: url('https://images.unsplash.com/photo-1541014741259-df529411b96a?auto=format&fit=crop&w=800&q=80');">
+                <div class="avatar-float mb-auto">
+                    <img src="https://i.pravatar.cc/100?u=1" class="rounded-circle border border-2 border-white"
+                        style="width:45px;height:45px;">
+                </div>
+                <h4 class="explore-title">Taste of Addis - Best Injera Joints...</h4>
+                <p class="explore-subtitle">🌍 Foodies of Ethiopia • United States of America</p>
+            </div>
         </div>
-        <div class="service-grid">
-            <!-- Taxi -->
-            <a href="taxi.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_taxis > 0): ?>
-                    <span class="count-badge" style="background:#1B5E20;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_taxis; ?> Available</span>
-                <?php endif; ?>
-                <div class="service-icon bg-taxi">
-                    <i class="fas fa-taxi"></i>
+        <div class="col-12 col-md-6">
+            <div class="explore-card"
+                style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80');">
+                <div class="avatar-float mb-auto">
+                    <img src="https://i.pravatar.cc/100?u=2" class="rounded-circle border border-2 border-white"
+                        style="width:45px;height:45px;">
                 </div>
-                <p class="service-label">Taxi</p>
-            </a>
-
-            <!-- Real Estate -->
-            <a href="../realestate/index.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_real_estate > 0): ?>
-                    <span class="count-badge" style="background:#5D4037;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_real_estate; ?> Homes</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #5D4037; color: white;">
-                    <i class="fas fa-building"></i>
-                </div>
-                <p class="service-label">Real Estate</p>
-            </a>
-
-            <!-- Food Delivery -->
-            <a href="restaurants.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_restaurants > 0): ?>
-                    <span class="count-badge" style="background:#E65100;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_restaurants; ?> Open</span>
-                <?php endif; ?>
-                <div class="service-icon bg-food">
-                    <i class="fas fa-utensils"></i>
-                </div>
-                <p class="service-label">Restaurants</p>
-            </a>
-
-            <!-- Train & Bus -->
-            <a href="buses.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_buses > 0): ?>
-                    <span class="count-badge" style="background:#00897B;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_buses; ?> Active</span>
-                <?php endif; ?>
-                <div class="service-icon bg-bus">
-                    <i class="fas fa-bus"></i>
-                </div>
-                <p class="service-label">Bus</p>
-            </a>
-
-            <!-- Flights -->
-            <a href="flights.php" class="service-card shadow-sm position-relative">
-                <span class="count-badge" style="background:#6A1B9A;"><i class="fas fa-plane me-1"
-                        style="font-size:0.5rem;"></i> Book Now</span>
-                <div class="service-icon bg-flight">
-                    <i class="fas fa-plane"></i>
-                </div>
-                <p class="service-label">Flights</p>
-            </a>
-
-            <!-- Jobs & Freelance -->
-            <a href="jobs.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_jobs > 0): ?>
-                    <span class="count-badge" style="background:#1565C0;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_jobs; ?> Jobs</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#1565C0;"><i class="fas fa-briefcase me-1"
-                            style="font-size:0.4rem;"></i>NEW</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background:linear-gradient(135deg,#1565C0,#0d47a1);color:white;">
-                    <i class="fas fa-briefcase"></i>
-                </div>
-                <p class="service-label">Jobs</p>
-            </a>
-
-            <!-- Dating Services -->
-            <a href="dating.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_dating > 0): ?>
-                    <span class="count-badge" style="background:#E91E63;"><i class="fas fa-heart me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_dating; ?> Active</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#E91E63;"><i class="fas fa-heart me-1"
-                            style="font-size:0.4rem;"></i> Find Love</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #E91E63; color: white;">
-                    <i class="fas fa-heart"></i>
-                </div>
-                <p class="service-label">Dating</p>
-            </a>
-
-            <!-- Community Hub -->
-            <a href="community.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_community > 0): ?>
-                    <span class="count-badge" style="background:#0288D1;"><i class="fas fa-bullhorn me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_community; ?> Updates</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#0288D1;"><i class="fas fa-users me-1"
-                            style="font-size:0.4rem;"></i> My Comm</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #0288D1; color: white;">
-                    <i class="fas fa-users"></i>
-                </div>
-                <p class="service-label">Community</p>
-            </a>
-
-            <!-- Movies -->
-            <a href="coming_soon.php?service=Movies" class="service-card shadow-sm position-relative">
-                <span class="count-badge" style="background:#AD1457;"><i class="fas fa-clock me-1"
-                        style="font-size:0.5rem;"></i> Soon</span>
-                <div class="service-icon bg-movies">
-                    <i class="fas fa-film"></i>
-                </div>
-                <p class="service-label">Movies</p>
-            </a>
-
-            <!-- Coupons -->
-            <a href="coming_soon.php?service=Coupons" class="service-card shadow-sm position-relative">
-                <span class="count-badge" style="background:#F57F17;"><i class="fas fa-clock me-1"
-                        style="font-size:0.5rem;"></i> Soon</span>
-                <div class="service-icon bg-coupons">
-                    <i class="fas fa-ticket-alt"></i>
-                </div>
-                <p class="service-label">Coupons</p>
-            </a>
-
-            <!-- Hotels -->
-            <a href="booking.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_hotels > 0): ?>
-                    <span class="count-badge" style="background:#0D47A1;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_hotels; ?> Listed</span>
-                <?php endif; ?>
-                <div class="service-icon bg-hotels">
-                    <i class="fas fa-hotel"></i>
-                </div>
-                <p class="service-label">Hotels</p>
-            </a>
-
-            <!-- Health Services -->
-            <a href="health_services.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_health > 0): ?>
-                    <span class="count-badge" style="background:#2E7D32;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_health; ?> Pros</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#2E7D32;"><i class="fas fa-heartbeat me-1"
-                            style="font-size:0.4rem;"></i> Healthcare</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #2E7D32; color: white;">
-                    <i class="fas fa-heartbeat"></i>
-                </div>
-                <p class="service-label">Health</p>
-            </a>
-
-            <!-- Home Services -->
-            <a href="home_services.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_home_services > 0): ?>
-                    <span class="count-badge" style="background:#4527A0;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_home_services; ?> Categories</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#4527A0;"><i class="fas fa-wrench me-1"
-                            style="font-size:0.4rem;"></i> Pro Help</span>
-                <?php endif; ?>
-                <div class="service-icon bg-home-services">
-                    <i class="fas fa-wrench"></i>
-                </div>
-                <p class="service-label">Home</p>
-            </a>
-
-            <!-- Transport -->
-            <a href="buses.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_buses > 0): ?>
-                    <span class="count-badge" style="background:#00695C;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_buses; ?> Routes</span>
-                <?php endif; ?>
-                <div class="service-icon bg-transport">
-                    <i class="fas fa-bus-alt"></i>
-                </div>
-                <p class="service-label">Transport</p>
-            </a>
-
-            <!-- House Rent -->
-            <a href="rent.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_listings > 0): ?>
-                    <span class="count-badge" style="background:#BF360C;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_listings; ?> Homes</span>
-                <?php endif; ?>
-                <div class="service-icon bg-rent">
-                    <i class="fas fa-home"></i>
-                </div>
-                <p class="service-label">Rent</p>
-            </a>
-
-            <!-- Broker Hub -->
-            <a href="../broker/dashboard.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_brokers > 0): ?>
-                    <span class="count-badge" style="background:#F9A825;color:#333;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_brokers; ?> Brokers</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #F9A825; color: white;">
-                    <i class="fas fa-user-tie"></i>
-                </div>
-                <p class="service-label">Broker</p>
-            </a>
-
-            <!-- Education -->
-            <a href="education.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_education > 0): ?>
-                    <span class="count-badge" style="background:#1565C0;"><i class="fas fa-graduation-cap me-1"
-                            style="font-size:0.5rem;"></i> <?php echo $count_education; ?> Grades</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#1565C0;">NEW</span>
-                <?php endif; ?>
-                <div class="service-icon bg-education">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <p class="service-label">Education</p>
-            </a>
-
-            <!-- Exchange Material -->
-            <a href="exchange_material.php" class="service-card shadow-sm position-relative">
-                <?php if ($count_exchange > 0): ?>
-                    <span class="count-badge" style="background:#5C6BC0;"><i class="fas fa-circle me-1"
-                            style="font-size:0.4rem;"></i> <?php echo $count_exchange; ?> Items</span>
-                <?php else: ?>
-                    <span class="count-badge" style="background:#5C6BC0;"><i class="fas fa-sync-alt me-1"
-                            style="font-size:0.5rem;"></i> Buy/Sell</span>
-                <?php endif; ?>
-                <div class="service-icon" style="background-color: #5C6BC0; color: white;">
-                    <i class="fas fa-exchange-alt"></i>
-                </div>
-                <p class="service-label">Exchange</p>
-            </a>
+                <h4 class="explore-title">Suzy and Austin - Weekend Getaways</h4>
+                <p class="explore-subtitle">Our favorites in Lalibela, Gondar & beyond...</p>
+            </div>
         </div>
-    </section>
+    </div>
+
+    <a href="community.php" class="text-decoration-none fw-bold mt-3 d-inline-block" style="color:#5091f2;">
+        View more shops <i class="fas fa-arrow-right ms-1"></i>
+    </a>
+</div>
+
+<main class="container py-4">
+    <?php echo displayFlashMessage(); ?>
 
     <!-- Category Section -->
     <section class="mb-5">

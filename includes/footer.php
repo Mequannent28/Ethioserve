@@ -100,6 +100,99 @@ $base_url = BASE_URL; ?>
         </div>
 </footer>
 
+<style>
+    /* Premium Mobile Bottom Navigation - Expedia Style */
+    .mobile-bottom-nav {
+        display: none;
+        position: fixed;
+        bottom: 0px;
+        left: 0;
+        right: 0;
+        background: #0d121f;
+        /* Dark premium background */
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+        z-index: 10001;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+        border-radius: 0;
+        /* Pure app feel */
+    }
+
+    @media (max-width: 767.98px) {
+        .mobile-bottom-nav {
+            display: block;
+        }
+
+        body {
+            padding-bottom: 90px !important;
+        }
+    }
+
+    .nav-container-f {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    .nav-item-f {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.5);
+        /* Muted white */
+        font-size: 0.65rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        flex: 1;
+        gap: 6px;
+    }
+
+    .nav-item-f i {
+        font-size: 1.3rem;
+    }
+
+    .nav-item-f.active {
+        color: #FFFFFF;
+        font-weight: 700;
+    }
+
+    .nav-item-f:active {
+        transform: scale(0.92);
+        opacity: 0.8;
+    }
+</style>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-bottom-nav">
+    <div class="nav-container-f">
+        <a href="<?php echo $base_url; ?>/customer/index.php"
+            class="nav-item-f <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="<?php echo $base_url; ?>/customer/index.php#search" class="nav-item-f">
+            <i class="fas fa-search"></i>
+            <span>Search</span>
+        </a>
+        <a href="<?php echo $base_url; ?>/customer/bookings.php" class="nav-item-f">
+            <i class="fas fa- suitcase-rolling"></i>
+            <span>Bookings</span>
+        </a>
+        <a href="<?php echo $base_url; ?>/customer/messages.php" class="nav-item-f">
+            <i class="fas fa-comment-dots"></i>
+            <span>Inbox</span>
+        </a>
+        <a href="<?php echo $is_logged_in ? ($user_role == 'doctor' ? $base_url . '/doctor/dashboard.php' : $base_url . '/customer/profile.php') : $base_url . '/login.php'; ?>"
+            class="nav-item-f <?php echo (basename($_SERVER['PHP_SELF']) == 'profile.php' || basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>">
+            <i class="fas fa-user-circle"></i>
+            <span>Account</span>
+        </a>
+    </div>
+</nav>
+
 <!-- Chatbot Widget -->
 <?php include __DIR__ . '/chatbot.php'; ?>
 
