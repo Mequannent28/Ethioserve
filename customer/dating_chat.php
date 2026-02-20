@@ -44,14 +44,34 @@ try {
 }
 
 // Handle Message Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['message'])) {
-    $msg = sanitize($_POST['message']);
-    try {
-        $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message) VALUES (?, ?, ?)");
-        $stmt->execute([$user_id, $other_user_id, $msg]);
-        header("Location: dating_chat.php?user_id=" . $other_user_id);
-        exit();
-    } catch (Exception $e) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $msg = sanitize($_POST['message'] ?? '');
+    $type = 'text';
+    $attachment = null;
+
+    // Handle File Upload
+    if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = '../uploads/dating_chat/';
+        if (!is_dir($upload_dir))
+            mkdir($upload_dir, 0777, true);
+
+        $file_name = time() . '_' . basename($_FILES['image']['name']);
+        $target_file = $upload_dir . $file_name;
+
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+            $attachment = 'uploads/dating_chat/' . $file_name;
+            $type = 'image';
+        }
+    }
+
+    if (!empty($msg) || $attachment) {
+        try {
+            $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message, message_type, attachment_url) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$user_id, $other_user_id, $msg, $type, $attachment]);
+            header("Location: dating_chat.php?user_id=" . $other_user_id);
+            exit();
+        } catch (Exception $e) {
+        }
     }
 }
 
@@ -82,71 +102,112 @@ include '../includes/header.php';
                                 <span class="small text-success"><i class="fas fa-circle me-1 small"></i> Online</span>
                             </div>
                         </div>
-                        <div class="dropdown">
-                            <button class="btn btn-light rounded-circle" data-bs-toggle="dropdown"><i
-                                    class="fas fa-ellipsis-v"></i></button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4">
-                                <li><a class="dropdown-item py-2" href="#"><i class="fas fa-user-circle me-2"></i>View
-                                        Profile</a></li>
-                                <li><a class="dropdown-item py-2 text-danger" href="#"><i
-                                            class="fas fa-flag me-2"></i>Report User</a></li>
-                            </ul>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="dating_video_call.php?user_id=<?php echo $other_user_id; ?>"
+                                class="btn btn-light rounded-circle" title="Video Call">
+                                <i class="fas fa-video text-danger"></i>
+                            </a>
+                            <div class="dropdown">
+
+                                <button class="btn btn-light rounded-circle" data-bs-toggle="dropdown"><i
+                                        class="fas fa-ellipsis-v"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4">
+                                    <li><a class="dropdown-item py-2" href="#"><i
+                                                class="fas fa-user-circle me-2"></i>View
+                                            Profile</a></li>
+                                    <li><a class="dropdown-item py-2 text-danger" href="#"><i
+                                                class="fas fa-flag me-2"></i>Report User</a></li>
+                                </ul>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Chat Body -->
-                    <div class="chat-body p-4 bg-light" style="height: 500px; overflow-y: auto;">
-                        <?php if (empty($messages)): ?>
-                            <div class="text-center py-5 text-muted">
-                                <div style="font-size:2.5rem;" class="mb-2">👋</div>
-                                <p class="fw-bold mb-1">Start the conversation!</p>
-                                <p class="small">Say hi to <?php echo htmlspecialchars($other_user['full_name']); ?></p>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php foreach ($messages as $m):
-                            $is_me = ($m['sender_id'] == $user_id);
-                            ?>
-                            <div
-                                class="d-flex mb-3 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
-                                <div class="message-bubble p-3 <?php echo $is_me ? 'bg-danger text-white rounded-start-pill rounded-bottom-pill' : 'bg-white text-dark shadow-sm rounded-end-pill rounded-bottom-pill'; ?>"
-                                    style="max-width: 80%;">
-                                    <p class="mb-0">
-                                        <?php echo htmlspecialchars($m['message']); ?>
-                                    </p>
-                                    <small class="d-block mt-1 opacity-75" style="font-size: 0.6rem;">
-                                        <?php echo date('h:i A', strtotime($m['created_at'])); ?>
-                                    </small>
+                        <!-- Chat Body -->
+                        <div class="chat-body p-4 bg-light" style="height: 500px; overflow-y: auto;">
+                            <?php if (empty($messages)): ?>
+                                <div class="text-center py-5 text-muted">
+                                    <div style="font-size:2.5rem;" class="mb-2">👋</div>
+                                    <p class="fw-bold mb-1">Start the conversation!</p>
+                                    <p class="small">Say hi to <?php echo htmlspecialchars($other_user['full_name']); ?></p>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
-                        <div id="chatEnd"></div>
-                    </div>
+                            <?php endif; ?>
 
-                    <!-- Chat Footer -->
-                    <div class="chat-footer p-3 bg-white border-top">
-                        <form method="POST" class="d-flex gap-2">
-                            <?php echo csrfField(); ?>
-                            <button type="button" class="btn btn-light rounded-circle"><i
-                                    class="fas fa-image"></i></button>
-                            <input type="text" name="message" class="form-control rounded-pill border-0 bg-light px-4"
-                                placeholder="Type a message..." required autocomplete="off">
-                            <button type="submit" class="btn btn-danger rounded-circle"
-                                style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </form>
+                            <?php foreach ($messages as $m):
+                                $is_me = ($m['sender_id'] == $user_id);
+                                ?>
+                                <div
+                                    class="d-flex mb-3 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
+                                    <div class="message-bubble p-3 <?php echo $is_me ? 'bg-danger text-white rounded-start-pill rounded-bottom-pill' : 'bg-white text-dark shadow-sm rounded-end-pill rounded-bottom-pill'; ?>"
+                                        style="max-width: 80%;">
+                                        <?php if ($m['message_type'] === 'image'): ?>
+                                            <img src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
+                                                class="img-fluid rounded-4 mb-2 shadow-sm"
+                                                style="max-height: 200px; cursor: pointer;" onclick="window.open(this.src)">
+                                        <?php endif; ?>
+                                        <?php if (!empty($m['message'])): ?>
+                                            <p class="mb-0">
+                                                <?php echo htmlspecialchars($m['message']); ?>
+                                            </p>
+                                        <?php endif; ?>
+                                        <small class="d-block mt-1 opacity-75" style="font-size: 0.6rem;">
+                                            <?php echo date('h:i A', strtotime($m['created_at'])); ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                            <div id="chatEnd"></div>
+                        </div>
+
+                        <!-- Chat Footer -->
+                        <div class="chat-footer p-3 bg-white border-top">
+                            <form method="POST" enctype="multipart/form-data" class="d-flex gap-2" id="datingChatForm">
+                                <?php echo csrfField(); ?>
+                                <input type="file" name="image" id="datingImageInput" class="d-none" accept="image/*">
+                                <button type="button" class="btn btn-light rounded-circle"
+                                    onclick="document.getElementById('datingImageInput').click()">
+                                    <i class="fas fa-image text-muted"></i>
+                                </button>
+                                <input type="text" name="message"
+                                    class="form-control rounded-pill border-0 bg-light px-4"
+                                    placeholder="Type a message..." autocomplete="off">
+                                <button type="submit" class="btn btn-danger rounded-circle"
+                                    style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    // Auto scroll to bottom
-    const chatBody = document.querySelector('.chat-body');
-    chatBody.scrollTop = chatBody.scrollHeight;
-</script>
+    <script>
+        // Auto scroll to bottom
+        const chatBody = document.querySelector('.chat-body');
+        chatBody.scrollTop = chatBody.scrollHeight;
 
-<?php include '../includes/footer.php'; ?>
+        // Auto submit image
+        document.getElementById('datingImageInput').addEventListener('change', function () {
+            if (this.files.length > 0) {
+                document.getElementById('datingChatForm').submit();
+            }
+        });
+
+        // Auto-refresh chat every 5s
+        setInterval(() => {
+            fetch(window.location.href)
+                .then(r => r.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newBody = doc.querySelector('.chat-body');
+                    if (newBody && chatBody.innerHTML !== newBody.innerHTML) {
+                        const wasAtBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 50;
+                        chatBody.innerHTML = newBody.innerHTML;
+                        if (wasAtBottom) chatBody.scrollTop = chatBody.scrollHeight;
+                    }
+                });
+        }, 5000);
+    </script>
+
+    <?php include '../includes/footer.php'; ?>
