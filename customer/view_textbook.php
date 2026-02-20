@@ -67,8 +67,17 @@ if (!function_exists('hexToRgb')) {
 }
 
 // Handle Download Request
-if (isset($_GET['download']) && $_GET['download'] === 'true' && isset($res_data['file_path'])) {
-    $file_path = '../uploads/education/' . $res_data['file_path'];
+if (isset($_GET['download']) && $_GET['download'] === 'true' && (isset($res_data['file_path']) || isset($res_data['file_url']))) {
+    $raw_path = $res_data['file_url'] ?? $res_data['file_path'];
+
+    if (strpos($raw_path, 'http') === 0) {
+        // Redir to external URL for download if it's a full URL
+        header("Location: " . $raw_path);
+        exit;
+    }
+
+    $file_path = '../uploads/education/' . $raw_path;
+
     if (file_exists($file_path)) {
         // Log download
         try {
@@ -120,7 +129,9 @@ if (isset($subject_colors[$res_data['subject']])) {
     $color = $subject_colors[$res_data['subject']];
 }
 
-$pdf_url = isset($res_data['file_path']) ? '../uploads/education/' . $res_data['file_path'] : '';
+$raw_url = $res_data['file_url'] ?? $res_data['file_path'] ?? '';
+$pdf_url = (strpos($raw_url, 'http') === 0) ? $raw_url : '../uploads/education/' . $raw_url;
+
 $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
 ?>
 
@@ -350,7 +361,10 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
     <div class="row g-4">
         <div class="col-lg-9">
             <div class="pdf-container" id="pdfContainer">
-                <?php if (file_exists($pdf_url)): ?>
+                <?php
+                $is_external = strpos($pdf_url, 'http') === 0;
+                if (!empty($pdf_url) && ($is_external || file_exists($pdf_url))):
+                    ?>
                     <object data="<?php echo $pdf_url; ?>" type="application/pdf" class="pdf-viewer">
                         <div class="fallback-message">
                             <i class="fas fa-file-pdf mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
