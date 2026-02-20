@@ -470,12 +470,70 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                         <?php endif; ?>
                                     </a>
                                 </li>
-                                <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/track_order.php">
-                                        <i class="fas fa-receipt me-2"></i> My Orders</a>
-                                </li>
-                                <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/booking.php">
-                                        <i class="fas fa-calendar me-2"></i> My Bookings</a>
-                                </li>
+
+                                <?php if ($user_role == 'customer'): ?>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li>
+                                        <h6 class="dropdown-header text-uppercase small" style="font-size: 0.65rem;">My Activity
+                                        </h6>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/track_order.php">
+                                            <i class="fas fa-shopping-bag me-2 text-primary-green"></i> My Orders & Bus
+                                            Tickets</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/my_home_bookings.php">
+                                            <i class="fas fa-tools me-2 text-primary-green"></i> Home Service Bookings</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/medical_records.php">
+                                            <i class="fas fa-file-medical me-2 text-primary-green"></i> Medical Records</a>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li>
+                                        <h6 class="dropdown-header text-uppercase small" style="font-size: 0.65rem;">Explore
+                                            Services</h6>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/restaurants.php">
+                                            <i class="fas fa-utensils me-2 text-primary-green"></i> Restaurants & Food</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/rent.php">
+                                            <i class="fas fa-home me-2 text-primary-green"></i> Rent & Real Estate</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/taxi.php">
+                                            <i class="fas fa-taxi me-2 text-primary-green"></i> Taxi & Rides</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/jobs.php">
+                                            <i class="fas fa-briefcase me-2 text-primary-green"></i> Jobs & Freelance</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/health_services.php">
+                                            <i class="fas fa-heartbeat me-2 text-primary-green"></i> Health & Doctors</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/community.php">
+                                            <i class="fas fa-users me-2 text-primary-green"></i> Community & Social</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/dating_matches.php">
+                                            <i class="fas fa-heart me-2 text-primary-green"></i> Dating & Matches</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/coming_soon.php?service=Movies">
+                                            <i class="fas fa-film me-2 text-primary-green"></i> Cinema & Movies</a>
+                                    </li>
+                                <?php else: ?>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/track_order.php">
+                                            <i class="fas fa-receipt me-2"></i> My Orders</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/booking.php">
+                                            <i class="fas fa-calendar me-2"></i> My Bookings</a>
+                                    </li>
+                                <?php endif; ?>
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
@@ -705,10 +763,10 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                 activeIncomingCall = data.call;
                                 document.getElementById('callerNameDisp').textContent = data.call.caller_name;
                                 document.getElementById('callerDetailDisp').textContent = "Incoming video call...";
-                                
+
                                 const modal = getModal();
                                 if (modal) modal.show();
-                                
+
                                 if (audioEnabled && ringtoneIn) {
                                     setTimeout(() => {
                                         ringtoneIn.play().catch(e => console.warn("Audio play deferred", e));
