@@ -107,8 +107,8 @@ include '../includes/header.php';
                             $is_me = ($m['sender_id'] == $user_id); ?>
                             <div
                                 class="d-flex mb-3 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
-                                <div class="p-3 rounded-4 shadow-sm"
-                                    style="max-width: 80%; background: <?php echo $is_me ? '#0d6efd' : '#fff'; ?>; color: <?php echo $is_me ? '#fff' : '#333'; ?>; border-radius: <?php echo $is_me ? '20px 20px 4px 20px' : '20px 20px 20px 4px'; ?>;">
+                                <div class="message-bubble p-3 <?php echo $is_me ? 'sent-bubble' : 'received-bubble'; ?> rounded-4 shadow-sm"
+                                    style="max-width: 80%; border-radius: <?php echo $is_me ? '20px 20px 4px 20px' : '20px 20px 20px 4px'; ?>;">
                                     <div class="message-content">
                                         <?php if ($m['message_type'] === 'text'): ?>
                                             <p class="mb-1"><?php echo nl2br(htmlspecialchars($m['message'])); ?></p>
@@ -144,7 +144,8 @@ include '../includes/header.php';
                                                     <div class="min-w-0">
                                                         <div class="fw-bold text-dark text-truncate"
                                                             style="font-size: 0.75rem; max-width: 150px;">
-                                                            <?php echo basename($m['attachment_url']); ?></div>
+                                                            <?php echo basename($m['attachment_url']); ?>
+                                                        </div>
                                                     </div>
                                                 </a>
                                             </div>
@@ -206,6 +207,26 @@ include '../includes/header.php';
         </div>
     </div>
 </div>
+
+<style>
+    .sent-bubble {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%) !important;
+        color: #ffffff !important;
+    }
+
+    .received-bubble {
+        background: #212529 !important;
+        color: #ffffff !important;
+    }
+
+    .message-bubble {
+        transition: transform 0.2s;
+    }
+
+    .message-bubble:hover {
+        transform: translateY(-2px);
+    }
+</style>
 
 <script>
     const chatBody = document.getElementById('chatBody');

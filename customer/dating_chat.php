@@ -75,6 +75,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Mark messages as read
+try {
+    $stmt = $pdo->prepare("UPDATE dating_messages SET is_read = 1 WHERE sender_id = ? AND receiver_id = ? AND is_read = 0");
+    $stmt->execute([$other_user_id, $user_id]);
+} catch (Exception $e) {
+}
+
 // Fetch Messages
 $stmt = $pdo->prepare("SELECT * FROM dating_messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY created_at ASC");
 $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
@@ -83,51 +90,157 @@ $messages = $stmt->fetchAll();
 include '../includes/header.php';
 ?>
 
-<div class="chat-container py-5 min-vh-100" style="background: #f8f9fa;">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+<style>
+    .chat-container {
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    }
+
+    .chat-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-body::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+
+    .sent-bubble {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%) !important;
+        border-bottom-right-radius: 4px !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 15px rgba(27, 94, 32, 0.2) !important;
+    }
+
+    .received-bubble {
+        background: #212529 !important;
+        border-bottom-left-radius: 4px !important;
+        border: none !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .message-bubble p {
+        color: inherit !important;
+    }
+
+    .message-bubble {
+        transition: all 0.2s ease;
+    }
+
+    .message-bubble:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        border: none;
+        transition: 0.3s;
+    }
+
+    /* Fixed layout to prevent jumping */
+    .chat-card {
+        height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        max-height: 800px;
+    }
+
+    .chat-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: white;
+        flex-shrink: 0;
+    }
+
+    .chat-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background-attachment: fixed;
+        /* Keeps background stable */
+    }
+
+    .chat-footer {
+        flex-shrink: 0;
+        background: white;
+    }
+
+    @media (max-width: 768px) {
+        .chat-container {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .chat-card {
+            height: calc(100vh - 70px);
+            /* Adjust for mobile header/footer */
+            max-height: none;
+            border-radius: 0 !important;
+        }
+
+        .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+    }
+</style>
+
+<div class="chat-container py-4 min-vh-100" style="background: #f8f9fa;">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card border-0 shadow-lg rounded-5 overflow-hidden">
+        <div class="row justify-content-center g-0">
+            <div class="col-lg-8 col-xl-6">
+                <div class="card border-0 shadow-lg rounded-5 overflow-hidden chat-card">
                     <!-- Chat Header -->
-                    <div class="bg-white p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center">
                             <a href="dating_matches.php" class="btn btn-light rounded-circle me-3"><i
                                     class="fas fa-arrow-left"></i></a>
-                            <img src="<?php echo htmlspecialchars($other_user['profile_pic']); ?>"
-                                class="rounded-circle me-3" width="50" height="50" style="object-fit: cover;">
-                            <div>
-                                <h6 class="fw-bold mb-0">
-                                    <?php echo htmlspecialchars($other_user['full_name']); ?>
-                                </h6>
-                                <span class="small text-success"><i class="fas fa-circle me-1 small"></i> Online</span>
+                            <div class="position-relative">
+                                <img src="<?php echo htmlspecialchars($other_user['profile_pic']); ?>"
+                                    class="rounded-circle me-3 border border-2 border-white shadow-sm" width="50"
+                                    height="50" style="object-fit: cover;">
+                                <span
+                                    class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle"
+                                    style="width: 12px; height: 12px; transform: translate(-10px, -2px);"></span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($other_user['full_name']); ?></h6>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted small" style="font-size: 0.75rem;">
+                                        <?php if ($is_matched): ?>
+                                            <span class="badge bg-danger rounded-pill fw-normal"
+                                                style="font-size: 0.6rem;">Mutual Match</span>
+                                        <?php else: ?>
+                                            Active Now
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <a href="dating_video_call.php?user_id=<?php echo $other_user_id; ?>"
-                                class="btn btn-light rounded-circle" title="Video Call">
-                                <i class="fas fa-video text-danger"></i>
+                                class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2 text-danger fw-bold shadow-sm border-0"
+                                style="font-size: 0.85rem;">
+                                <i class="fas fa-video"></i> <span class="d-none d-md-inline">Video Call</span>
                             </a>
-                            <div class="dropdown">
-
-                                <button class="btn btn-light rounded-circle" data-bs-toggle="dropdown"><i
-                                        class="fas fa-ellipsis-v"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4">
-                                    <li><a class="dropdown-item py-2" href="#"><i
-                                                class="fas fa-user-circle me-2"></i>View
-                                            Profile</a></li>
-                                    <li><a class="dropdown-item py-2 text-danger" href="#"><i
-                                                class="fas fa-flag me-2"></i>Report User</a></li>
-                                </ul>
-                            </div>
                         </div>
+                    </div>
 
-                        <!-- Chat Body -->
-                        <div class="chat-body p-4 bg-light" style="height: 500px; overflow-y: auto;">
+                    <!-- Chat Body -->
+                    <div class="chat-body p-3 p-md-4"
+                        style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); background-color: #f0f2f5;">
+                        <div id="message-container">
                             <?php if (empty($messages)): ?>
-                                <div class="text-center py-5 text-muted">
-                                    <div style="font-size:2.5rem;" class="mb-2">👋</div>
-                                    <p class="fw-bold mb-1">Start the conversation!</p>
-                                    <p class="small">Say hi to <?php echo htmlspecialchars($other_user['full_name']); ?></p>
+                                <div class="text-center py-5 no-messages">
+                                    <div class="mb-4 animate__animated animate__bounceIn">
+                                        <span style="font-size: 4rem;">👋</span>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Start the conversation!</h5>
+                                    <p class="text-muted small">Send a message to say hi to
+                                        <?php echo htmlspecialchars($other_user['full_name']); ?>
+                                    </p>
                                 </div>
                             <?php endif; ?>
 
@@ -135,46 +248,68 @@ include '../includes/header.php';
                                 $is_me = ($m['sender_id'] == $user_id);
                                 ?>
                                 <div
-                                    class="d-flex mb-3 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
-                                    <div class="message-bubble p-3 <?php echo $is_me ? 'bg-danger text-white rounded-start-pill rounded-bottom-pill' : 'bg-white text-dark shadow-sm rounded-end-pill rounded-bottom-pill'; ?>"
-                                        style="max-width: 80%;">
-                                        <?php if ($m['message_type'] === 'image'): ?>
-                                            <img src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
-                                                class="img-fluid rounded-4 mb-2 shadow-sm"
-                                                style="max-height: 200px; cursor: pointer;" onclick="window.open(this.src)">
-                                        <?php endif; ?>
-                                        <?php if (!empty($m['message'])): ?>
-                                            <p class="mb-0">
-                                                <?php echo htmlspecialchars($m['message']); ?>
-                                            </p>
-                                        <?php endif; ?>
-                                        <small class="d-block mt-1 opacity-75" style="font-size: 0.6rem;">
-                                            <?php echo date('h:i A', strtotime($m['created_at'])); ?>
-                                        </small>
+                                    class="d-flex mb-4 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?> animate__animated animate__fadeInUp animate__faster">
+                                    <div class="message-wrapper" style="max-width: 80%;">
+                                        <div class="message-bubble p-3 <?php
+                                        echo $is_me
+                                            ? 'sent-bubble border-0'
+                                            : 'received-bubble border-0';
+                                        ?> rounded-4 position-relative">
+
+                                            <?php if ($m['message_type'] === 'image'): ?>
+                                                <div class="mb-2 overflow-hidden rounded-3 shadow-sm">
+                                                    <img src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
+                                                        class="img-fluid w-100"
+                                                        style="max-height: 250px; object-fit: cover; cursor: pointer;"
+                                                        onclick="window.open(this.src)">
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($m['message'])): ?>
+                                                <p class="mb-0 fw-medium"
+                                                    style="font-size: 0.95rem; line-height: 1.5; word-wrap: break-word;">
+                                                    <?php echo htmlspecialchars($m['message']); ?>
+                                                </p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div
+                                            class="mt-1 d-flex align-items-center gap-2 <?php echo $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
+                                            <small class="text-muted" style="font-size: 0.65rem; opacity: 0.8;">
+                                                <?php echo date('h:i A', strtotime($m['created_at'])); ?>
+                                            </small>
+                                            <?php if ($is_me): ?>
+                                                <i class="fas fa-check-double text-danger" style="font-size: 0.6rem;"></i>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
-                            <div id="chatEnd"></div>
                         </div>
+                        <div id="chatEnd"></div>
+                    </div>
 
-                        <!-- Chat Footer -->
-                        <div class="chat-footer p-3 bg-white border-top">
-                            <form method="POST" enctype="multipart/form-data" class="d-flex gap-2" id="datingChatForm">
-                                <?php echo csrfField(); ?>
-                                <input type="file" name="image" id="datingImageInput" class="d-none" accept="image/*">
-                                <button type="button" class="btn btn-light rounded-circle"
-                                    onclick="document.getElementById('datingImageInput').click()">
-                                    <i class="fas fa-image text-muted"></i>
-                                </button>
+                    <!-- Chat Footer -->
+                    <div class="chat-footer p-3 bg-white border-top">
+                        <form method="POST" enctype="multipart/form-data" class="d-flex align-items-center gap-2"
+                            id="datingChatForm">
+                            <?php echo csrfField(); ?>
+                            <input type="file" name="image" id="datingImageInput" class="d-none" accept="image/*">
+                            <button type="button" class="btn btn-light rounded-circle border-0"
+                                style="width: 45px; height: 45px;"
+                                onclick="document.getElementById('datingImageInput').click()" title="Attach Image">
+                                <i class="fas fa-image text-primary fs-5"></i>
+                            </button>
+                            <div class="flex-grow-1">
                                 <input type="text" name="message"
-                                    class="form-control rounded-pill border-0 bg-light px-4"
-                                    placeholder="Type a message..." autocomplete="off">
-                                <button type="submit" class="btn btn-danger rounded-circle"
-                                    style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </form>
-                        </div>
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-3"
+                                    placeholder="Type your message..." autocomplete="off" style="font-size: 0.95rem;">
+                            </div>
+                            <button type="submit"
+                                class="btn btn-danger rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+                                style="width: 50px; height: 50px;">
+                                <i class="fas fa-paper-plane fs-5"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -182,8 +317,10 @@ include '../includes/header.php';
     </div>
 
     <script>
-        // Auto scroll to bottom
         const chatBody = document.querySelector('.chat-body');
+        const messageContainer = document.getElementById('message-container');
+
+        // Initial scroll
         chatBody.scrollTop = chatBody.scrollHeight;
 
         // Auto submit image
@@ -193,21 +330,25 @@ include '../includes/header.php';
             }
         });
 
-        // Auto-refresh chat every 5s
+        // Polling with safety to prevent jumps
         setInterval(() => {
             fetch(window.location.href)
                 .then(r => r.text())
                 .then(html => {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
-                    const newBody = doc.querySelector('.chat-body');
-                    if (newBody && chatBody.innerHTML !== newBody.innerHTML) {
-                        const wasAtBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 50;
-                        chatBody.innerHTML = newBody.innerHTML;
-                        if (wasAtBottom) chatBody.scrollTop = chatBody.scrollHeight;
+                    const newNode = doc.getElementById('message-container');
+
+                    if (newNode && messageContainer.innerHTML !== newNode.innerHTML) {
+                        const wasAtBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 100;
+                        messageContainer.innerHTML = newNode.innerHTML;
+                        if (wasAtBottom) {
+                            chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
+                        }
                     }
                 });
         }, 5000);
     </script>
+</div>
 
-    <?php include '../includes/footer.php'; ?>
+<?php include '../includes/footer.php'; ?>

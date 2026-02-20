@@ -101,21 +101,21 @@ $base_url = BASE_URL; ?>
 </footer>
 
 <style>
-    /* Premium Mobile Bottom Navigation - Expedia Style */
+    /* Premium Mobile Bottom Navigation */
     .mobile-bottom-nav {
         display: none;
         position: fixed;
         bottom: 0px;
         left: 0;
         right: 0;
-        background: #0d121f;
-        /* Dark premium background */
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
         z-index: 10001;
-        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
-        border-radius: 0;
-        /* Pure app feel */
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 24px 24px 0 0;
     }
 
     @media (max-width: 767.98px) {
@@ -124,7 +124,7 @@ $base_url = BASE_URL; ?>
         }
 
         body {
-            padding-bottom: 90px !important;
+            padding-bottom: 85px !important;
         }
     }
 
@@ -141,54 +141,87 @@ $base_url = BASE_URL; ?>
         flex-direction: column;
         align-items: center;
         text-decoration: none;
-        color: rgba(255, 255, 255, 0.5);
-        /* Muted white */
-        font-size: 0.65rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
+        color: #8e8e93;
+        font-size: 0.7rem;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         flex: 1;
-        gap: 6px;
+        gap: 4px;
     }
 
     .nav-item-f i {
-        font-size: 1.3rem;
+        font-size: 1.4rem;
+        transition: transform 0.3s ease;
     }
 
     .nav-item-f.active {
-        color: #FFFFFF;
-        font-weight: 700;
+        color: #1B5E20;
     }
 
-    .nav-item-f:active {
-        transform: scale(0.92);
-        opacity: 0.8;
+    .nav-item-f.active i {
+        transform: scale(1.15) translateY(-2px);
+    }
+
+    .nav-center-f {
+        position: relative;
+        top: -18px;
+    }
+
+    .nav-center-f .icon-box {
+        width: 58px;
+        height: 52px;
+        background: linear-gradient(135deg, #FFB300, #FFD600);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(255, 179, 0, 0.35);
+        color: #1B5E20;
+        transition: all 0.3s ease;
+        border: 4px solid #fff;
+    }
+
+    .nav-center-f i {
+        font-size: 1.6rem !important;
+        color: #1B5E20;
+    }
+
+    .nav-center-f:active .icon-box {
+        transform: scale(0.9) rotate(5deg);
+    }
+
+    .nav-item-f:active:not(.nav-center-f) {
+        transform: scale(0.85);
     }
 </style>
 
 <!-- Mobile Bottom Navigation -->
 <nav class="mobile-bottom-nav">
     <div class="nav-container-f">
-        <a href="<?php echo $base_url; ?>/customer/index.php"
+        <a href="<?php echo $base_url; ?>/index.php"
             class="nav-item-f <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="<?php echo $base_url; ?>/customer/index.php#search" class="nav-item-f">
-            <i class="fas fa-search"></i>
-            <span>Search</span>
+        <a href="<?php echo $base_url; ?>/customer/index.php#services" class="nav-item-f">
+            <i class="fas fa-th-large"></i>
+            <span>Services</span>
         </a>
-        <a href="<?php echo $base_url; ?>/customer/bookings.php" class="nav-item-f">
-            <i class="fas fa- suitcase-rolling"></i>
-            <span>Bookings</span>
+        <a href="<?php echo $base_url; ?>/customer/index.php" class="nav-item-f nav-center-f">
+            <div class="icon-box">
+                <i class="fas fa-plus"></i>
+            </div>
+            <span style="font-size: 0.65rem; color: #1B5E20; font-weight: 800; margin-top: 5px;">APPS</span>
         </a>
-        <a href="<?php echo $base_url; ?>/customer/messages.php" class="nav-item-f">
-            <i class="fas fa-comment-dots"></i>
-            <span>Inbox</span>
+        <a href="<?php echo $base_url; ?>/customer/orders.php"
+            class="nav-item-f <?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>">
+            <i class="fas fa-heart"></i>
+            <span>Saved</span>
         </a>
         <a href="<?php echo $is_logged_in ? ($user_role == 'doctor' ? $base_url . '/doctor/dashboard.php' : $base_url . '/customer/profile.php') : $base_url . '/login.php'; ?>"
             class="nav-item-f <?php echo (basename($_SERVER['PHP_SELF']) == 'profile.php' || basename($_SERVER['PHP_SELF']) == 'dashboard.php') ? 'active' : ''; ?>">
-            <i class="fas fa-user-circle"></i>
-            <span>Account</span>
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
         </a>
     </div>
 </nav>

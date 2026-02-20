@@ -215,7 +215,22 @@ include '../includes/header.php';
                 <?php if ($user_id): ?>
                     <a href="dating_matches.php" class="btn btn-white rounded-pill shadow-sm px-3 position-relative"
                         style="border:1px solid #eee;">
-                        <i class="fas fa-comments text-danger me-1"></i> Matches
+                        <i class="fas fa-th-large text-danger me-1"></i> Dating Hub
+                        <?php
+                        // Quick count for unread messages to show badge on button
+                        $unread_total = 0;
+                        if ($user_id) {
+                            $stmt_uc = $pdo->prepare("SELECT COUNT(*) FROM dating_messages WHERE receiver_id = ? AND is_read = 0");
+                            $stmt_uc->execute([$user_id]);
+                            $unread_total = $stmt_uc->fetchColumn();
+                        }
+                        if ($unread_total > 0):
+                            ?>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                style="font-size: 0.6rem; transform: translate(-50%, -50%) !important;">
+                                <?php echo $unread_total; ?>
+                            </span>
+                        <?php endif; ?>
                     </a>
                     <a href="dating_setup.php" class="btn rounded-circle shadow-sm"
                         style="width:42px;height:42px;border:1px solid #eee;background:#fff;display:flex;align-items:center;justify-content:center;">

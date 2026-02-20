@@ -808,6 +808,14 @@ function getUnreadMessageCount()
     } catch (Exception $e) {
     }
 
+    // 3. Dating Messages
+    try {
+        $s = $pdo->prepare("SELECT COUNT(*) FROM dating_messages WHERE receiver_id = ? AND is_read = 0");
+        $s->execute([$user_id]);
+        $total += (int) $s->fetchColumn();
+    } catch (Exception $e) {
+    }
+
     return $total;
 }
 

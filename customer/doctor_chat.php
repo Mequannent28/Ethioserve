@@ -202,80 +202,85 @@ include '../includes/header.php';
                                         class="rounded-circle me-2 align-self-end" width="32" height="32"
                                         style="object-fit: cover;">
                                 <?php endif; ?>
-                                <div class="message-bubble p-3 <?php echo $is_me
-                                    ? 'text-white'
-                                    : 'bg-white text-dark shadow-sm'; ?>"
-                                    style="max-width: 75%; border-radius: <?php echo $is_me ? '20px 20px 4px 20px' : '20px 20px 20px 4px'; ?>; 
-                                           <?php echo $is_me ? 'background: linear-gradient(135deg, #1565C0, #0D47A1);' : ''; ?>">
+                                <div class="message-bubble p-3 <?php echo $is_me ? 'sent-bubble' : 'received-bubble shadow-sm'; ?>"
+                                    style="max-width: 75%; border-radius: <?php echo $is_me ? '20px 20px 4px 20px' : '20px 20px 20px 4px'; ?>;">
                                     <div class="message-content">
-                                            <?php if ($m['message_type'] === 'text'): ?>
-                                                    <p class="mb-1" style="line-height: 1.5;">
-                                                        <?php echo nl2br(htmlspecialchars($m['message'])); ?>
-                                                    </p>
-                                            <?php elseif ($m['message_type'] === 'image'): ?>
-                                                    <div class="chat-image-container mb-2">
-                                                        <a href="<?php echo $base_url . '/' . $m['attachment_url']; ?>" target="_blank">
-                                                            <img src="<?php echo $base_url . '/' . $m['attachment_url']; ?>" class="img-fluid rounded-3 shadow-sm chat-image">
-                                                        </a>
-                                                    </div>
-                                                    <?php if (!empty($m['message'])): ?>
-                                                            <p class="mb-1 small"><?php echo htmlspecialchars($m['message']); ?></p>
-                                                    <?php endif; ?>
-                                            <?php elseif ($m['message_type'] === 'location'): ?>
-                                                    <div class="location-message mb-2">
-                                                        <a href="<?php echo $m['message']; ?>" target="_blank" class="btn btn-sm btn-light rounded-pill border-0 px-3 w-100 text-start d-flex align-items-center gap-2">
-                                                            <div class="bg-danger bg-opacity-10 p-2 rounded-circle">
-                                                                <i class="fas fa-map-marker-alt text-danger"></i>
-                                                            </div>
-                                                            <div>
-                                                                <div class="fw-bold text-dark" style="font-size: 0.75rem;">Shared Location</div>
-                                                                <div class="text-muted" style="font-size: 0.65rem;">Tap to view on Google Maps</div>
-                                                            </div>
-                                                        </a>
-                                                    </div>
-                                            <?php elseif ($m['message_type'] === 'file'): ?>
-                                                    <div class="file-message mb-2">
-                                                        <a href="<?php echo $base_url . '/' . $m['attachment_url']; ?>" target="_blank" class="btn btn-sm btn-light rounded-pill border-0 px-3 w-100 text-start d-flex align-items-center gap-2">
-                                                            <div class="bg-primary bg-opacity-10 p-2 rounded-circle">
-                                                                <i class="fas fa-file text-primary"></i>
-                                                            </div>
-                                                            <div class="min-w-0">
-                                                                <div class="fw-bold text-dark text-truncate" style="font-size: 0.75rem; max-width: 150px;"><?php echo basename($m['attachment_url']); ?></div>
-                                                            </div>
-                                                        </a>
-                                                    </div>
+                                        <?php if ($m['message_type'] === 'text'): ?>
+                                            <p class="mb-1" style="line-height: 1.5;">
+                                                <?php echo nl2br(htmlspecialchars($m['message'])); ?>
+                                            </p>
+                                        <?php elseif ($m['message_type'] === 'image'): ?>
+                                            <div class="chat-image-container mb-2">
+                                                <a href="<?php echo $base_url . '/' . $m['attachment_url']; ?>" target="_blank">
+                                                    <img src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
+                                                        class="img-fluid rounded-3 shadow-sm chat-image">
+                                                </a>
+                                            </div>
+                                            <?php if (!empty($m['message'])): ?>
+                                                <p class="mb-1 small"><?php echo htmlspecialchars($m['message']); ?></p>
                                             <?php endif; ?>
-                                        </div>
-                                        <div
-                                            class="d-flex align-items-center gap-1 <?php echo $is_me ? 'justify-content-end' : ''; ?>">
-                                            <small class="<?php echo $is_me ? 'text-white-50' : 'text-muted'; ?>"
-                                                style="font-size: 0.65rem;">
-                                                <?php echo date('h:i A', strtotime($m['created_at'])); ?>
-                                            </small>
-                                            <?php if ($is_me): ?>
-                                                    <i class="fas fa-check-double small"
-                                                        style="font-size:0.6rem; color: <?php echo $m['is_read'] ? '#4FC3F7' : 'rgba(255,255,255,0.5)'; ?>;"></i>
-                                            <?php endif; ?>
-                                        </div>
+                                        <?php elseif ($m['message_type'] === 'location'): ?>
+                                            <div class="location-message mb-2">
+                                                <a href="<?php echo $m['message']; ?>" target="_blank"
+                                                    class="btn btn-sm btn-light rounded-pill border-0 px-3 w-100 text-start d-flex align-items-center gap-2">
+                                                    <div class="bg-danger bg-opacity-10 p-2 rounded-circle">
+                                                        <i class="fas fa-map-marker-alt text-danger"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.75rem;">Shared
+                                                            Location</div>
+                                                        <div class="text-muted" style="font-size: 0.65rem;">Tap to view on
+                                                            Google Maps</div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        <?php elseif ($m['message_type'] === 'file'): ?>
+                                            <div class="file-message mb-2">
+                                                <a href="<?php echo $base_url . '/' . $m['attachment_url']; ?>" target="_blank"
+                                                    class="btn btn-sm btn-light rounded-pill border-0 px-3 w-100 text-start d-flex align-items-center gap-2">
+                                                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle">
+                                                        <i class="fas fa-file text-primary"></i>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="fw-bold text-dark text-truncate"
+                                                            style="font-size: 0.75rem; max-width: 150px;">
+                                                            <?php echo basename($m['attachment_url']); ?></div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-center gap-1 <?php echo $is_me ? 'justify-content-end' : ''; ?>">
+                                        <small class="<?php echo $is_me ? 'text-white-50' : 'text-muted'; ?>"
+                                            style="font-size: 0.65rem;">
+                                            <?php echo date('h:i A', strtotime($m['created_at'])); ?>
+                                        </small>
+                                        <?php if ($is_me): ?>
+                                            <i class="fas fa-check-double small"
+                                                style="font-size:0.6rem; color: <?php echo $m['is_read'] ? '#4FC3F7' : 'rgba(255,255,255,0.5)'; ?>;"></i>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
+                            </div>
                         <?php endforeach; ?>
                         <div id="chatEnd"></div>
                     </div>
 
                     <!-- Chat Footer -->
                     <div class="chat-footer p-3 bg-white border-top">
-                        <form method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end" id="chatForm">
+                        <form method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end"
+                            id="chatForm">
                             <?php echo csrfField(); ?>
                             <input type="hidden" name="message_type" id="messageType" value="text">
-                            
+
                             <div class="d-flex gap-1">
                                 <button type="button" class="btn btn-light rounded-circle flex-shrink-0" id="attachBtn"
                                     style="width:40px;height:40px;" title="Attach File">
                                     <i class="fas fa-paperclip text-muted"></i>
                                 </button>
-                                <button type="button" class="btn btn-light rounded-circle flex-shrink-0" id="locationBtn"
-                                    style="width:40px;height:40px;" title="Share Location">
+                                <button type="button" class="btn btn-light rounded-circle flex-shrink-0"
+                                    id="locationBtn" style="width:40px;height:40px;" title="Share Location">
                                     <i class="fas fa-map-marker-alt text-muted"></i>
                                 </button>
                             </div>
@@ -289,7 +294,8 @@ include '../includes/header.php';
                                             <i class="fas fa-file text-primary"></i>
                                             <span id="fileName" class="text-truncate" style="max-width: 150px;"></span>
                                         </div>
-                                        <button type="button" class="btn-close" style="font-size: 0.6rem;" id="clearFile"></button>
+                                        <button type="button" class="btn-close" style="font-size: 0.6rem;"
+                                            id="clearFile"></button>
                                     </div>
                                 </div>
                                 <textarea name="message" id="messageInput"
@@ -378,6 +384,25 @@ include '../includes/header.php';
     .chat-body::-webkit-scrollbar-thumb:hover {
         background: #999;
     }
+
+    .sent-bubble {
+        background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%) !important;
+        color: #ffffff !important;
+    }
+
+    .received-bubble {
+        background: #212529 !important;
+        color: #ffffff !important;
+    }
+
+    .message-bubble {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+
+    .message-bubble:hover {
+        transform: translateY(-2px);
+    }
 </style>
 
 <script>
@@ -428,7 +453,7 @@ include '../includes/header.php';
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
                 const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                
+
                 messageInput.value = mapsUrl;
                 messageType.value = 'location';
                 document.getElementById('chatForm').submit();
@@ -450,7 +475,7 @@ include '../includes/header.php';
 
     attachBtn.addEventListener('click', () => fileInput.click());
 
-    fileInput.addEventListener('change', function() {
+    fileInput.addEventListener('change', function () {
         if (this.files && this.files[0]) {
             fileName.textContent = this.files[0].name;
             filePreview.classList.remove('d-none');

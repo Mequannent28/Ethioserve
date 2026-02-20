@@ -790,10 +790,16 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                         .then(() => {
                             if (ringtoneIn) ringtoneIn.pause();
                             let redirectUrl = '';
-                            if ('<?php echo $user_role; ?>' === 'doctor') {
-                                redirectUrl = '<?php echo $base_url; ?>/doctor/video_call.php?customer_id=' + activeIncomingCall.caller_id;
+                            if (activeIncomingCall.provider_id > 0) {
+                                // It's a doctor call
+                                if ('<?php echo $user_role; ?>' === 'doctor') {
+                                    redirectUrl = '<?php echo $base_url; ?>/doctor/video_call.php?customer_id=' + activeIncomingCall.caller_id;
+                                } else {
+                                    redirectUrl = '<?php echo $base_url; ?>/customer/doctor_video_call.php?doctor_id=' + activeIncomingCall.provider_id;
+                                }
                             } else {
-                                redirectUrl = '<?php echo $base_url; ?>/customer/doctor_video_call.php?doctor_id=' + activeIncomingCall.provider_id;
+                                // It's a dating call
+                                redirectUrl = '<?php echo $base_url; ?>/customer/dating_video_call.php?user_id=' + activeIncomingCall.caller_id + '&room_id=' + activeIncomingCall.room_id + '&incoming=1';
                             }
                             window.location.href = redirectUrl;
                         });
@@ -815,9 +821,97 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                         });
                 };
 
-                // Check every 3 seconds for better responsiveness
+                // --- Real-time Dating Messages Notification ---
+                let lastNotifiedMsgId = null;
+
+                function checkNewMessages() {
+                    // Don't poll if we're already on the chat page for that specific user
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const chatUserId = urlParams.get('user_id');
+
+                    fetch('<?php echo $base_url; ?>/includes/dating_polling.php')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'ok' && data.new_message) {
+                                let msg = data.message;
+
+                                // Prevent duplicate notifications for the same message
+                                if (lastNotifiedMsgId === msg.id) return;
+
+                                // If the current page is dating_chat.php and it's from the SAME sender, don't show a toast (they are already chatting)
+                                if (window.location.pathname.includes('dating_chat.php') && chatUserId == msg.sender_id) {
+                                    return;
+                                }
+
+                                lastNotifiedMsgId = msg.id;
+                                showMessageToast(msg);
+
+                                // Dynamically update the global unread badge in header
+                                const badges = document.querySelectorAll('.badge.bg-danger');
+                                badges.forEach(badge => {
+                                    if (badge.closest('a[href*="messages.php"]') || badge.classList.contains('cart-badge')) return;
+                                    // This is a bit generic, better to find specific message badges
+                                });
+                                // Simple way: increment any element with class 'unread-count-global'
+                                // For now, we'll just trigger a small refresh feel by making it pulse
+                                const msgIcons = document.querySelectorAll('.fa-envelope');
+                                msgIcons.forEach(icon => {
+                                    icon.classList.add('animate__animated', 'animate__heartBeat');
+                                    setTimeout(() => icon.classList.remove('animate__heartBeat'), 2000);
+                                });
+                            }
+                        })
+                        .catch(err => console.error("Polling error:", err));
+                }
+
+                function showMessageToast(msg) {
+                    const toastContainer = document.getElementById('toastNotificationContainer');
+                    if (!toastContainer) return;
+
+                    const toastId = 'toast-' + Date.now();
+                    const toastHtml = `
+                        <div id="${toastId}" class="toast animate__animated animate__fadeInRight" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="6000">
+                            <div class="toast-header bg-danger text-white border-0">
+                                <i class="fas fa-heart me-2"></i>
+                                <strong class="me-auto">New Dating Message</strong>
+                                <small>Just now</small>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                            <div class="toast-body d-flex align-items-center gap-3 p-3 bg-white shadow-sm rounded-bottom">
+                                <img src="${msg.profile_pic || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.full_name)}" class="rounded-circle shadow-sm" width="45" height="45" style="object-fit:cover;">
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="fw-bold text-dark small mb-1">${msg.full_name}</div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.8rem;">${msg.message_type === 'text' ? msg.message : 'Sent you an image 📷'}</div>
+                                    <a href="<?php echo $base_url; ?>/customer/dating_chat.php?user_id=${msg.sender_id}" class="btn btn-sm btn-danger rounded-pill px-3 mt-2 fw-bold" style="font-size:0.7rem;">Reply Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                    const toastElement = document.getElementById(toastId);
+                    const bsToast = new bootstrap.Toast(toastElement);
+                    bsToast.show();
+
+                    // Optional: play a subtle notification sound
+                    try {
+                        let audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-back-button-2566.mp3');
+                        audio.volume = 0.5;
+                        audio.play();
+                    } catch (e) { }
+                }
+
+                // Initial checks
+                setTimeout(checkIncomingCalls, 1000);
+                setTimeout(checkNewMessages, 2000);
+
+                // Regular polling
                 setInterval(checkIncomingCalls, 3000);
-                setTimeout(checkIncomingCalls, 1000); // Initial check
+                setInterval(checkNewMessages, 8000); // Check for messages every 8 seconds
             });
         </script>
+
+        <!-- Global Toast Container -->
+        <div id="toastNotificationContainer" class="toast-container position-fixed bottom-0 end-0 p-3"
+            style="z-index: 10000;"></div>
     <?php endif; ?>

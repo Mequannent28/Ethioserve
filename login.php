@@ -95,6 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         case 'doctor':
                             header("Location: doctor/dashboard.php");
                             break;
+                        case 'dating':
+                            header("Location: customer/dating.php");
+                            break;
                         default:
                             header("Location: customer/index.php");
                     }

@@ -15,16 +15,20 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 if ($action === 'initiate_call') {
     $doctor_id = intval($_POST['doctor_id'] ?? 0);
     $receiver_id = intval($_POST['receiver_id'] ?? 0);
-    $room_id = $_POST['room_id'];
+    $room_id = $_POST['room_id'] ?? '';
 
+    // Auto-detect receiver if only doctor_id is provided
     if (!$receiver_id && $doctor_id) {
-        // Find doctor's user_id
         $stmt = $pdo->prepare("SELECT user_id FROM health_providers WHERE id = ?");
         $stmt->execute([$doctor_id]);
-        $receiver = $stmt->fetch();
-        if ($receiver && $receiver['user_id']) {
-            $receiver_id = $receiver['user_id'];
-        }
+        $row = $stmt->fetch();
+        if ($row)
+            $receiver_id = $row['user_id'];
+    }
+
+    if (!$receiver_id || !$room_id) {
+        echo json_encode(['error' => 'Missing receiver or room ID']);
+        exit();
     }
 
     if ($receiver_id === $user_id) {
@@ -37,13 +41,9 @@ if ($action === 'initiate_call') {
         $stmt->execute([$user_id, $receiver_id, $doctor_id, $room_id]);
         $call_id = $pdo->lastInsertId();
 
-        // Log the initiation for debugging
-        error_log("Call initiated: ID $call_id from $user_id to $receiver_id");
-
         echo json_encode(['success' => true, 'call_id' => $call_id]);
     } catch (Exception $e) {
-        error_log("Call initiation failed: " . $e->getMessage());
-        echo json_encode(['error' => 'Database error during initiation']);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
     exit();
 }
