@@ -234,6 +234,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     onclick="fillLogin('dawit_dating','password')">
                                     <i class="fas fa-heart me-1"></i>Dating (Dawit)
                                 </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                    onclick="fillLogin('beaza_dating','password')">
+                                    <i class="fas fa-heart me-1"></i>Dating (Beaza)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                    onclick="fillLogin('aman_dating','password')">
+                                    <i class="fas fa-heart me-1"></i>Dating (Aman)
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                    onclick="fillLogin('eden_dating','password')">
+                                    <i class="fas fa-heart me-1"></i>Dating (Eden)
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3"
                                     onclick="fillLogin('cloud_company','password')">
                                     <i class="fas fa-building me-1"></i>Employer (Jobs)
