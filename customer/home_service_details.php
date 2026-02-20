@@ -126,7 +126,8 @@ include '../includes/header.php';
                                 <div class="card-body p-4">
                                     <div class="d-flex align-items-start">
                                         <div class="me-4 position-relative">
-                                            <img src="<?php echo $pro['profile_image'] ?: '../assets/img/default-avatar.png'; ?>"
+                                            <?php $p_img = isset($pro['profile_image']) ? $pro['profile_image'] : ''; ?>
+                                            <img src="<?php echo $p_img ?: '../assets/img/default-avatar.png'; ?>"
                                                 class="rounded-circle shadow-sm"
                                                 style="width: 80px; height: 80px; object-fit: cover; border: 3px solid #f8f9fa;">
                                             <span
@@ -175,7 +176,7 @@ include '../includes/header.php';
                                                             <?php echo htmlspecialchars($pro['location']); ?></span>
                                                     </div>
                                                 </div>
-                                                <?php if ($pro['degree_type']): ?>
+                                                <?php if (!empty($pro['degree_type'])): ?>
                                                     <div class="col-md-6">
                                                         <div class="d-flex align-items-center text-muted small">
                                                             <i class="fas fa-graduation-cap me-2 text-info"></i>
@@ -184,7 +185,7 @@ include '../includes/header.php';
                                                         </div>
                                                     </div>
                                                 <?php endif; ?>
-                                                <?php if ($pro['certification']): ?>
+                                                <?php if (!empty($pro['certification'])): ?>
                                                     <div class="col-md-6">
                                                         <div class="d-flex align-items-center text-muted small">
                                                             <i class="fas fa-certificate me-2 text-warning"></i>
