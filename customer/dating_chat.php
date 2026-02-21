@@ -55,10 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
     }
 
     if (!empty($msg) || $attachment) {
+        $inserted = false;
+        // Try advanced insert (with reply_to_id column if migration ran)
         try {
             $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message, message_type, attachment_url, reply_to_id) VALUES (?,?,?,?,?,?)");
             $stmt->execute([$user_id, $other_user_id, $msg, $type, $attachment, $reply_to]);
+            $inserted = true;
         } catch (Exception $e) {
+            // Column might not exist yet — fallback to basic insert
+        }
+        if (!$inserted) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message, message_type, attachment_url) VALUES (?,?,?,?,?)");
+                $stmt->execute([$user_id, $other_user_id, $msg, $type, $attachment]);
+            } catch (Exception $e) {
+            }
         }
         header("Location: dating_chat.php?user_id=" . $other_user_id);
         exit();
