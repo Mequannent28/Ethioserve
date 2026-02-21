@@ -92,10 +92,6 @@ include '../includes/header.php';
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 <style>
-    .chat-container {
-        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-    }
-
     .chat-body::-webkit-scrollbar {
         width: 6px;
     }
@@ -128,61 +124,31 @@ include '../includes/header.php';
         transition: all 0.2s ease;
     }
 
-    .message-bubble:hover {
-        transform: translateY(-2px);
-    }
-
     .btn-danger {
         background: linear-gradient(135deg, #ff416c, #ff4b2b);
         border: none;
         transition: 0.3s;
     }
 
-    /* Fixed layout to prevent jumping */
-    .chat-card {
-        height: calc(100vh - 120px);
-        display: flex;
-        flex-direction: column;
-        max-height: 800px;
+    /* Desktop: scrollable chat body with fixed height */
+    @media (min-width: 769px) {
+        .chat-body {
+            height: 520px;
+            overflow-y: auto;
+        }
     }
 
-    .chat-header {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: white;
-        flex-shrink: 0;
-    }
-
-    .chat-body {
-        flex-grow: 1;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        background-attachment: fixed;
-        /* Keeps background stable */
-    }
-
-    .chat-footer {
-        flex-shrink: 0;
-        background: white;
-    }
-
+    /* Mobile: fully flexible, no fixed height, page scrolls naturally */
     @media (max-width: 768px) {
+        .chat-body {
+            height: auto;
+            min-height: 200px;
+            overflow-y: visible;
+        }
+
         .chat-container {
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-        }
-
-        .chat-card {
-            height: calc(100vh - 70px);
-            /* Adjust for mobile header/footer */
-            max-height: none;
-            border-radius: 0 !important;
-        }
-
-        .container {
-            max-width: 100% !important;
-            padding: 0 !important;
+            padding-top: 10px !important;
+            padding-bottom: 60px !important;
         }
     }
 </style>
@@ -191,9 +157,10 @@ include '../includes/header.php';
     <div class="container">
         <div class="row justify-content-center g-0">
             <div class="col-lg-8 col-xl-6">
-                <div class="card border-0 shadow-lg rounded-5 overflow-hidden chat-card">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
                     <!-- Chat Header -->
-                    <div class="chat-header p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="bg-white p-3 border-bottom d-flex align-items-center justify-content-between sticky-top"
+                        style="z-index: 10;">
                         <div class="d-flex align-items-center">
                             <a href="dating_matches.php" class="btn btn-light rounded-circle me-3"><i
                                     class="fas fa-arrow-left"></i></a>
