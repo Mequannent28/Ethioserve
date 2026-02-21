@@ -591,7 +591,7 @@ include '../includes/header.php';
                                                 <?php echo htmlspecialchars($tag); ?>
                                             </span>
                                         <?php endforeach; ?>
-                                    </div>
+                                    </div> b
                                 <?php endif; ?>
 
                                 <!-- Contact: revealed if matched, locked if not -->
