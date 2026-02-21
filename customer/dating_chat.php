@@ -71,26 +71,47 @@ try {
 } catch (Exception $e) {
 }
 
-// Fetch messages with reply info
-$stmt = $pdo->prepare("
-    SELECT m.*, 
-           r.message AS reply_text, r.message_type AS reply_type, ru.full_name AS reply_sender
-    FROM dating_messages m
-    LEFT JOIN dating_messages r ON m.reply_to_id = r.id
-    LEFT JOIN users ru ON r.sender_id = ru.id
-    WHERE (m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?)
-    ORDER BY m.created_at ASC
-");
-$stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
-$messages = $stmt->fetchAll();
+// Fetch messages — try advanced query (with reply/pin columns), fallback to simple
+$messages = [];
+try {
+    $stmt = $pdo->prepare("
+        SELECT m.*,
+               r.message AS reply_text, r.message_type AS reply_type, ru.full_name AS reply_sender
+        FROM dating_messages m
+        LEFT JOIN dating_messages r ON m.reply_to_id = r.id
+        LEFT JOIN users ru ON r.sender_id = ru.id
+        WHERE (m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?)
+        ORDER BY m.created_at ASC
+    ");
+    $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
+    $messages = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Columns not migrated yet — use simple fallback
+    $stmt = $pdo->prepare("SELECT * FROM dating_messages WHERE (sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?) ORDER BY created_at ASC");
+    $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
+    $messages = $stmt->fetchAll();
+    // Add missing fields with defaults so the template doesn't break
+    $messages = array_map(function ($m) {
+        $m['reply_to_id'] = $m['reply_to_id'] ?? null;
+        $m['reply_text'] = $m['reply_text'] ?? null;
+        $m['reply_type'] = $m['reply_type'] ?? null;
+        $m['reply_sender'] = $m['reply_sender'] ?? null;
+        $m['is_pinned'] = $m['is_pinned'] ?? 0;
+        $m['is_edited'] = $m['is_edited'] ?? 0;
+        $m['edited_at'] = $m['edited_at'] ?? null;
+        $m['forwarded_from'] = $m['forwarded_from'] ?? null;
+        return $m;
+    }, $messages);
+}
 
-// Fetch pinned
+// Fetch pinned message safely
 $pinned_msg = null;
 try {
     $stmt = $pdo->prepare("SELECT * FROM dating_messages WHERE is_pinned=1 AND ((sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?)) LIMIT 1");
     $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
-    $pinned_msg = $stmt->fetch();
+    $pinned_msg = $stmt->fetch() ?: null;
 } catch (Exception $e) {
+    $pinned_msg = null; // is_pinned column not yet added — run migrate_dating_chat_v2.php
 }
 
 include '../includes/header.php';
@@ -457,7 +478,8 @@ try {
                             </div>
                             <div>
                                 <div class="fw-bold" style="font-size:.95rem;">
-                                    <?php echo htmlspecialchars($other_user['full_name']); ?></div>
+                                    <?php echo htmlspecialchars($other_user['full_name']); ?>
+                                </div>
                                 <div class="text-muted" style="font-size:.72rem;">
                                     <?php echo $is_matched ? '<span class="badge bg-danger">Matched</span>' : 'Online'; ?>
                                 </div>
@@ -477,7 +499,8 @@ try {
                             <div class="flex-1">
                                 <div class="fw-bold text-success" style="font-size:.72rem;">Pinned Message</div>
                                 <div class="text-truncate" style="max-width:260px;">
-                                    <?php echo htmlspecialchars(substr($pinned_msg['message'], 0, 80)); ?></div>
+                                    <?php echo htmlspecialchars(substr($pinned_msg['message'], 0, 80)); ?>
+                                </div>
                             </div>
                             <button class="btn btn-sm p-0 text-muted"
                                 onclick="event.stopPropagation();unpinMessage(<?php echo $pinned_msg['id']; ?>)"><i
@@ -513,7 +536,8 @@ try {
                                     <span style="font-size:3.5rem;">👋</span>
                                     <h5 class="fw-bold mt-3">Start the conversation!</h5>
                                     <p class="text-muted small">Say hi to
-                                        <?php echo htmlspecialchars($other_user['full_name']); ?></p>
+                                        <?php echo htmlspecialchars($other_user['full_name']); ?>
+                                    </p>
                                 </div>
                             <?php endif; ?>
 
@@ -540,9 +564,11 @@ try {
                                         <?php if ($m['reply_to_id'] && $m['reply_text'] !== null): ?>
                                             <div class="reply-preview">
                                                 <div class="fw-bold" style="font-size:.72rem;">
-                                                    <?php echo htmlspecialchars($m['reply_sender'] ?? ''); ?></div>
+                                                    <?php echo htmlspecialchars($m['reply_sender'] ?? ''); ?>
+                                                </div>
                                                 <div class="text-truncate">
-                                                    <?php echo htmlspecialchars(substr($m['reply_text'], 0, 60)); ?></div>
+                                                    <?php echo htmlspecialchars(substr($m['reply_text'], 0, 60)); ?>
+                                                </div>
                                             </div>
                                         <?php endif; ?>
 
