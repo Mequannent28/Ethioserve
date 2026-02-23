@@ -26,7 +26,7 @@ function fetchMsg(PDO $pdo, int $id): ?array
 }
 function jsonOut(array $data): void
 {
- echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
 // ─── PING ───────────────────────────────────────────────────────────────────
@@ -43,6 +43,13 @@ if ($action === 'delete') {
     if ((int) $row['sender_id'] !== $user_id)
         jsonOut(['success' => false, 'error' => 'Not your message']);
     try {
+        // Delete associated file if it exists
+        if (!empty($row['attachment_url'])) {
+            $filePath = '../' . $row['attachment_url'];
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
         $pdo->prepare("DELETE FROM dating_messages WHERE id = ?")->execute([$msg_id]);
         jsonOut(['success' => true]);
     } catch (Exception $e) {
@@ -135,6 +142,7 @@ if ($action === 'details') {
     } catch (Exception $e) {
         jsonOut(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     }
+}
 // ─── GET PINNED ─────────────────────────────────────────────────────────────
 if ($action === 'get_pinned') {
     $other_id = (int) ($_GET['other_id'] ?? 0);
@@ -146,6 +154,33 @@ if ($action === 'get_pinned') {
         jsonOut(['pinned' => $s->fetch(PDO::FETCH_ASSOC) ?: null]);
     } catch (Exception $e) {
         jsonOut(['pinned' => null]);
+    }
+}
+// ─── LOAD NEW MESSAGES ──────────────────────────────────────────────────────
+if ($action === 'load_messages') {
+    $last_id = (int) ($_POST['last_id'] ?? $_GET['last_id'] ?? 0);
+    $other_id = (int) ($_POST['other_id'] ?? $_GET['other_id'] ?? 0);
+    if (!$other_id)
+        jsonOut(['success' => true, 'messages' => []]);
+    try {
+        $s = $pdo->prepare("
+            SELECT m.*, u.full_name as sender_name 
+            FROM dating_messages m 
+            JOIN users u ON m.sender_id = u.id
+            WHERE m.id > ? 
+            AND ((m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?))
+            ORDER BY m.id ASC
+        ");
+        $s->execute([$last_id, $user_id, $other_id, $other_id, $user_id]);
+        $new_msgs = $s->fetchAll(PDO::FETCH_ASSOC);
+        // Mark as read
+        if (!empty($new_msgs)) {
+            $pdo->prepare("UPDATE dating_messages SET is_read=1 WHERE sender_id=? AND receiver_id=? AND is_read=0 AND id > ?")
+                ->execute([$other_id, $user_id, $last_id]);
+        }
+        jsonOut(['success' => true, 'messages' => $new_msgs]);
+    } catch (Exception $e) {
+        jsonOut(['success' => false, 'error' => $e->getMessage()]);
     }
 }
 jsonOut(['success' => false, 'error' => 'Unknown action: ' . htmlspecialchars($action)]);

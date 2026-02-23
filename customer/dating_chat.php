@@ -47,10 +47,17 @@ if ($api_action !== '') {
         if ((int) $row['sender_id'] !== $api_uid)
             apiOut(['success' => false, 'error' => 'Not your message']);
         try {
+            // Delete associated file if it exists
+            if (!empty($row['attachment_url'])) {
+                $filePath = '../' . $row['attachment_url'];
+                if (file_exists($filePath)) {
+                    @unlink($filePath);
+                }
+            }
             $pdo->prepare("DELETE FROM dating_messages WHERE id=?")->execute([$api_mid]);
             apiOut(['success' => true]);
         } catch (Exception $e) {
-            apiOut(['success' => false, 'error' => $e->getMessage()]);
+            apiOut(['success' => false, 'error' => 'Delete failed: ' . $e->getMessage()]);
         }
     }
     // EDIT
@@ -154,6 +161,37 @@ if ($api_action !== '') {
             apiOut(['pinned' => $s->fetch(PDO::FETCH_ASSOC) ?: null]);
         } catch (Exception $e) {
             apiOut(['pinned' => null]);
+        }
+    }
+
+    // LOAD NEW MESSAGES (Polling)
+    if ($api_action === 'load_messages') {
+        $last_id = (int) ($_GET['last_id'] ?? 0);
+        $other_id = (int) ($_GET['other_id'] ?? 0);
+        if (!$other_id)
+            apiOut(['success' => false, 'messages' => []]);
+
+        try {
+            $s = $pdo->prepare("
+                SELECT m.*, u.full_name as sender_name 
+                FROM dating_messages m 
+                JOIN users u ON m.sender_id = u.id
+                WHERE m.id > ? 
+                AND ((m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?))
+                ORDER BY m.id ASC
+            ");
+            $s->execute([$last_id, $api_uid, $other_id, $other_id, $api_uid]);
+            $new_msgs = $s->fetchAll(PDO::FETCH_ASSOC);
+
+            // Mark as read
+            if (!empty($new_msgs)) {
+                $pdo->prepare("UPDATE dating_messages SET is_read=1 WHERE sender_id=? AND receiver_id=? AND is_read=0 AND id > ?")
+                    ->execute([$other_id, $api_uid, $last_id]);
+            }
+
+            apiOut(['success' => true, 'messages' => $new_msgs]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => $e->getMessage()]);
         }
     }
 
@@ -983,6 +1021,7 @@ try {
     const OTHER_ID = <?php echo $other_user_id; ?>;
     const MY_ID = <?php echo $user_id; ?>;
     const OTHER_NAME = '<?php echo htmlspecialchars($other_user['full_name']); ?>';
+    let lastId = <?php echo !empty($messages) ? (int)end($messages)['id'] : 0; ?>;
 
     let activeRow = null;
     let editMsgId = null;
@@ -1451,23 +1490,42 @@ try {
         }
     }
 
-    /* ─── Auto-poll for new messages & incoming calls every 5s ─── */
-    const msgContainer = document.getElementById('messageContainer');
+    /* ─── Auto-poll for new messages every 5s ─── */
     setInterval(() => {
-        // 1. Check for new messages
-        fetch(window.location.href)
-            .then(r => r.text())
-            .then(html => {
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const fresh = doc.getElementById('messageContainer');
-                if (fresh && fresh.innerHTML !== msgContainer.innerHTML) {
-                    const atBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 120;
-                    msgContainer.innerHTML = fresh.innerHTML;
-                    if (atBottom) chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
-                }
-            });
-
-        // Global Call Polling is handled by header.php ── no duplicate confirm() boxes needed here.
+        apiFetch({ action: 'load_messages', last_id: lastId, other_id: OTHER_ID }).then(d => {
+            if (d.success && d.messages && d.messages.length > 0) {
+                const atBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 120;
+                
+                d.messages.forEach(m => {
+                    if (document.getElementById('msg-' + m.id)) return; // skip duplicates
+                    
+                    const isMe = m.sender_id == MY_ID;
+                    const row = document.createElement('div');
+                    row.id = 'msg-' + m.id;
+                    row.className = `msg-row ${isMe ? 'me' : 'them'} animate__animated animate__fadeInUp animate__faster`;
+                    row.dataset.id = m.id;
+                    row.dataset.me = isMe ? '1' : '0';
+                    row.dataset.text = m.message || '';
+                    row.dataset.type = m.message_type;
+                    
+                    const timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    row.innerHTML = `
+                        <div class="bubble" oncontextmenu="showCtx(event,this.closest('.msg-row'))" onclick="handleTap(event,this.closest('.msg-row'))">
+                            ${m.message ? `<div>${m.message.replace(/\n/g, '<br>')}</div>` : ''}
+                            <div class="meta">
+                                ${timeStr}
+                                ${isMe ? ' <i class="fas fa-check-double" style="font-size:.63rem; color:rgba(255,255,255,.6);"></i>' : ''}
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('messageContainer').appendChild(row);
+                    lastId = m.id;
+                });
+                
+                if (atBottom) chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
+            }
+        });
     }, 5000);
 </script>
 <?php include '../includes/footer.php'; ?>
