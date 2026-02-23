@@ -762,7 +762,13 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                 console.log("%c[CALL SYSTEM] Incoming call detected", "color: white; background: #2E7D32; padding: 5px; border-radius: 5px; font-weight: bold;");
                                 activeIncomingCall = data.call;
                                 document.getElementById('callerNameDisp').textContent = data.call.caller_name;
-                                document.getElementById('callerDetailDisp').textContent = "Incoming video call...";
+                                document.getElementById('callerDetailDisp').textContent = (data.call.call_type === 'telemed' ? 'Incoming medical consultation...' : 'Incoming dating call...');
+
+                                // Update icon based on video/audio
+                                const callIcon = document.querySelector('#incomingCallModal .display-4');
+                                if (callIcon) {
+                                    callIcon.className = (data.call.is_video == 1 ? 'fas fa-video display-4 text-white' : 'fas fa-phone display-4 text-white');
+                                }
 
                                 const modal = getModal();
                                 if (modal) modal.show();
@@ -790,16 +796,17 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                         .then(() => {
                             if (ringtoneIn) ringtoneIn.pause();
                             let redirectUrl = '';
-                            if (activeIncomingCall.provider_id > 0) {
-                                // It's a doctor call
+
+                            if (activeIncomingCall.call_type === 'telemed') {
                                 if ('<?php echo $user_role; ?>' === 'doctor') {
                                     redirectUrl = '<?php echo $base_url; ?>/doctor/video_call.php?customer_id=' + activeIncomingCall.caller_id;
                                 } else {
-                                    redirectUrl = '<?php echo $base_url; ?>/customer/doctor_video_call.php?doctor_id=' + activeIncomingCall.provider_id;
+                                    // For customer, provider_id is the doctor's user id (caller_id)
+                                    redirectUrl = '<?php echo $base_url; ?>/customer/doctor_video_call.php?doctor_id=' + activeIncomingCall.caller_id + '&is_video=' + activeIncomingCall.is_video;
                                 }
                             } else {
                                 // It's a dating call
-                                redirectUrl = '<?php echo $base_url; ?>/customer/dating_video_call.php?user_id=' + activeIncomingCall.caller_id + '&room_id=' + activeIncomingCall.room_id + '&incoming=1';
+                                redirectUrl = '<?php echo $base_url; ?>/customer/dating_video_call.php?user_id=' + activeIncomingCall.caller_id + '&room_id=' + activeIncomingCall.room_id + '&incoming=1&is_video=' + activeIncomingCall.is_video;
                             }
                             window.location.href = redirectUrl;
                         });

@@ -1,30 +1,21 @@
-<?php ob_start(); // Capture ALL output — prevents any stray PHP notice/warning from breaking JSON
-
-error_reporting(0); // Suppress notices/warnings that would corrupt JSON output
+<?php ob_start();
+error_reporting(0);
 ini_set('display_errors', '0');
+require_once '../includes/config.php';
+require_once '../includes/db.php';
+require_once '../includes/functions.php';
 
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/functions.php';
-
-ob_end_clean(); // Discard anything output during includes
-
+ob_end_clean();
 header('Content-Type: application/json; charset=utf-8');
-
 // ─── Auth ───────────────────────────────────────────────────────────────────
-// Support both $_SESSION['id'] (used in dating_chat.php) and $_SESSION['user_id']
-$user_id = $_SESSION['user_id'] ?? $_SESSION['id'] ?? null;
-
+$user_id = (int) ($_SESSION['user_id'] ?? $_SESSION['id'] ?? 0);
 if (!$user_id) {
     echo json_encode(['success' => false, 'error' => 'Not logged in']);
     exit;
 }
-$user_id = (int) $user_id;
-
 // ─── Input ──────────────────────────────────────────────────────────────────
 $action = trim($_POST['action'] ?? $_GET['action'] ?? '');
 $msg_id = (int) ($_POST['msg_id'] ?? $_GET['msg_id'] ?? 0);
-
 // ─── Helper ─────────────────────────────────────────────────────────────────
 function fetchMsg(PDO $pdo, int $id): ?array
 {
@@ -33,29 +24,24 @@ function fetchMsg(PDO $pdo, int $id): ?array
     $r = $s->fetch(PDO::FETCH_ASSOC);
     return $r ?: null;
 }
-
 function jsonOut(array $data): void
 {
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+ echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
-
-// ─── PING (diagnostic) ──────────────────────────────────────────────────────
+// ─── PING ───────────────────────────────────────────────────────────────────
 if ($action === 'ping') {
-    jsonOut(['success' => true, 'user_id' => $user_id, 'msg' => 'API reachable']);
+    jsonOut(['success' => true, 'user_id' => $user_id, 'msg' => 'API OK']);
 }
-
 // ─── DELETE ─────────────────────────────────────────────────────────────────
 if ($action === 'delete') {
     if (!$msg_id)
-        jsonOut(['success' => false, 'error' => 'No message ID provided']);
-
+        jsonOut(['success' => false, 'error' => 'No message ID']);
     $row = fetchMsg($pdo, $msg_id);
     if (!$row)
-        jsonOut(['success' => false, 'error' => 'Message not found (id=' . $msg_id . ')']);
+        jsonOut(['success' => false, 'error' => 'Message not found']);
     if ((int) $row['sender_id'] !== $user_id)
-        jsonOut(['success' => false, 'error' => 'Permission denied — not your message']);
-
+        jsonOut(['success' => false, 'error' => 'Not your message']);
     try {
         $pdo->prepare("DELETE FROM dating_messages WHERE id = ?")->execute([$msg_id]);
         jsonOut(['success' => true]);
@@ -63,17 +49,14 @@ if ($action === 'delete') {
         jsonOut(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     }
 }
-
 // ─── EDIT ───────────────────────────────────────────────────────────────────
 if ($action === 'edit') {
     $new_text = trim($_POST['text'] ?? '');
     if (!$msg_id || $new_text === '')
         jsonOut(['success' => false, 'error' => 'Missing data']);
-
     $row = fetchMsg($pdo, $msg_id);
     if (!$row || (int) $row['sender_id'] !== $user_id)
         jsonOut(['success' => false, 'error' => 'Not allowed']);
-
     try {
         $pdo->prepare("UPDATE dating_messages SET message=?, is_edited=1, edited_at=NOW() WHERE id=?")
             ->execute([$new_text, $msg_id]);
@@ -82,20 +65,15 @@ if ($action === 'edit') {
         jsonOut(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     }
 }
-
 // ─── PIN / UNPIN ────────────────────────────────────────────────────────────
 if ($action === 'pin' || $action === 'unpin') {
     if (!$msg_id)
         jsonOut(['success' => false, 'error' => 'No message ID']);
-
     $row = fetchMsg($pdo, $msg_id);
     if (!$row)
         jsonOut(['success' => false, 'error' => 'Message not found']);
-
-    $isInConv = ((int) $row['sender_id'] === $user_id || (int) $row['receiver_id'] === $user_id);
-    if (!$isInConv)
+    if ((int) $row['sender_id'] !== $user_id && (int) $row['receiver_id'] !== $user_id)
         jsonOut(['success' => false, 'error' => 'Not your conversation']);
-
     $pinVal = ($action === 'pin') ? 1 : 0;
     try {
         if ($pinVal === 1) {
@@ -109,45 +87,38 @@ if ($action === 'pin' || $action === 'unpin') {
         jsonOut(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     }
 }
-
 // ─── FORWARD ────────────────────────────────────────────────────────────────
 if ($action === 'forward') {
     $to = (int) ($_POST['to_user_id'] ?? 0);
     if (!$msg_id || !$to)
         jsonOut(['success' => false, 'error' => 'Missing data']);
-
     $s = $pdo->prepare("SELECT * FROM dating_messages WHERE id=? AND (sender_id=? OR receiver_id=?)");
     $s->execute([$msg_id, $user_id, $user_id]);
     $row = $s->fetch(PDO::FETCH_ASSOC);
     if (!$row)
         jsonOut(['success' => false, 'error' => 'Not found or not allowed']);
-
     try {
         $pdo->prepare("INSERT INTO dating_messages (sender_id,receiver_id,message,message_type,attachment_url,forwarded_from)
-                       SELECT ?,?,message,message_type,attachment_url,? FROM dating_messages WHERE id=?")
+             SELECT ?,?,message,message_type,attachment_url,? FROM dating_messages WHERE id=?")
             ->execute([$user_id, $to, $msg_id, $msg_id]);
     } catch (Exception $e) {
-        // Fallback: forwarded_from column may not exist yet
         try {
             $pdo->prepare("INSERT INTO dating_messages (sender_id,receiver_id,message,message_type,attachment_url)
                            SELECT ?,?,message,message_type,attachment_url FROM dating_messages WHERE id=?")
                 ->execute([$user_id, $to, $msg_id]);
         } catch (Exception $e2) {
-            jsonOut(['success' => false, 'error' => 'DB error: ' . $e2->getMessage()]);
+            jsonOut(['success' => false, 'error' => $e2->getMessage()]);
         }
     }
     jsonOut(['success' => true]);
 }
-
 // ─── DETAILS ────────────────────────────────────────────────────────────────
 if ($action === 'details') {
     if (!$msg_id)
         jsonOut(['success' => false, 'error' => 'No message ID']);
-
     try {
         $s = $pdo->prepare("
-            SELECT m.*,
-                   u.full_name,
+            SELECT m.*, u.full_name,
                    COALESCE(m.is_edited, 0) AS is_edited,
                    COALESCE(m.is_pinned, 0) AS is_pinned,
                    COALESCE(m.is_read,   0) AS is_read,
@@ -164,8 +135,6 @@ if ($action === 'details') {
     } catch (Exception $e) {
         jsonOut(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     }
-}
-
 // ─── GET PINNED ─────────────────────────────────────────────────────────────
 if ($action === 'get_pinned') {
     $other_id = (int) ($_GET['other_id'] ?? 0);
@@ -179,6 +148,4 @@ if ($action === 'get_pinned') {
         jsonOut(['pinned' => null]);
     }
 }
-
-// ─── Unknown action ──────────────────────────────────────────────────────────
 jsonOut(['success' => false, 'error' => 'Unknown action: ' . htmlspecialchars($action)]);

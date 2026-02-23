@@ -5,82 +5,61 @@ require_once 'functions.php';
 header('Content-Type: application/json');
 
 if (!isLoggedIn()) {
-    echo json_encode(['error' => 'Not logged in']);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
 
+$action = $_REQUEST['action'] ?? '';
 $user_id = getCurrentUserId();
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 if ($action === 'initiate_call') {
-    $doctor_id = intval($_POST['doctor_id'] ?? 0);
-    $receiver_id = intval($_POST['receiver_id'] ?? 0);
-    $room_id = $_POST['room_id'] ?? '';
+    // Flexible receiver ID (could be doctor_id or user_id for dating)
+    $receiver_id = intval($_POST['receiver_id'] ?? $_POST['doctor_id'] ?? 0);
+    $room_id = sanitize($_POST['room_id'] ?? '');
+    $call_type = sanitize($_POST['call_type'] ?? 'telemed'); // telemed, dating
+    $is_video = intval($_POST['is_video'] ?? 1); // 1 for video, 0 for audio
+    $call_id = uniqid('call_');
 
-    // Auto-detect receiver if only doctor_id is provided
-    if (!$receiver_id && $doctor_id) {
-        $stmt = $pdo->prepare("SELECT user_id FROM health_providers WHERE id = ?");
-        $stmt->execute([$doctor_id]);
-        $row = $stmt->fetch();
-        if ($row)
-            $receiver_id = $row['user_id'];
-    }
-
-    if (!$receiver_id || !$room_id) {
-        echo json_encode(['error' => 'Missing receiver or room ID']);
-        exit();
-    }
-
-    if ($receiver_id === $user_id) {
-        echo json_encode(['error' => 'You cannot call yourself']);
+    if ($receiver_id <= 0 || empty($room_id)) {
+        echo json_encode(['error' => 'Missing parameters']);
         exit();
     }
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO video_calls (caller_id, receiver_id, provider_id, room_id, status) VALUES (?, ?, ?, ?, 'pending')");
-        $stmt->execute([$user_id, $receiver_id, $doctor_id, $room_id]);
-        $call_id = $pdo->lastInsertId();
-
+        // We use a unified table 'all_signaling' or just adapt health_signaling to be generic
+        // Let's create/use 'signaling_calls' table instead
+        $stmt = $pdo->prepare("INSERT INTO app_signaling (call_id, caller_id, receiver_id, room_id, status, call_type, is_video) VALUES (?, ?, ?, ?, 'pending', ?, ?)");
+        $stmt->execute([$call_id, $user_id, $receiver_id, $room_id, $call_type, $is_video]);
         echo json_encode(['success' => true, 'call_id' => $call_id]);
     } catch (Exception $e) {
-        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+        echo json_encode(['error' => $e->getMessage()]);
     }
-    exit();
-}
-
-if ($action === 'check_incoming') {
-    // Check for pending calls for current user
-    $stmt = $pdo->prepare("SELECT c.*, u.full_name as caller_name 
-                           FROM video_calls c
-                           JOIN users u ON c.caller_id = u.id
-                           WHERE c.receiver_id = ? AND c.status = 'pending' AND c.created_at > (NOW() - INTERVAL 3 MINUTE)
-                           ORDER BY c.created_at DESC LIMIT 1");
-    $stmt->execute([$user_id]);
-    $call = $stmt->fetch();
-
-    if ($call) {
-        echo json_encode(['call' => $call]);
-    } else {
-        echo json_encode(['call' => null]);
-    }
-    exit();
-}
-
-if ($action === 'respond_call') {
-    $call_id = intval($_POST['call_id']);
-    $status = $_POST['status']; // accepted, rejected
-
-    $stmt = $pdo->prepare("UPDATE video_calls SET status = ? WHERE id = ? AND receiver_id = ?");
-    $stmt->execute([$status, $call_id, $user_id]);
-
-    echo json_encode(['success' => true]);
-    exit();
-}
-
-if ($action === 'get_call_status') {
-    $call_id = intval($_GET['call_id'] ?? 0);
-    $stmt = $pdo->prepare("SELECT status FROM video_calls WHERE id = ?");
+} elseif ($action === 'get_call_status') {
+    $call_id = sanitize($_GET['call_id']);
+    $stmt = $pdo->prepare("SELECT status FROM app_signaling WHERE call_id = ?");
     $stmt->execute([$call_id]);
-    echo json_encode(['status' => $stmt->fetchColumn()]);
-    exit();
+    $status = $stmt->fetchColumn();
+    echo json_encode(['status' => $status]);
+} elseif ($action === 'handle_call' || $action === 'respond_call') {
+    $call_id = $_POST['call_id'] ?? '';
+    $status = sanitize($_POST['status']); // accepted or rejected
+
+    // Support both numeric id and uuid call_id
+    if (is_numeric($call_id)) {
+        $stmt = $pdo->prepare("UPDATE app_signaling SET status = ? WHERE id = ? AND receiver_id = ?");
+    } else {
+        $stmt = $pdo->prepare("UPDATE app_signaling SET status = ? WHERE call_id = ? AND receiver_id = ?");
+    }
+    $stmt->execute([$status, $call_id, $user_id]);
+    echo json_encode(['success' => true]);
+} elseif ($action === 'check_incoming') {
+    // Poll for new calls where 'me' is the receiver
+    $stmt = $pdo->prepare("SELECT s.*, u.full_name as caller_name 
+                           FROM app_signaling s 
+                           JOIN users u ON s.caller_id = u.id 
+                           WHERE s.receiver_id = ? AND s.status = 'pending' 
+                           ORDER BY s.created_at DESC LIMIT 1");
+    $stmt->execute([$user_id]);
+    $call = $stmt->fetch(PDO::FETCH_ASSOC);
+    echo json_encode(['call' => $call]);
 }

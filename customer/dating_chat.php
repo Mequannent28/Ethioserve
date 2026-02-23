@@ -1,6 +1,168 @@
 <?php
+ob_start();
+error_reporting(0);
+ini_set('display_errors', '0');
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
+
+// ═══════════════════════════════════════════════════════════════════
+// INLINE API — handles AJAX calls from the chat page
+// Called when ?action=... or POST action=... is present
+// ═══════════════════════════════════════════════════════════════════
+$api_action = trim($_POST['action'] ?? $_GET['action'] ?? '');
+if ($api_action !== '') {
+    ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+
+    $api_uid = (int) ($_SESSION['user_id'] ?? $_SESSION['id'] ?? 0);
+    $base_url = BASE_URL;
+    if (!$api_uid) {
+        echo json_encode(['success' => false, 'error' => 'Not logged in']);
+        exit;
+    }
+
+    $api_mid = (int) ($_POST['msg_id'] ?? $_GET['msg_id'] ?? 0);
+
+    function apiMsg(PDO $p, int $id): ?array
+    {
+        $s = $p->prepare("SELECT * FROM dating_messages WHERE id=?");
+        $s->execute([$id]);
+        return $s->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+    function apiOut(array $d): void
+    {
+        echo json_encode($d, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    // PING
+    if ($api_action === 'ping')
+        apiOut(['success' => true, 'user_id' => $api_uid]);
+    // DELETE
+    if ($api_action === 'delete') {
+        if (!$api_mid)
+            apiOut(['success' => false, 'error' => 'No message ID']);
+        $row = apiMsg($pdo, $api_mid);
+        if (!$row)
+            apiOut(['success' => false, 'error' => 'Message not found']);
+        if ((int) $row['sender_id'] !== $api_uid)
+            apiOut(['success' => false, 'error' => 'Not your message']);
+        try {
+            $pdo->prepare("DELETE FROM dating_messages WHERE id=?")->execute([$api_mid]);
+            apiOut(['success' => true]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+    // EDIT
+    if ($api_action === 'edit') {
+        $txt = trim($_POST['text'] ?? '');
+        if (!$api_mid || !$txt)
+            apiOut(['success' => false, 'error' => 'Missing data']);
+        $row = apiMsg($pdo, $api_mid);
+        if (!$row || (int) $row['sender_id'] !== $api_uid)
+            apiOut(['success' => false, 'error' => 'Not allowed']);
+        try {
+            $pdo->prepare("UPDATE dating_messages SET message=?,is_edited=1,edited_at=NOW() WHERE id=?")->execute([$txt, $api_mid]);
+            apiOut(['success' => true, 'text' => htmlspecialchars($txt)]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+    // PIN / UNPIN
+    if ($api_action === 'pin' || $api_action === 'unpin') {
+        if (!$api_mid)
+            apiOut(['success' => false, 'error' => 'No message ID']);
+        $row = apiMsg($pdo, $api_mid);
+        if (!$row)
+            apiOut(['success' => false, 'error' => 'Not found']);
+
+        // Ownership check
+        if ((int) $row['sender_id'] !== $api_uid && (int) $row['receiver_id'] !== $api_uid) {
+            apiOut(['success' => false, 'error' => 'Not authorized']);
+        }
+
+        $pv = ($api_action === 'pin') ? 1 : 0;
+        try {
+            if ($pv === 1) {
+                // Clear other pins for this conversation
+                $oth = ((int) $row['sender_id'] === $api_uid) ? (int) $row['receiver_id'] : (int) $row['sender_id'];
+                $pdo->prepare("UPDATE dating_messages SET is_pinned=0 WHERE (sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?)")
+                    ->execute([$api_uid, $oth, $oth, $api_uid]);
+            }
+            $pdo->prepare("UPDATE dating_messages SET is_pinned=? WHERE id=?")->execute([$pv, $api_mid]);
+            apiOut(['success' => true, 'pinned' => $pv]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => 'DB Error: ' . $e->getMessage()]);
+        }
+    }
+
+    // FORWARD
+    if ($api_action === 'forward') {
+        $to = (int) ($_POST['to_user_id'] ?? 0);
+        if (!$api_mid || !$to)
+            apiOut(['success' => false, 'error' => 'Missing data']);
+        $s = $pdo->prepare("SELECT * FROM dating_messages WHERE id=? AND (sender_id=? OR receiver_id=?)");
+        $s->execute([$api_mid, $api_uid, $api_uid]);
+        $row = $s->fetch(PDO::FETCH_ASSOC);
+        if (!$row)
+            apiOut(['success' => false, 'error' => 'Not found or not allowed']);
+        try {
+            $pdo->prepare("INSERT INTO dating_messages (sender_id,receiver_id,message,message_type,attachment_url,forwarded_from) SELECT ?,?,message,message_type,attachment_url,? FROM dating_messages WHERE id=?")->execute([$api_uid, $to, $api_mid, $api_mid]);
+        } catch (Exception $e) {
+            try {
+                $pdo->prepare("INSERT INTO dating_messages (sender_id,receiver_id,message,message_type,attachment_url) SELECT ?,?,message,message_type,attachment_url FROM dating_messages WHERE id=?")->execute([$api_uid, $to, $api_mid]);
+            } catch (Exception $e2) {
+                apiOut(['success' => false, 'error' => $e2->getMessage()]);
+            }
+        }
+        apiOut(['success' => true]);
+    }
+
+    // DETAILS
+    if ($api_action === 'details') {
+        if (!$api_mid)
+            apiOut(['success' => false, 'error' => 'No message ID']);
+        try {
+            $s = $pdo->prepare("SELECT m.*, u.full_name as sender_name 
+                               FROM dating_messages m 
+                               JOIN users u ON m.sender_id = u.id 
+                               WHERE m.id = ? AND (m.sender_id = ? OR m.receiver_id = ?)");
+            $s->execute([$api_mid, $api_uid, $api_uid]);
+            $msg = $s->fetch(PDO::FETCH_ASSOC);
+            if (!$msg)
+                apiOut(['success' => false, 'error' => 'Message not found']);
+
+            // Format data for JS
+            $msg['full_name'] = $msg['sender_name'];
+            $msg['is_read'] = (int) ($msg['is_read'] ?? 0);
+            $msg['is_pinned'] = (int) ($msg['is_pinned'] ?? 0);
+            $msg['is_edited'] = (int) ($msg['is_edited'] ?? 0);
+
+            apiOut(['success' => true, 'message' => $msg]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => 'Details Fail: ' . $e->getMessage()]);
+        }
+    }
+    // GET_PINNED
+    if ($api_action === 'get_pinned') {
+        $oid = (int) ($_GET['other_id'] ?? 0);
+        if (!$oid)
+            apiOut(['pinned' => null]);
+        try {
+            $s = $pdo->prepare("SELECT * FROM dating_messages WHERE is_pinned=1 AND ((sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?)) ORDER BY created_at DESC LIMIT 1");
+            $s->execute([$api_uid, $oid, $oid, $api_uid]);
+            apiOut(['pinned' => $s->fetch(PDO::FETCH_ASSOC) ?: null]);
+        } catch (Exception $e) {
+            apiOut(['pinned' => null]);
+        }
+    }
+
+    apiOut(['success' => false, 'error' => 'Unknown action: ' . htmlspecialchars($api_action)]);
+}
+// ═══════════════════════════════════════════════════════════════════
+// END API — normal page rendering below
+// ═══════════════════════════════════════════════════════════════════
+ob_end_clean();
 
 if (!isset($_SESSION['id'])) {
     header("Location: ../login.php");
@@ -9,6 +171,7 @@ if (!isset($_SESSION['id'])) {
 
 $user_id = $_SESSION['id'];
 $other_user_id = intval($_GET['user_id'] ?? 0);
+$base_url = BASE_URL;
 
 if (!$other_user_id) {
     header("Location: dating.php");
@@ -51,6 +214,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
         if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $file_name)) {
             $attachment = 'uploads/dating_chat/' . $file_name;
             $type = 'image';
+        }
+    }
+
+    if (isset($_FILES['voice']) && $_FILES['voice']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = '../uploads/dating_chat/';
+        if (!is_dir($upload_dir))
+            mkdir($upload_dir, 0777, true);
+        $file_name = 'voice_' . time() . '.webm';
+        if (move_uploaded_file($_FILES['voice']['tmp_name'], $upload_dir . $file_name)) {
+            $attachment = 'uploads/dating_chat/' . $file_name;
+            $type = 'voice';
         }
     }
 
@@ -130,6 +304,59 @@ include '../includes/header.php';
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 <style>
+    /* ─── Reply preview inside bubble ─── */
+    .reply-preview {
+        background: rgba(0, 0, 0, 0.05);
+        border-left: 3px solid #2E7D32;
+        padding: 4px 10px;
+        margin-bottom: 6px;
+        border-radius: 4px;
+        font-size: .8rem;
+    }
+
+    .me .reply-preview {
+        background: rgba(255, 255, 255, 0.15);
+        border-left-color: #fff;
+    }
+
+    .them .reply-preview {
+        background: rgba(0, 0, 0, 0.04);
+        border-left-color: #2E7D32;
+    }
+
+    .reply-highlight {
+        animation: pulseHighlight 1.5s ease;
+    }
+
+    @keyframes pulseHighlight {
+        0% {
+            background-color: rgba(46, 125, 50, 0.4);
+        }
+
+        100% {}
+    }
+
+    .animate-pulse {
+        animation: pulseRecord 1s infinite;
+    }
+
+    @keyframes pulseRecord {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
     /* ─── Base ─── */
     .chat-page {
         background: #f0f2f5;
@@ -332,45 +559,44 @@ include '../includes/header.php';
 
     /* ─── Reply bar (input area) ─── */
     #replyBar {
-        display: none;
-        background: #f8f8f8;
-        border-top: 2px solid #2E7D32;
+        display: none !important;
+        background: #f8f9fa;
+        border-left: 4px solid #2E7D32;
         padding: 8px 14px;
+        margin-bottom: 8px;
+        border-radius: 8px;
         font-size: .82rem;
         align-items: center;
         gap: 8px;
+        transition: all .2s;
     }
 
     #replyBar .reply-cancel {
         cursor: pointer;
         color: #999;
         font-size: 1.1rem;
-    }
-
-    #replyBar .reply-info {
-        flex: 1;
-    }
-
-    #replyBar .reply-name {
-        font-weight: 600;
-        color: #2E7D32;
+        padding-left: 10px;
     }
 
     /* ─── Edit bar ─── */
     #editBar {
-        display: none;
+        display: none !important;
         background: #fffde7;
-        border-top: 2px solid #f9a825;
+        border-left: 4px solid #f9a825;
         padding: 8px 14px;
+        margin-bottom: 8px;
+        border-radius: 8px;
         font-size: .82rem;
         align-items: center;
         gap: 8px;
+        transition: all .2s;
     }
 
     #editBar .edit-cancel {
         cursor: pointer;
         color: #999;
         font-size: 1.1rem;
+        padding-left: 10px;
     }
 
     /* ─── Input bar ─── */
@@ -449,22 +675,24 @@ include '../includes/header.php';
 </style>
 
 <?php
-// Fetch contacts for forward modal (all users current user has chatted with)
-$contacts = [];
+// Fetch ALL dating users for forward modal (excluding self)
 try {
     $stmt = $pdo->prepare("
         SELECT DISTINCT u.id, u.full_name, p.profile_pic
         FROM users u
         LEFT JOIN dating_profiles p ON u.id = p.user_id
-        WHERE u.id != ? AND u.id IN (
-            SELECT DISTINCT sender_id FROM dating_messages WHERE receiver_id = ?
+        WHERE u.id != ? AND (u.role = 'dating' OR u.id IN (
+            SELECT DISTINCT sender_id   FROM dating_messages WHERE receiver_id = ?
             UNION
-            SELECT DISTINCT receiver_id FROM dating_messages WHERE sender_id = ?
-        ) LIMIT 20
+            SELECT DISTINCT receiver_id FROM dating_messages WHERE sender_id   = ?
+        ))
+        ORDER BY u.full_name
+        LIMIT 30
     ");
     $stmt->execute([$user_id, $user_id, $user_id]);
     $contacts = $stmt->fetchAll();
 } catch (Exception $e) {
+    $contacts = [];
 }
 ?>
 
@@ -496,9 +724,13 @@ try {
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="dating_video_call.php?user_id=<?php echo $other_user_id; ?>"
-                                class="btn btn-light rounded-circle p-2 text-danger"><i class="fas fa-video"></i></a>
+                        <div class="d-flex gap-3">
+                            <a href="dating_video_call.php?user_id=<?php echo $other_user_id; ?>&is_video=0"
+                                class="btn btn-light rounded-circle p-2 text-primary" title="Voice Call"><i
+                                    class="fas fa-phone"></i></a>
+                            <a href="dating_video_call.php?user_id=<?php echo $other_user_id; ?>&is_video=1"
+                                class="btn btn-light rounded-circle p-2 text-danger" title="Video Call"><i
+                                    class="fas fa-video"></i></a>
                         </div>
                     </div>
 
@@ -518,26 +750,6 @@ try {
                                     class="fas fa-times"></i></button>
                         </div>
                     <?php endif; ?>
-
-                    <!-- ─── Reply Bar ─── -->
-                    <div id="replyBar" class="d-flex">
-                        <i class="fas fa-reply text-success mt-1"></i>
-                        <div class="reply-info">
-                            <div class="reply-name" id="replyName"></div>
-                            <div id="replyText" class="text-muted text-truncate" style="max-width:220px;"></div>
-                        </div>
-                        <span class="reply-cancel ms-auto" onclick="cancelReply()">✕</span>
-                    </div>
-
-                    <!-- ─── Edit Bar ─── -->
-                    <div id="editBar" class="d-flex">
-                        <i class="fas fa-pencil-alt text-warning mt-1"></i>
-                        <div class="flex-1 ms-2">
-                            <div class="fw-bold text-warning">Edit Message</div>
-                            <div id="editOriginal" class="text-muted text-truncate" style="max-width:220px;"></div>
-                        </div>
-                        <span class="edit-cancel ms-auto" onclick="cancelEdit()">✕</span>
-                    </div>
 
                     <!-- ─── Messages ─── -->
                     <div class="chat-body" id="chatBody">
@@ -572,13 +784,22 @@ try {
                                             <div class="fwd-label"><i class="fas fa-forward me-1"></i>Forwarded</div>
                                         <?php endif; ?>
 
-                                        <?php if ($m['reply_to_id'] && $m['reply_text'] !== null): ?>
-                                            <div class="reply-preview">
-                                                <div class="fw-bold" style="font-size:.72rem;">
+                                        <?php if ($m['reply_to_id']): ?>
+                                            <div class="reply-preview"
+                                                onclick="scrollToMessage(<?php echo $m['reply_to_id']; ?>); event.stopPropagation();"
+                                                style="cursor:pointer">
+                                                <div class="fw-bold"
+                                                    style="font-size: .72rem; color:<?php echo $is_me ? '#e8f5e9' : '#1b5e20'; ?>;">
                                                     <?php echo htmlspecialchars($m['reply_sender'] ?? ''); ?>
                                                 </div>
-                                                <div class="text-truncate">
-                                                    <?php echo htmlspecialchars(substr($m['reply_text'], 0, 60)); ?>
+                                                <div class="text-truncate" style="font-size: .78rem; opacity: .85;">
+                                                    <?php if ($m['reply_type'] === 'image'): ?>
+                                                        <i class="fas fa-camera me-1"></i>Photo
+                                                    <?php elseif ($m['reply_type'] === 'voice'): ?>
+                                                        <i class="fas fa-microphone me-1"></i>Voice Message
+                                                    <?php else: ?>
+                                                        <?php echo htmlspecialchars(substr($m['reply_text'] ?? '', 0, 60)); ?>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         <?php endif; ?>
@@ -589,6 +810,17 @@ try {
                                                     class="img-fluid w-100"
                                                     style="cursor:pointer;max-height:220px;object-fit:cover;"
                                                     onclick="window.open(this.src)">
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <?php if ($m['message_type'] === 'voice' && $m['attachment_url']): ?>
+                                            <div class="voice-msg py-1">
+                                                <audio controls class="voice-player"
+                                                    style="height:30px; filter: <?php echo $is_me ? 'invert(1) grayscale(1) brightness(2)' : ''; ?>">
+                                                    <source src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
+                                                        type="audio/webm">
+                                                    Your browser does not support audio.
+                                                </audio>
                                             </div>
                                         <?php endif; ?>
 
@@ -612,6 +844,45 @@ try {
 
                     <!-- ─── Footer ─── -->
                     <div class="chat-footer">
+                        <!-- Reply Bar -->
+                        <div id="replyBar" class="d-flex">
+                            <i class="fas fa-reply text-success mt-1 me-2"></i>
+                            <div class="reply-info">
+                                <div class="reply-name" id="replyName"
+                                    style="font-size: 0.75rem; font-weight: 700; color: #2E7D32;"></div>
+                                <div id="replyText" class="text-muted text-truncate"
+                                    style="max-width:220px; font-size: 0.82rem;"></div>
+                            </div>
+                            <span class="reply-cancel ms-auto" onclick="cancelReply()">✕</span>
+                        </div>
+
+                        <!-- Edit Bar -->
+                        <div id="editBar" class="d-flex">
+                            <i class="fas fa-pencil-alt text-warning mt-1 me-2"></i>
+                            <div class="flex-1">
+                                <div class="fw-bold text-warning" style="font-size: 0.75rem;">Editing Message</div>
+                                <div id="editOriginal" class="text-muted text-truncate"
+                                    style="max-width:220px; font-size: 0.82rem;"></div>
+                            </div>
+                            <span class="edit-cancel ms-auto" onclick="cancelEdit()">✕</span>
+                        </div>
+
+                        <!-- Recording Bar -->
+                        <div id="recordingBar" class="d-flex align-items-center justify-content-between d-none"
+                            style="background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; animation: fadeIn .3s;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-microphone text-danger animate-pulse"></i>
+                                <span class="fw-bold text-danger" id="recordTimer">0:00</span>
+                                <span class="text-muted small ms-2">Recording...</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                    onclick="cancelRecording()">Cancel</button>
+                                <button type="button" class="btn btn-sm btn-success rounded-pill px-3"
+                                    onclick="stopAndSendRecording()">Send</button>
+                            </div>
+                        </div>
+
                         <form method="POST" enctype="multipart/form-data" id="chatForm">
                             <?php echo csrfField(); ?>
                             <input type="hidden" name="reply_to_id" id="replyToId" value="">
@@ -621,8 +892,11 @@ try {
                                 <i class="fas fa-image text-primary"></i>
                             </button>
                             <input type="text" name="message" id="msgInput" class="msg-input" placeholder="Message..."
-                                autocomplete="off">
-                            <button type="submit" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+                                autocomplete="off" oninput="toggleInputButtons()">
+                            <button type="button" id="micBtn" class="send-btn" onclick="startVoiceRecording()"><i
+                                    class="fas fa-microphone"></i></button>
+                            <button type="submit" id="sendBtn" class="send-btn d-none"><i
+                                    class="fas fa-paper-plane"></i></button>
                         </form>
                     </div>
 
@@ -634,28 +908,38 @@ try {
 
 <!-- ─── Context Menu ─── -->
 <div id="ctxMenu">
-    <div class="ctx-item" id="ctxReply" onclick="ctxAction('reply')"> <i class="fas fa-reply text-success"></i> Reply
+    <div class="ctx-item" id="ctxReply" onclick="ctxAction('reply')">
+        <i class="fas fa-reply text-success"></i> Reply
     </div>
-    <div class="ctx-item" id="ctxCopy" onclick="ctxAction('copy')"> <i class="fas fa-copy text-primary"></i> Copy</div>
-    <div class="ctx-item" id="ctxForward" onclick="ctxAction('forward')"> <i class="fas fa-share text-info"></i> Forward
+    <div class="ctx-item" id="ctxCopy" onclick="ctxAction('copy')">
+        <i class="fas fa-copy text-primary"></i> Copy
     </div>
-    <div class="ctx-item" id="ctxPin" onclick="ctxAction('pin')"> <i class="fas fa-thumbtack text-warning"></i> Pin
+    <div class="ctx-item" id="ctxForward" onclick="ctxAction('forward')">
+        <i class="fas fa-share text-info"></i> Forward
     </div>
-    <div class="ctx-item" id="ctxUnpin" onclick="ctxAction('unpin')"> <i class="fas fa-thumbtack text-muted"></i> Unpin
+    <div class="ctx-item" id="ctxPin" onclick="ctxAction('pin')">
+        <i class="fas fa-thumbtack text-warning"></i> Pin
     </div>
-    <div class="ctx-item" id="ctxDetails" onclick="ctxAction('details')"> <i
-            class="fas fa-info-circle text-secondary"></i> Details</div>
+    <div class="ctx-item" id="ctxUnpin" onclick="ctxAction('unpin')">
+        <i class="fas fa-thumbtack text-muted"></i> Unpin
+    </div>
+    <div class="ctx-item" id="ctxDetails" onclick="ctxAction('details')">
+        <i class="fas fa-info-circle text-secondary"></i> Details
+    </div>
     <div class="ctx-sep" id="meSep"></div>
-    <div class="ctx-item" id="ctxEdit" onclick="ctxAction('edit')"> <i class="fas fa-pencil-alt text-warning"></i> Edit
+    <div class="ctx-item" id="ctxEdit" onclick="ctxAction('edit')">
+        <i class="fas fa-pencil-alt text-warning"></i> Edit
     </div>
-    <div class="ctx-item ctx-danger" id="ctxDelete" onclick="ctxAction('delete')"><i class="fas fa-trash-alt"></i>
-        Delete</div>
+    <div class="ctx-sep" id="delSep"></div>
+    <div class="ctx-item ctx-danger" id="ctxDelete" onclick="ctxAction('delete')">
+        <i class="fas fa-trash-alt"></i> Delete
+    </div>
 </div>
 
 <!-- ─── Details Modal ─── -->
 <div class="modal fade" id="detailsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content p-4">
+        <div class="modal-content p-4" style="border-radius:18px">
             <h5 class="fw-bold mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>Message Details</h5>
             <div id="detailsBody" class="text-muted small"></div>
             <button class="btn btn-light rounded-pill mt-3" data-bs-dismiss="modal">Close</button>
@@ -666,28 +950,36 @@ try {
 <!-- ─── Forward Modal ─── -->
 <div class="modal fade" id="forwardModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content p-4">
+        <div class="modal-content p-4" style="border-radius:18px">
             <h5 class="fw-bold mb-3"><i class="fas fa-share me-2 text-info"></i>Forward to...</h5>
-            <div id="forwardContacts">
-                <?php foreach ($contacts as $c): ?>
-                    <div class="contact-item"
-                        onclick="doForward(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')">
-                        <img src="<?php echo htmlspecialchars($c['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($c['full_name'])); ?>"
-                            class="rounded-circle" width="40" height="40" style="object-fit:cover;">
-                        <span class="fw-medium"><?php echo htmlspecialchars($c['full_name']); ?></span>
+            <div id="forwardContacts" style="max-height:320px;overflow-y:auto">
+                <?php if (!empty($contacts)): ?>
+                    <?php foreach ($contacts as $c): ?>
+                        <div class="contact-item"
+                            onclick="doForward(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars($c['full_name']); ?>')"
+                            id="fwd-user-<?php echo $c['id']; ?>">
+                            <img src="<?php echo htmlspecialchars($c['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($c['full_name']) . '&background=1B5E20&color=fff'); ?>"
+                                class="rounded-circle" width="40" height="40" style="object-fit:cover;flex-shrink:0">
+                            <span class="fw-medium"><?php echo htmlspecialchars($c['full_name']); ?></span>
+                            <i class="fas fa-check-circle text-success ms-auto d-none fwd-check"></i>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">No other dating users found.</p>
                     </div>
-                <?php endforeach; ?>
-                <?php if (empty($contacts)): ?>
-                    <p class="text-muted">No other conversations yet.</p>
                 <?php endif; ?>
             </div>
-            <button class="btn btn-light rounded-pill mt-3" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-light rounded-pill mt-3 w-100" data-bs-dismiss="modal">Cancel</button>
         </div>
     </div>
 </div>
 
 <script>
-    const API = '<?php echo $base_url; ?>/includes/dating_chat_api.php';
+    // API = THIS same page — detects 'action' POST param and returns JSON directly
+    // No separate file needed, completely avoids Apache 403 restrictions!
+    const API = '<?php echo rtrim(BASE_URL, "/"); ?>/customer/dating_chat.php?user_id=<?php echo $other_user_id; ?>';
     const OTHER_ID = <?php echo $other_user_id; ?>;
     const MY_ID = <?php echo $user_id; ?>;
     const OTHER_NAME = '<?php echo htmlspecialchars($other_user['full_name']); ?>';
@@ -696,11 +988,41 @@ try {
     let editMsgId = null;
     let tapTimer = null;
 
+    /* ─── Robust API fetch helper ─── */
+    /* Returns a Promise that always resolves to a plain object.         */
+    /* If PHP outputs non-JSON (error/warning), we surface the raw text. */
+    function apiFetch(params) {
+        return fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(params)
+        })
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+                return r.text();          // read as text first
+            })
+            .then(raw => {
+                try {
+                    return JSON.parse(raw);
+                } catch (_) {
+                    // PHP printed something before JSON — show the raw output
+                    const preview = raw.substring(0, 300).replace(/</g, '&lt;');
+                    return { success: false, error: 'Invalid API response (PHP error?): ' + preview };
+                }
+            });
+    }
+
+    /* ─── Verify API is reachable on page load (silent) ─── */
+    apiFetch({ action: 'ping' }).then(d => {
+        if (!d.success) console.warn('Chat API ping failed:', d.error);
+        else console.log('Chat API OK — user_id:', d.user_id);
+    }).catch(e => console.warn('Chat API unreachable:', e.message));
+
     /* ─── Scroll to bottom on load ─── */
     const chatBody = document.getElementById('chatBody');
     chatBody.scrollTop = chatBody.scrollHeight;
 
-    /* ─── Auto-resize: submit image immediately ─── */
+    /* ─── Submit image immediately on select ─── */
     document.getElementById('imgInput').addEventListener('change', () => {
         if (document.getElementById('imgInput').files.length > 0) {
             document.getElementById('chatForm').submit();
@@ -713,22 +1035,38 @@ try {
         activeRow = row;
         const isMe = row.dataset.me === '1';
         const isPinned = row.dataset.pinned === '1';
+        const hasText = !!row.dataset.text;
 
-        document.getElementById('ctxEdit').style.display = isMe ? 'flex' : 'none';
-        document.getElementById('ctxDelete').style.display = isMe ? 'flex' : 'none';
-        document.getElementById('meSep').style.display = isMe ? 'block' : 'none';
-        document.getElementById('ctxPin').style.display = !isPinned ? 'flex' : 'none';
-        document.getElementById('ctxUnpin').style.display = isPinned ? 'flex' : 'none';
+        // Show/hide items based on ownership & state
+        show('ctxReply', true);
+        show('ctxCopy', hasText);
+        show('ctxForward', true);
+        show('ctxPin', !isPinned);
+        show('ctxUnpin', isPinned);
+        show('ctxDetails', true);
+        show('meSep', isMe);
+        show('ctxEdit', isMe && hasText && row.dataset.type === 'text');   // edit: only own text msgs
+        show('delSep', isMe);
+        show('ctxDelete', isMe);              // delete: only own msgs
 
         const menu = document.getElementById('ctxMenu');
         menu.style.display = 'block';
-        // Position
+
+        // Smart positioning
         let x = e.clientX, y = e.clientY;
-        const mw = menu.offsetWidth || 200, mh = menu.offsetHeight || 260;
+        const mw = menu.offsetWidth || 210;
+        const mh = menu.offsetHeight || 290;
         if (x + mw > window.innerWidth) x = window.innerWidth - mw - 10;
         if (y + mh > window.innerHeight) y = window.innerHeight - mh - 10;
+        if (x < 4) x = 4;
+        if (y < 4) y = 4;
         menu.style.left = x + 'px';
         menu.style.top = y + 'px';
+    }
+
+    function show(id, visible) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = visible ? 'flex' : 'none';
     }
 
     /* Long-press for mobile */
@@ -758,102 +1096,198 @@ try {
         if (!activeRow) return;
         const id = activeRow.dataset.id;
         const text = activeRow.dataset.text;
+        const isMe = activeRow.dataset.me === '1';
 
+        /* ─── COPY ─── */
         if (action === 'copy') {
-            navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'success'));
+            if (!text) { showToast('Nothing to copy', 'warning'); return; }
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast('Copied to clipboard! ✓', 'success'))
+                    .catch(() => {
+                        legacyCopy(text);
+                        showToast('Copied! ✓', 'success');
+                    });
+            } else {
+                legacyCopy(text);
+                showToast('Copied! ✓', 'success');
+            }
             return;
         }
+
+        /* ─── REPLY ─── */
         if (action === 'reply') {
             document.getElementById('replyToId').value = id;
-            document.getElementById('replyName').textContent = activeRow.dataset.me === '1' ? 'You' : OTHER_NAME;
-            document.getElementById('replyText').textContent = text || 'Image';
-            document.getElementById('replyBar').style.display = 'flex';
+            document.getElementById('replyName').textContent = isMe ? 'You' : OTHER_NAME;
+            document.getElementById('replyText').textContent = (activeRow.dataset.type === 'voice' ? '🎤 Voice Message' : (text || '📷 Photo'));
+            // Show reply bar (override CSS display:none)
+            const replyBar = document.getElementById('replyBar');
+            replyBar.style.setProperty('display', 'flex', 'important');
             document.getElementById('msgInput').focus();
             cancelEdit();
             return;
         }
+
+        /* ─── EDIT (own messages only) ─── */
         if (action === 'edit') {
+            if (!isMe) { showToast('You can only edit your own messages', 'warning'); return; }
             editMsgId = id;
             document.getElementById('editOriginal').textContent = text;
-            document.getElementById('editBar').style.display = 'flex';
+            const editBar = document.getElementById('editBar');
+            editBar.style.setProperty('display', 'flex', 'important');
             document.getElementById('msgInput').value = text;
             document.getElementById('msgInput').focus();
             cancelReply();
             return;
         }
+
+        /* ─── DELETE (own messages only) ─── */
         if (action === 'delete') {
-            if (!confirm('Delete this message?')) return;
-            fetch(API, { method: 'POST', body: new URLSearchParams({ action: 'delete', msg_id: id }) })
-                .then(r => r.json())
+            if (!isMe) { showToast('You can only delete your own messages', 'warning'); return; }
+            if (!confirm('Delete this message for everyone?')) return;
+            const savedRow = activeRow;
+            apiFetch({ action: 'delete', msg_id: id })
                 .then(d => {
-                    if (d.success) { activeRow.remove(); showToast('Message deleted', 'danger'); }
-                });
+                    if (d.success) {
+                        savedRow.style.transition = 'opacity .3s, transform .3s';
+                        savedRow.style.opacity = '0';
+                        savedRow.style.transform = 'scale(0.9)';
+                        setTimeout(() => savedRow.remove(), 320);
+                        showToast('Message deleted 🗑️', 'danger');
+                    } else {
+                        showToast(d.error || 'Delete failed', 'danger');
+                    }
+                })
+                .catch(err => showToast('Error: ' + err.message, 'danger'));
             return;
         }
+
+        /* ─── PIN ─── */
         if (action === 'pin') {
-            fetch(API, { method: 'POST', body: new URLSearchParams({ action: 'pin', msg_id: id }) })
-                .then(r => r.json())
+            apiFetch({ action: 'pin', msg_id: id })
                 .then(d => {
-                    if (d.success) { showToast('Message pinned 📌', 'success'); setTimeout(() => location.reload(), 800); }
-                });
+                    if (d.success) { showToast('Message pinned 📌', 'success'); setTimeout(() => location.reload(), 900); }
+                    else showToast(d.error || 'Pin failed', 'warning');
+                })
+                .catch(err => showToast('Error: ' + err.message, 'danger'));
             return;
         }
+
+        /* ─── UNPIN ─── */
         if (action === 'unpin') {
             unpinMessage(id);
             return;
         }
+
+        /* ─── FORWARD ─── */
         if (action === 'forward') {
+            // Reset checkmarks
+            document.querySelectorAll('.fwd-check').forEach(el => el.classList.add('d-none'));
             const modal = new bootstrap.Modal(document.getElementById('forwardModal'));
             modal.show();
             return;
         }
+
+        /* ─── DETAILS ─── */
         if (action === 'details') {
-            fetch(API + '?action=details&msg_id=' + id)
-                .then(r => r.json())
+            const detailsBody = document.getElementById('detailsBody');
+            detailsBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><div class="mt-2 text-muted small">Loading details...</div></div>';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('detailsModal')).show();
+
+            apiFetch({ action: 'details', msg_id: id })
                 .then(d => {
                     if (d.success) {
                         const m = d.message;
-                        document.getElementById('detailsBody').innerHTML = `
-                        <table class="table table-sm table-borderless">
-                            <tr><td><b>Sender</b></td><td>${m.full_name}</td></tr>
-                            <tr><td><b>Sent at</b></td><td>${m.created_at}</td></tr>
-                            <tr><td><b>Type</b></td><td>${m.message_type}</td></tr>
-                            <tr><td><b>Edited</b></td><td>${m.is_edited ? '✅ ' + m.edited_at : '—'}</td></tr>
-                            <tr><td><b>Pinned</b></td><td>${m.is_pinned ? '📌 Yes' : 'No'}</td></tr>
-                            <tr><td><b>Read</b></td><td>${m.is_read ? '✅ Yes' : 'No'}</td></tr>
-                            ${m.message ? '<tr><td><b>Text</b></td><td>' + m.message + '</td></tr>' : ''}
-                        </table>`;
-                        new bootstrap.Modal(document.getElementById('detailsModal')).show();
+                        const sentAt = m.created_at ? new Date(m.created_at.replace(' ', 'T')).toLocaleString() : '—';
+                        const editAt = m.edited_at ? new Date(m.edited_at.replace(' ', 'T')).toLocaleString() : null;
+                        const typeLbl = m.message_type === 'image' ? '📷 Image' : '💬 Text';
+                        const readLbl = m.is_read == 1 ? '<span class="text-success fw-bold">✅ Read</span>' : '<span class="text-muted">⏳ Not yet read</span>';
+                        const pinLbl = m.is_pinned == 1 ? '<span class="text-warning fw-bold">📌 Pinned</span>' : '<span class="text-muted">—</span>';
+                        const editLbl = m.is_edited == 1 ? `<span class="text-warning">✏️ Edited${editAt ? ' at ' + editAt : ''}</span>` : '<span class="text-muted">—</span>';
+                        detailsBody.innerHTML = `
+                            <table class="table table-sm table-borderless mb-0" style="font-size:.9rem">
+                                <tr><td class="fw-bold text-muted pe-3" style="width:90px">Sender</td><td>${escHtml(m.full_name)}</td></tr>
+                                <tr><td class="fw-bold text-muted">Sent at</td><td>${sentAt}</td></tr>
+                                <tr><td class="fw-bold text-muted">Type</td><td>${typeLbl}</td></tr>
+                                <tr><td class="fw-bold text-muted">Read</td><td>${readLbl}</td></tr>
+                                <tr><td class="fw-bold text-muted">Pinned</td><td>${pinLbl}</td></tr>
+                                <tr><td class="fw-bold text-muted">Edited</td><td>${editLbl}</td></tr>
+                                ${m.message ? `<tr><td class="fw-bold text-muted align-top">Content</td><td style="word-break:break-word">${escHtml(m.message)}</td></tr>` : ''}
+                            </table>`;
+                    } else {
+                        detailsBody.innerHTML = `<div class="alert alert-danger py-2 mb-0"><i class="fas fa-exclamation-circle me-2"></i>${escHtml(d.error || 'Not found')}</div>`;
                     }
+                })
+                .catch(err => {
+                    detailsBody.innerHTML = `<div class="alert alert-danger py-2 mb-0"><i class="fas fa-wifi me-2"></i>${escHtml(err.message)}</div>`;
                 });
             return;
         }
     }
 
+    /* Fallback clipboard for http:// pages */
+    function legacyCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+
+    /* Safe HTML escape */
+    function escHtml(str) {
+        if (!str) return '—';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function unpinMessage(id) {
         if (!confirm('Unpin this message?')) return;
-        fetch(API, { method: 'POST', body: new URLSearchParams({ action: 'unpin', msg_id: id }) })
-            .then(r => r.json())
-            .then(d => { if (d.success) { showToast('Unpinned', 'secondary'); setTimeout(() => location.reload(), 800); } });
+        apiFetch({ action: 'unpin', msg_id: id })
+            .then(d => {
+                if (d.success) { showToast('Unpinned ✓', 'secondary'); setTimeout(() => location.reload(), 800); }
+                else showToast(d.error || 'Failed', 'warning');
+            })
+            .catch(err => showToast('Error: ' + err.message, 'danger'));
     }
 
     function doForward(toUserId, toName) {
         if (!activeRow) return;
-        fetch(API, { method: 'POST', body: new URLSearchParams({ action: 'forward', msg_id: activeRow.dataset.id, to_user_id: toUserId }) })
-            .then(r => r.json())
+        // Visual feedback
+        const btn = document.getElementById('fwd-user-' + toUserId);
+        if (btn) { btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none'; }
+
+        apiFetch({ action: 'forward', msg_id: activeRow.dataset.id, to_user_id: toUserId })
             .then(d => {
-                bootstrap.Modal.getInstance(document.getElementById('forwardModal')).hide();
-                if (d.success) showToast('Forwarded to ' + toName + ' ✓', 'info');
-            });
+                if (btn) {
+                    const chk = btn.querySelector('.fwd-check');
+                    if (chk) chk.classList.remove('d-none');
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = '';
+                }
+                if (d.success) {
+                    showToast('📤 Forwarded to ' + toName, 'info');
+                    setTimeout(() => {
+                        const m = bootstrap.Modal.getInstance(document.getElementById('forwardModal'));
+                        if (m) m.hide();
+                    }, 900);
+                } else {
+                    showToast(d.error || 'Forward failed', 'danger');
+                }
+            })
+            .catch(err => showToast('Error: ' + err.message, 'danger'));
     }
 
     /* ─── Reply helpers ─── */
     function cancelReply() {
-        document.getElementById('replyBar').style.display = 'none';
+        const rb = document.getElementById('replyBar');
+        rb.style.setProperty('display', 'none', 'important');
         document.getElementById('replyToId').value = '';
     }
     function cancelEdit() {
-        document.getElementById('editBar').style.display = 'none';
+        const eb = document.getElementById('editBar');
+        eb.style.setProperty('display', 'none', 'important');
         editMsgId = null;
         document.getElementById('msgInput').value = '';
     }
@@ -866,26 +1300,32 @@ try {
         const text = document.getElementById('msgInput').value.trim();
         if (!text) return;
 
-        fetch(API, { method: 'POST', body: new URLSearchParams({ action: 'edit', msg_id: editMsgId, text }) })
-            .then(r => r.json())
+        apiFetch({ action: 'edit', msg_id: editMsgId, text })
             .then(d => {
                 if (d.success) {
                     const row = document.getElementById('msg-' + editMsgId);
                     if (row) {
-                        // update text in DOM
                         const bubble = row.querySelector('.bubble > div:not(.reply-preview):not(.fwd-label):not(.meta)');
                         if (bubble) bubble.textContent = text;
                     }
                     cancelEdit();
                     showToast('Message edited ✓', 'success');
+                } else {
+                    showToast(d.error || 'Edit failed', 'warning');
                 }
-            });
+            })
+            .catch(err => showToast('Error: ' + err.message, 'danger'));
     });
 
-    /* ─── Scroll to pinned msg ─── */
+    /* ─── Scroll to original msg with highlight pulse ─── */
     function scrollToMessage(id) {
         const el = document.getElementById('msg-' + id);
-        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.querySelector('.bubble').classList.add('pinned-highlight'); }
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const bubble = el.querySelector('.bubble');
+            bubble.classList.add('reply-highlight');
+            setTimeout(() => bubble.classList.remove('reply-highlight'), 1500);
+        }
     }
 
     /* ─── Toast ─── */
@@ -900,9 +1340,121 @@ try {
         setTimeout(() => el.remove(), 3000);
     }
 
-    /* ─── Auto-poll for new messages every 5s ─── */
+    /* ─── Voice Recording Logic ─── */
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordInterval;
+    let recStartTime;
+
+    function toggleInputButtons() {
+        const input = document.getElementById('msgInput');
+        const micBtn = document.getElementById('micBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        if (input.value.trim().length > 0) {
+            micBtn.classList.add('d-none');
+            sendBtn.classList.remove('d-none');
+        } else {
+            micBtn.classList.remove('d-none');
+            sendBtn.classList.add('d-none');
+        }
+    }
+
+    async function startVoiceRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Your browser doesn't support voice recording.");
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                if (window.pendingVoiceSend) {
+                    await uploadVoiceMessage(audioBlob);
+                    window.pendingVoiceSend = false;
+                }
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+
+            // UI Updates
+            document.getElementById('recordingBar').classList.remove('d-none');
+            document.getElementById('chatForm').classList.add('d-none');
+            recStartTime = Date.now();
+            recordInterval = setInterval(updateRecordTimer, 1000);
+        } catch (err) {
+            console.error(err);
+            alert("Microphone access denied.");
+        }
+    }
+
+    function updateRecordTimer() {
+        const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        document.getElementById('recordTimer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function cancelRecording() {
+        window.pendingVoiceSend = false;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        cleanupRecordUI();
+    }
+
+    function stopAndSendRecording() {
+        window.pendingVoiceSend = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        cleanupRecordUI();
+    }
+
+    function cleanupRecordUI() {
+        document.getElementById('recordingBar').classList.add('d-none');
+        document.getElementById('chatForm').classList.remove('d-none');
+        clearInterval(recordInterval);
+        document.getElementById('recordTimer').textContent = '0:00';
+    }
+
+    async function uploadVoiceMessage(blob) {
+        const fd = new FormData();
+        fd.append('voice', blob, 'voice.webm');
+        fd.append('message', ''); // Empty text
+        fd.append('reply_to_id', document.getElementById('replyToId').value);
+
+        // Add CSRF token
+        const csrf = document.querySelector('input[name="csrf_token"]');
+        if (csrf) fd.append('csrf_token', csrf.value);
+
+        try {
+            const res = await fetch(window.location.href, {
+                method: 'POST',
+                body: fd
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Upload failed.");
+            }
+        } catch (e) {
+            alert("Error sending voice: " + e.message);
+        }
+    }
+
+    /* ─── Auto-poll for new messages & incoming calls every 5s ─── */
     const msgContainer = document.getElementById('messageContainer');
     setInterval(() => {
+        // 1. Check for new messages
         fetch(window.location.href)
             .then(r => r.text())
             .then(html => {
@@ -914,7 +1466,8 @@ try {
                     if (atBottom) chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
                 }
             });
+
+        // Global Call Polling is handled by header.php ── no duplicate confirm() boxes needed here.
     }, 5000);
 </script>
-
 <?php include '../includes/footer.php'; ?>

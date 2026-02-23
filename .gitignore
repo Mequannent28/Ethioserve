@@ -31,9 +31,14 @@ error_log
 *.tmp
 *.bak
 *.cache
+/temp/
 
-# Uploads (if any local uploads)
-/uploads/temp/
+# Uploads
+/uploads/
 
-# Generated Tickets
-/temp/Ticket_*.html
+# Local scripts
+fix_dating_accounts.php
+fix_dating_now.php
+test_chat_api.php
+test_db.php
+validate_dating_accounts.php

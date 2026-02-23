@@ -7,6 +7,7 @@ if (!isLoggedIn()) {
 }
 
 $user_id = getCurrentUserId();
+$base_url = BASE_URL;
 $doctor_id = intval($_GET['doctor_id'] ?? 0);
 
 if (!$doctor_id) {
@@ -45,6 +46,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $attachment = 'uploads/chat/' . $file_name;
             $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
             $type = in_array($ext, ['jpg', 'jpeg', 'png', 'gif']) ? 'image' : 'file';
+        }
+    }
+
+    // Handle Voice Recording
+    if (isset($_FILES['voice']) && $_FILES['voice']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = '../uploads/chat/';
+        if (!is_dir($upload_dir))
+            mkdir($upload_dir, 0777, true);
+        $file_name = 'voice_' . time() . '.webm';
+        if (move_uploaded_file($_FILES['voice']['tmp_name'], $upload_dir . $file_name)) {
+            $attachment = 'uploads/chat/' . $file_name;
+            $type = 'voice';
         }
     }
 
@@ -109,7 +122,12 @@ include '../includes/header.php';
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="doctor_video_call.php?doctor_id=<?php echo $doctor_id; ?>"
+                                <a href="doctor_video_call.php?doctor_id=<?php echo $doctor_id; ?>&is_video=0"
+                                    class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center"
+                                    style="width:42px;height:42px;" title="Voice Call">
+                                    <i class="fas fa-phone"></i>
+                                </a>
+                                <a href="doctor_video_call.php?doctor_id=<?php echo $doctor_id; ?>&is_video=1"
                                     class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center"
                                     style="width:42px;height:42px;" title="Video Call">
                                     <i class="fas fa-video"></i>
@@ -244,9 +262,19 @@ include '../includes/header.php';
                                                     <div class="min-w-0">
                                                         <div class="fw-bold text-dark text-truncate"
                                                             style="font-size: 0.75rem; max-width: 150px;">
-                                                            <?php echo basename($m['attachment_url']); ?></div>
+                                                            <?php echo basename($m['attachment_url']); ?>
+                                                        </div>
                                                     </div>
                                                 </a>
+                                            </div>
+                                        <?php elseif ($m['message_type'] === 'voice'): ?>
+                                            <div class="voice-message mb-2">
+                                                <audio controls class="voice-player"
+                                                    style="height:32px; width: 100%; border-radius: 20px; filter: <?php echo $is_me ? 'invert(1) grayscale(1) brightness(2)' : ''; ?>">
+                                                    <source src="<?php echo $base_url . '/' . $m['attachment_url']; ?>"
+                                                        type="audio/webm">
+                                                    Your browser does not support audio.
+                                                </audio>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -267,57 +295,76 @@ include '../includes/header.php';
                         <div id="chatEnd"></div>
                     </div>
 
-                    <!-- Chat Footer -->
-                    <div class="chat-footer p-3 bg-white border-top">
-                        <form method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end"
-                            id="chatForm">
-                            <?php echo csrfField(); ?>
-                            <input type="hidden" name="message_type" id="messageType" value="text">
-
-                            <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-light rounded-circle flex-shrink-0" id="attachBtn"
-                                    style="width:40px;height:40px;" title="Attach File">
-                                    <i class="fas fa-paperclip text-muted"></i>
-                                </button>
-                                <button type="button" class="btn btn-light rounded-circle flex-shrink-0"
-                                    id="locationBtn" style="width:40px;height:40px;" title="Share Location">
-                                    <i class="fas fa-map-marker-alt text-muted"></i>
-                                </button>
-                            </div>
-
-                            <input type="file" name="attachment" id="fileInput" class="d-none">
-
-                            <div class="flex-grow-1 position-relative">
-                                <div id="filePreview" class="bg-light p-2 mb-2 rounded-4 d-none">
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div class="d-flex align-items-center gap-2 small">
-                                            <i class="fas fa-file text-primary"></i>
-                                            <span id="fileName" class="text-truncate" style="max-width: 150px;"></span>
-                                        </div>
-                                        <button type="button" class="btn-close" style="font-size: 0.6rem;"
-                                            id="clearFile"></button>
-                                    </div>
-                                </div>
-                                <textarea name="message" id="messageInput"
-                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
-                                    placeholder="Type your message..." required autocomplete="off" rows="1"
-                                    style="resize: none; max-height: 120px; overflow-y: auto;"></textarea>
-                            </div>
-                            <button type="submit" class="btn rounded-circle flex-shrink-0 shadow-sm send-btn"
-                                style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1565C0, #0D47A1); color: white;">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </form>
-                        <div class="text-center mt-2">
-                            <small class="text-muted" style="font-size: 0.7rem;">
-                                <i class="fas fa-lock me-1"></i>Messages are private between you and your doctor
-                            </small>
+                    <!-- Recording Bar -->
+                    <div id="recordingBar"
+                        class="d-flex align-items-center justify-content-between d-none mb-3 bg-light p-3 rounded-pill animate__animated animate__fadeIn">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-microphone text-danger animate-pulse"></i>
+                            <span class="fw-bold text-danger" id="recordTimer">0:00</span>
+                            <span class="text-muted small ms-2">Recording...</span>
                         </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                onclick="cancelRecording()">Cancel</button>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3"
+                                onclick="stopAndSendRecording()">Send</button>
+                        </div>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end"
+                        id="chatForm">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="message_type" id="messageType" value="text">
+
+                        <div class="d-flex gap-1" id="fileButtons">
+                            <button type="button" class="btn btn-light rounded-circle flex-shrink-0" id="attachBtn"
+                                style="width:40px;height:40px;" title="Attach File">
+                                <i class="fas fa-paperclip text-muted"></i>
+                            </button>
+                            <button type="button" class="btn btn-light rounded-circle flex-shrink-0" id="locationBtn"
+                                style="width:40px;height:40px;" title="Share Location">
+                                <i class="fas fa-map-marker-alt text-muted"></i>
+                            </button>
+                        </div>
+
+                        <input type="file" name="attachment" id="fileInput" class="d-none">
+
+                        <div class="flex-grow-1 position-relative">
+                            <div id="filePreview" class="bg-light p-2 mb-2 rounded-4 d-none">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2 small">
+                                        <i class="fas fa-file text-primary"></i>
+                                        <span id="fileName" class="text-truncate" style="max-width: 150px;"></span>
+                                    </div>
+                                    <button type="button" class="btn-close" style="font-size: 0.6rem;"
+                                        id="clearFile"></button>
+                                </div>
+                            </div>
+                            <textarea name="message" id="messageInput"
+                                class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                oninput="toggleInputButtons()" placeholder="Type your message..." autocomplete="off"
+                                rows="1" style="resize: none; max-height: 120px; overflow-y: auto;"></textarea>
+                        </div>
+                        <button type="button" id="micBtn" class="btn rounded-circle flex-shrink-0 shadow-sm"
+                            onclick="startVoiceRecording()"
+                            style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #FF1744, #D50000); color: white;">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button type="submit" id="sendBtn" class="btn rounded-circle flex-shrink-0 shadow-sm d-none"
+                            style="width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1565C0, #0D47A1); color: white;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                    <div class="text-center mt-2">
+                        <small class="text-muted" style="font-size: 0.7rem;">
+                            <i class="fas fa-lock me-1"></i>Messages are private between you and your doctor
+                        </small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <style>
@@ -396,12 +443,33 @@ include '../includes/header.php';
     }
 
     .message-bubble {
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         transition: transform 0.2s;
     }
 
     .message-bubble:hover {
         transform: translateY(-2px);
+    }
+
+    .animate-pulse {
+        animation: pulseRecord 1s infinite;
+    }
+
+    @keyframes pulseRecord {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.5;
+            transform: scale(1.1);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 </style>
 
@@ -489,8 +557,123 @@ include '../includes/header.php';
         messageInput.required = true;
     });
 
-    // Auto-refresh messages every 5 seconds
+    /* ─── Voice Recording Logic ─── */
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordInterval;
+    let recStartTime;
+
+    function toggleInputButtons() {
+        const input = document.getElementById('messageInput');
+        const micBtn = document.getElementById('micBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const fileButtons = document.getElementById('fileButtons');
+
+        if (input.value.trim().length > 0) {
+            micBtn.classList.add('d-none');
+            sendBtn.classList.remove('d-none');
+            fileButtons.classList.add('d-none');
+        } else {
+            micBtn.classList.remove('d-none');
+            sendBtn.classList.add('d-none');
+            fileButtons.classList.remove('d-none');
+        }
+    }
+
+    async function startVoiceRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Your browser doesn't support voice recording.");
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                if (window.pendingVoiceSend) {
+                    await uploadVoiceMessage(audioBlob);
+                    window.pendingVoiceSend = false;
+                }
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+
+            // UI Updates
+            document.getElementById('recordingBar').classList.remove('d-none');
+            document.getElementById('chatForm').classList.add('d-none');
+            recStartTime = Date.now();
+            recordInterval = setInterval(updateRecordTimer, 1000);
+        } catch (err) {
+            console.error(err);
+            alert("Microphone access denied.");
+        }
+    }
+
+    function updateRecordTimer() {
+        const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        document.getElementById('recordTimer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function cancelRecording() {
+        window.pendingVoiceSend = false;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        cleanupRecordUI();
+    }
+
+    function stopAndSendRecording() {
+        window.pendingVoiceSend = true;
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        cleanupRecordUI();
+    }
+
+    function cleanupRecordUI() {
+        document.getElementById('recordingBar').classList.add('d-none');
+        document.getElementById('chatForm').classList.remove('d-none');
+        clearInterval(recordInterval);
+        document.getElementById('recordTimer').textContent = '0:00';
+    }
+
+    async function uploadVoiceMessage(blob) {
+        const fd = new FormData();
+        fd.append('voice', blob, 'voice.webm');
+        fd.append('message', '');
+
+        // Add CSRF token
+        const csrf = document.querySelector('input[name="csrf_token"]');
+        if (csrf) fd.append('csrf_token', csrf.value);
+
+        try {
+            const res = await fetch(window.location.href, {
+                method: 'POST',
+                body: fd
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Upload failed.");
+            }
+        } catch (e) {
+            alert("Error sending voice: " + e.message);
+        }
+    }
+
+    // Auto-refresh messages & check for incoming calls every 5 seconds
     setInterval(() => {
+        // 1. Refresh messages
         fetch(window.location.href)
             .then(r => r.text())
             .then(html => {
@@ -503,6 +686,8 @@ include '../includes/header.php';
                     if (wasAtBottom) chatBody.scrollTop = chatBody.scrollHeight;
                 }
             }).catch(() => { });
+
+        // Global Call Polling is handled by header.php ── no redundant confirm() needed here.
     }, 5000);
 </script>
 

@@ -59,7 +59,8 @@ include '../includes/header.php';
             </div>
             <h2 class="text-white fw-bold mb-2"><?php echo htmlspecialchars($other_user['full_name']); ?></h2>
             <p class="text-white-50 fs-5 mb-4" id="callStatusText">
-                <?php echo $incoming ? 'Joining call...' : 'Calling...'; ?></p>
+                <?php echo $incoming ? 'Joining call...' : 'Calling...'; ?>
+            </p>
 
             <div class="d-flex justify-content-center gap-3">
                 <button id="cancelCallBtn"
@@ -144,8 +145,18 @@ include '../includes/header.php';
         const roomId = '<?php echo $room_id; ?>';
         const otherUserId = <?php echo $other_user_id; ?>;
         const isIncoming = <?php echo $incoming; ?>;
+        const isVideo = <?php echo intval($_GET['is_video'] ?? 1); ?>;
         let api = null;
         let callId = null;
+
+        // UI Updates for Voice only
+        if (!isVideo) {
+            document.getElementById('callStatusText').textContent = isIncoming ? 'Joining voice call...' : 'Calling (Voice)...';
+            const icon = document.querySelector('#connectingOverlay .fas.fa-video');
+            if (icon) icon.classList.replace('fa-video', 'fa-phone');
+            const camBtn = document.getElementById('toggleCam');
+            if (camBtn) camBtn.style.display = 'none';
+        }
 
         // Load calling sounds from header if available, else use fallback
         const ringtoneOut = document.getElementById('ringtoneOutgoing') || new Audio('https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3');
@@ -158,6 +169,7 @@ include '../includes/header.php';
                 fd.append('receiver_id', otherUserId);
                 fd.append('room_id', roomId);
                 fd.append('call_type', 'dating');
+                fd.append('is_video', isVideo);
 
                 fetch('../includes/signaling.php', { method: 'POST', body: fd })
                     .then(r => r.json())
@@ -220,10 +232,14 @@ include '../includes/header.php';
                 },
                 configOverwrite: {
                     startWithAudioMuted: false,
-                    startWithVideoMuted: false
+                    startWithVideoMuted: !isVideo
                 }
             };
             api = new JitsiMeetExternalAPI(domain, options);
+
+            if (!isVideo) {
+                api.executeCommand('toggleVideo'); // Double ensure video is off
+            }
 
             api.addEventListeners({
                 readyToClose: () => endCall(),
