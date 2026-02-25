@@ -218,6 +218,7 @@ $count_dating = 0;
 $count_community = 0;
 $count_jobs = 0;
 
+// 1. Core Services
 try {
     $count_taxis = $pdo->query("SELECT COUNT(*) FROM taxi_companies WHERE status='approved'")->fetchColumn();
 } catch (Exception $e) {
@@ -274,6 +275,7 @@ try {
     $count_jobs = $pdo->query("SELECT COUNT(*) FROM job_listings WHERE status='active'")->fetchColumn();
 } catch (Exception $e) {
 }
+
 
 include('../includes/header.php');
 ?>
