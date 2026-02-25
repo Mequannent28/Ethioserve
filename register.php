@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Role validation
-        $valid_roles = ['customer', 'hotel', 'broker', 'transport', 'restaurant', 'taxi', 'student', 'dating'];
+        $valid_roles = ['customer', 'hotel', 'broker', 'transport', 'restaurant', 'taxi', 'student', 'dating', 'employer'];
         if (!in_array($role, $valid_roles)) {
             $errors[] = "Please select a valid role";
         }
@@ -107,6 +107,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 if ($role === 'taxi') {
                     $stmt = $pdo->prepare("INSERT INTO taxi_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
                     $stmt->execute([$user_id, $full_name . "'s Taxi"]);
+                }
+
+                // If employer role, create job company entry
+                if ($role === 'employer') {
+                    $stmt = $pdo->prepare("INSERT INTO job_companies (user_id, company_name, created_at) VALUES (?, ?, NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Company"]);
                 }
 
                 // If dating role, ensure profile is initialized (optional but good)
@@ -331,8 +337,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </label>
                                     </div>
                                     <div class="col-6 col-md-4 col-lg">
-                                        <input type="radio" class="btn-check" name="role" id="roleDating"
-                                            value="dating" <?php echo ($_POST['role'] ?? '') === 'dating' ? 'checked' : ''; ?>>
+                                        <input type="radio" class="btn-check" name="role" id="roleEmployer"
+                                            value="employer" <?php echo ($_POST['role'] ?? '') === 'employer' ? 'checked' : ''; ?>>
+                                        <label class="btn btn-outline-primary-green w-100 py-3 rounded-3"
+                                            for="roleEmployer">
+                                            <i class="fas fa-briefcase d-block mb-1 fs-4"></i>
+                                            <small>Employer</small>
+                                        </label>
+                                    </div>
+                                    <div class="col-6 col-md-4 col-lg">
+                                        <input type="radio" class="btn-check" name="role" id="roleDating" value="dating"
+                                            <?php echo ($_POST['role'] ?? '') === 'dating' ? 'checked' : ''; ?>>
                                         <label class="btn btn-outline-primary-green w-100 py-3 rounded-3"
                                             for="roleDating">
                                             <i class="fas fa-heart d-block mb-1 fs-4"></i>

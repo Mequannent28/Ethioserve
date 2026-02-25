@@ -433,7 +433,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Dating</p>
             </a>
-
             <!-- Community Hub -->
             <a href="community.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_community > 0): ?>
@@ -458,7 +457,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Movies</p>
             </a>
-
             <!-- Coupons -->
             <a href="coming_soon.php?service=Coupons" class="service-card shadow-sm position-relative">
                 <span class="count-badge" style="background:#F57F17;"><i class="fas fa-clock me-1"
@@ -468,7 +466,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Coupons</p>
             </a>
-
             <!-- Hotels -->
             <a href="booking.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_hotels > 0): ?>
@@ -480,7 +477,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Hotels</p>
             </a>
-
             <!-- Health Services -->
             <a href="health_services.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_health > 0): ?>
@@ -495,7 +491,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Health</p>
             </a>
-
             <!-- Home Services -->
             <a href="home_services.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_home_services > 0): ?>
@@ -510,7 +505,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Home</p>
             </a>
-
             <!-- Transport -->
             <a href="buses.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_buses > 0): ?>
@@ -522,7 +516,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Transport</p>
             </a>
-
             <!-- House Rent -->
             <a href="rent.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_listings > 0): ?>
@@ -534,7 +527,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Rent</p>
             </a>
-
             <!-- Broker Hub -->
             <a href="../broker/dashboard.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_brokers > 0): ?>
@@ -546,7 +538,6 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Broker</p>
             </a>
-
             <!-- Education -->
             <a href="education.php" class="service-card shadow-sm position-relative">
                 <?php if ($count_education > 0): ?>
@@ -577,7 +568,6 @@ include('../includes/header.php');
             </a>
         </div>
     </section>
-
     <!-- Category Section -->
     <section class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -779,7 +769,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- RESTAURANTS RESULTS -->
             <?php if (!empty($restaurants)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-utensils me-2"></i>Restaurants</h4>
@@ -933,7 +922,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- JOBS RESULTS -->
             <?php if (!empty($jobs)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-briefcase me-2"></i>Jobs</h4>
@@ -963,7 +951,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- REAL ESTATE RESULTS -->
             <?php if (!empty($real_estate)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-building me-2"></i>Real Estate</h4>
@@ -988,7 +975,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- EDUCATION RESULTS -->
             <?php if (!empty($education_resources)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-graduation-cap me-2"></i>Education
@@ -1012,9 +998,10 @@ include('../includes/header.php');
                                         <?php echo htmlspecialchars($edu['grade']); ?>
                                     </p>
                                     <p class="text-muted small mb-3">
-                                        <?php echo htmlspecialchars($edu['resource_type'] ?? 'Resource'); ?>
+                                        <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $edu['type'] ?? 'Resource'))); ?>
                                     </p>
-                                    <a href="education.php" class="btn btn-info text-white w-100 rounded-pill">Access</a>
+                                    <a href="education.php?grade=<?php echo $edu['grade']; ?>&subject=<?php echo urlencode($edu['subject']); ?>&type=<?php echo $edu['type']; ?>&open=1"
+                                        class="btn btn-info text-white w-100 rounded-pill">Access Now</a>
                                 </div>
                             </div>
                         </div>
@@ -1103,7 +1090,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- COMMUNITY EVENTS RESULTS -->
             <?php if (!empty($community_events)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-calendar-alt me-2"></i>Community Events
@@ -1217,7 +1203,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- BUS ROUTES RESULTS -->
             <?php if (!empty($bus_routes)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-route me-2"></i>Bus Routes</h4>
@@ -1250,7 +1235,6 @@ include('../includes/header.php');
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
             <!-- COURSES RESULTS -->
             <?php if (!empty($courses)): ?>
                 <h4 class="mb-3 text-primary-green separator-top pt-4"><i class="fas fa-play-circle me-2"></i>Courses</h4>
@@ -1425,7 +1409,6 @@ include('../includes/header.php');
         margin-top: 1rem;
     }
 </style>
-
 <script>
     // Handle smooth scrolling for anchors
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {

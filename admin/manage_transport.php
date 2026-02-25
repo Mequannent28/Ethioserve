@@ -104,6 +104,9 @@ $total_revenue = array_sum(array_column($bookings, 'total_amount'));
                     <h2 class="fw-bold mb-1"><i class="fas fa-bus-alt text-primary me-2"></i>Manage Transport</h2>
                     <p class="text-muted mb-0">Manage all bus bookings, schedules, and routes</p>
                 </div>
+                <a href="add_bus_booking.php" class="btn btn-primary-green rounded-pill px-4">
+                    <i class="fas fa-plus me-2"></i>Add Booking
+                </a>
             </div>
 
             <!-- Stats -->

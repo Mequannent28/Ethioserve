@@ -7,10 +7,10 @@ echo Database Name: ethioserve
 echo Import File:   database.sql
 echo.
 
-set mysql="c:\xampp1\mysql\bin\mysql.exe"
+set mysql="c:\xampp\mysql\bin\mysql.exe"
 
 if not exist %mysql% (
-    echo ERROR: mysql.exe not found at c:\xampp1\mysql\bin\mysql.exe
+    echo ERROR: mysql.exe not found at c:\xampp\mysql\bin\mysql.exe
     echo Please check your XAMPP installation path.
     pause
     exit /b

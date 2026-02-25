@@ -20,11 +20,11 @@ echo 1. Stopping MySQL...
 taskkill /F /IM mysqld.exe >nul 2>&1
 timeout /t 3 /nobreak >nul
 
-cd /d "c:\xampp1\mysql"
+cd /d "c:\xampp\mysql"
 
 rem Check if backup exists
 if not exist "backup" (
-    echo [ERROR] 'backup' folder missing in c:\xampp1\mysql. Cannot reset!
+    echo [ERROR] 'backup' folder missing in c:\xampp\mysql. Cannot reset!
     pause
     exit /b
 )
@@ -47,14 +47,14 @@ xcopy /E /I /Q /H /Y "backup" "data" >nul
 
 echo.
 echo 4. Starting MySQL Service...
-start "" "c:\xampp1\mysql\bin\mysqld.exe" --console --standalone
+start "" "c:\xampp\mysql\bin\mysqld.exe" --console --standalone
 
 echo Waiting for MySQL to initialize (15 seconds)...
 timeout /t 15 /nobreak >nul
 
 echo.
 echo 5. Creating Database...
-"c:\xampp1\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS ethioserve;"
+"c:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS ethioserve;"
 if errorlevel 1 (
     echo [ERROR] Could not create database. MySQL might not be running?
     pause
@@ -65,8 +65,7 @@ if errorlevel 1 (
 
 echo.
 echo 6. Importing Data from database.sql...
-if exist "c:\xampp1\htdocs\Ethioserve-main\database.sql" (
-    "c:\xampp1\mysql\bin\mysql.exe" -u root ethioserve < "c:\xampp1\htdocs\Ethioserve-main\database.sql"
+    "c:\xampp\mysql\bin\mysql.exe" -u root ethioserve < "c:\xampp\htdocs\Ethioserve-main\database.sql"
     if errorlevel 1 (
         echo [WARNING] Import had some errors, but data should be there.
     ) else (

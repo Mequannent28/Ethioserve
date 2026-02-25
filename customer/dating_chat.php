@@ -862,7 +862,23 @@ try {
                                             </div>
                                         <?php endif; ?>
 
-                                        <?php if (!empty($m['message'])): ?>
+                                        <?php if ($m['message_type'] === 'video_call'): ?>
+                                            <div class="d-flex align-items-center gap-2 py-1">
+                                                <div class="bg-danger rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                                    style="width:35px;height:35px;">
+                                                    <i class="fas fa-video text-white" style="font-size:0.9rem;"></i>
+                                                </div>
+                                                <div class="fw-bold"><?php echo htmlspecialchars($m['message']); ?></div>
+                                            </div>
+                                        <?php elseif ($m['message_type'] === 'voice' && empty($m['attachment_url'])): ?>
+                                            <div class="d-flex align-items-center gap-2 py-1">
+                                                <div class="bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                                    style="width:35px;height:35px;">
+                                                    <i class="fas fa-phone text-white" style="font-size:0.9rem;"></i>
+                                                </div>
+                                                <div class="fw-bold"><?php echo htmlspecialchars($m['message']); ?></div>
+                                            </div>
+                                        <?php elseif (!empty($m['message'])): ?>
                                             <div><?php echo nl2br(htmlspecialchars($m['message'])); ?></div>
                                         <?php endif; ?>
 
@@ -1021,7 +1037,7 @@ try {
     const OTHER_ID = <?php echo $other_user_id; ?>;
     const MY_ID = <?php echo $user_id; ?>;
     const OTHER_NAME = '<?php echo htmlspecialchars($other_user['full_name']); ?>';
-    let lastId = <?php echo !empty($messages) ? (int)end($messages)['id'] : 0; ?>;
+    let lastId = <?php echo !empty($messages) ? (int) end($messages)['id'] : 0; ?>;
 
     let activeRow = null;
     let editMsgId = null;
@@ -1495,10 +1511,10 @@ try {
         apiFetch({ action: 'load_messages', last_id: lastId, other_id: OTHER_ID }).then(d => {
             if (d.success && d.messages && d.messages.length > 0) {
                 const atBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 120;
-                
+
                 d.messages.forEach(m => {
                     if (document.getElementById('msg-' + m.id)) return; // skip duplicates
-                    
+
                     const isMe = m.sender_id == MY_ID;
                     const row = document.createElement('div');
                     row.id = 'msg-' + m.id;
@@ -1507,12 +1523,31 @@ try {
                     row.dataset.me = isMe ? '1' : '0';
                     row.dataset.text = m.message || '';
                     row.dataset.type = m.message_type;
-                    
+
                     const timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
+
+                    let msgHtml = '';
+                    if (m.message_type === 'video_call') {
+                        msgHtml = `<div class="d-flex align-items-center gap-2 py-1">
+                                    <div class="bg-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
+                                        <i class="fas fa-video text-white" style="font-size:0.8rem;"></i>
+                                    </div>
+                                    <div class="fw-bold">${escHtml(m.message)}</div>
+                                   </div>`;
+                    } else if (m.message_type === 'voice' && !m.attachment_url) {
+                        msgHtml = `<div class="d-flex align-items-center gap-2 py-1">
+                                    <div class="bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
+                                        <i class="fas fa-phone text-white" style="font-size:0.8rem;"></i>
+                                    </div>
+                                    <div class="fw-bold">${escHtml(m.message)}</div>
+                                   </div>`;
+                    } else if (m.message) {
+                        msgHtml = `<div>${escHtml(m.message).replace(/\n/g, '<br>')}</div>`;
+                    }
+
                     row.innerHTML = `
                         <div class="bubble" oncontextmenu="showCtx(event,this.closest('.msg-row'))" onclick="handleTap(event,this.closest('.msg-row'))">
-                            ${m.message ? `<div>${m.message.replace(/\n/g, '<br>')}</div>` : ''}
+                            ${msgHtml}
                             <div class="meta">
                                 ${timeStr}
                                 ${isMe ? ' <i class="fas fa-check-double" style="font-size:.63rem; color:rgba(255,255,255,.6);"></i>' : ''}
@@ -1522,7 +1557,7 @@ try {
                     document.getElementById('messageContainer').appendChild(row);
                     lastId = m.id;
                 });
-                
+
                 if (atBottom) chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
             }
         });

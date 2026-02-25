@@ -312,8 +312,8 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                         class="btn btn-outline-primary rounded-pill px-4">
                         <i class="fas fa-external-link-alt me-2"></i>View Portal
                     </a>
-                    <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal"
-                        data-bs-target="#addResourceModal" style="background:#1565C0;border-color:#1565C0;">
+                    <button class="btn btn-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                        data-bs-target="#addResourceModal">
                         <i class="fas fa-plus me-2"></i>Add Resource
                     </button>
                 </div>

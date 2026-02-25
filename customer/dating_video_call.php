@@ -39,51 +39,72 @@ $room_id = $_GET['room_id'] ?? ('ethioserve-dating-' . min($user_id, $other_user
 include '../includes/header.php';
 ?>
 
-<div class="video-call-page min-vh-100 position-relative" style="background: #0a0a1a; overflow: hidden;">
+<div class="video-call-page min-vh-100 position-relative"
+    style="background: #050510; overflow: hidden; font-family: 'Poppins', sans-serif;">
 
-    <!-- Background Decoration -->
-    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-20"
-        style="background: radial-gradient(circle at 20% 30%, #4a148c 0%, transparent 50%), radial-gradient(circle at 80% 70%, #311b92 0%, transparent 50%);">
+    <!-- Background Decoration - Dynamic Gradients -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at 10% 10%, rgba(131, 58, 180, 0.2) 0%, transparent 40%), 
+                    radial-gradient(circle at 90% 90%, rgba(253, 29, 29, 0.2) 0%, transparent 40%),
+                    radial-gradient(circle at 50% 50%, rgba(252, 176, 69, 0.1) 0%, transparent 60%);">
     </div>
 
-    <!-- Incoming/Connecting Overlay -->
+    <!-- Incoming/Connecting Overlay (The "Calling" Screen) -->
     <div id="connectingOverlay"
         class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center z-3"
-        style="background: linear-gradient(135deg, #1a0a28, #4a148c); transition: all 0.5s ease;">
-        <div class="text-center">
-            <div class="position-relative d-inline-block mb-4">
-                <img src="<?php echo htmlspecialchars($other_user['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($other_user['full_name'])); ?>"
-                    class="rounded-circle border border-4 border-white shadow-lg animate__animated animate__pulse animate__infinite"
-                    width="150" height="150" style="object-fit: cover;">
-                <div class="calling-ring"></div>
-            </div>
-            <h2 class="text-white fw-bold mb-2"><?php echo htmlspecialchars($other_user['full_name']); ?></h2>
-            <p class="text-white-50 fs-5 mb-4" id="callStatusText">
-                <?php echo $incoming ? 'Joining call...' : 'Calling...'; ?>
-            </p>
+        style="background: linear-gradient(135deg, #1a0a2e 0%, #050510 100%); transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
 
-            <div class="d-flex justify-content-center gap-3">
+        <div class="text-center animate__animated animate__fadeIn">
+            <!-- Profile Pic with Animated Rings -->
+            <div class="position-relative d-inline-block mb-5">
+                <div class="caller-avatar-container">
+                    <img src="<?php echo htmlspecialchars($other_user['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($other_user['full_name']) . '&background=fd1d1d&color=fff'); ?>"
+                        class="rounded-circle border border-4 border-white shadow-2xl position-relative z-2" width="180"
+                        height="180" style="object-fit: cover;">
+                    <div class="pulse-ring ring-1"></div>
+                    <div class="pulse-ring ring-2"></div>
+                    <div class="pulse-ring ring-3"></div>
+                </div>
+            </div>
+
+            <h1 class="text-white fw-bold mb-2 tracking-tight"><?php echo htmlspecialchars($other_user['full_name']); ?>
+            </h1>
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-5">
+                <span class="badge rounded-pill bg-danger px-3 py-2 animate__animated animate__pulse animate__infinite">
+                    <i class="fas <?php echo intval($_GET['is_video'] ?? 1) ? 'fa-video' : 'fa-phone-alt'; ?> me-1"></i>
+                    <span id="callStatusText"><?php echo $incoming ? 'CONNECTING...' : 'CALLING...'; ?></span>
+                </span>
+            </div>
+
+            <!-- Action Buttons for Calling State -->
+            <div class="d-flex justify-content-center">
                 <button id="cancelCallBtn"
-                    class="btn btn-danger rounded-circle p-4 shadow-lg animate__animated animate__bounceIn">
+                    class="btn btn-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg hover-scale"
+                    style="width:90px;height:90px; transition: all 0.3s ease;">
                     <i class="fas fa-phone-slash fs-2"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Jitsi Container -->
-    <div id="jitsi-container" class="w-100 h-100 position-absolute top-0 start-0 z-1 d-none"></div>
+    <!-- Jitsi Container (The actual call surface) -->
+    <div id="jitsi-container"
+        class="w-100 h-100 position-absolute top-0 start-0 z-1 d-none animate__animated animate__fadeIn"></div>
 
-    <!-- Mobile-optimized Bottom Controls -->
-    <div id="callControls" class="position-fixed bottom-0 start-0 w-100 p-4 z-2 d-none">
+    <!-- Custom Control Overlay (Shows after connection) -->
+    <div id="callControls"
+        class="position-fixed bottom-0 start-0 w-100 p-5 z-2 d-none animate__animated animate__slideInUp">
         <div class="d-flex justify-content-center align-items-center gap-4">
-            <button id="toggleMic" class="btn btn-light rounded-circle shadow-lg" style="width:60px;height:60px;">
+            <button id="toggleMic" class="btn btn-blur-light rounded-circle shadow-lg" style="width:65px;height:65px;">
                 <i class="fas fa-microphone fs-4"></i>
             </button>
-            <button id="endCallBtn" class="btn btn-danger rounded-circle shadow-lg" style="width:75px;height:75px;">
+
+            <button id="endCallBtn"
+                class="btn btn-danger rounded-circle shadow-lg hover-scale-lg d-flex align-items-center justify-content-center"
+                style="width:85px;height:85px;">
                 <i class="fas fa-phone-slash fs-2"></i>
             </button>
-            <button id="toggleCam" class="btn btn-light rounded-circle shadow-lg" style="width:60px;height:60px;">
+
+            <button id="toggleCam" class="btn btn-blur-light rounded-circle shadow-lg" style="width:65px;height:65px;">
                 <i class="fas fa-video fs-4"></i>
             </button>
         </div>
@@ -104,27 +125,77 @@ include '../includes/header.php';
         display: none !important;
     }
 
-    .calling-ring {
-        position: absolute;
-        top: -15px;
-        left: -15px;
-        width: calc(100% + 30px);
-        height: calc(100% + 30px);
-        border: 4px solid rgba(255, 255, 255, 0.4);
-        border-radius: 50%;
-        animation: ring-expand 2s infinite;
+    /* Pulse Rings for Calling State */
+    .caller-avatar-container {
+        position: relative;
+        z-index: 10;
     }
 
-    @keyframes ring-expand {
+    .pulse-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 180px;
+        height: 180px;
+        background: rgba(253, 29, 29, 0.4);
+        border-radius: 50%;
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .ring-1 {
+        animation: pulse-ring 3s infinite;
+    }
+
+    .ring-2 {
+        animation: pulse-ring 3s infinite 1s;
+    }
+
+    .ring-3 {
+        animation: pulse-ring 3s infinite 2s;
+    }
+
+    @keyframes pulse-ring {
         0% {
-            transform: scale(1);
-            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.6;
         }
 
         100% {
-            transform: scale(1.5);
+            transform: translate(-50%, -50%) scale(2.2);
             opacity: 0;
         }
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.1);
+    }
+
+    .hover-scale-lg:hover {
+        transform: scale(1.15);
+    }
+
+    .btn-blur-light {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        transition: all 0.3s ease;
+    }
+
+    .btn-blur-light:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    .shadow-2xl {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    }
+
+    .tracking-tight {
+        letter-spacing: -0.05em;
     }
 
     .z-1 {
@@ -147,7 +218,7 @@ include '../includes/header.php';
         const isIncoming = <?php echo $incoming; ?>;
         const isVideo = <?php echo intval($_GET['is_video'] ?? 1); ?>;
         let api = null;
-        let callId = null;
+        let callId = '<?php echo $_GET['call_id'] ?? ''; ?>';
 
         // UI Updates for Voice only
         if (!isVideo) {
@@ -161,8 +232,12 @@ include '../includes/header.php';
         // Load calling sounds from header if available, else use fallback
         const ringtoneOut = document.getElementById('ringtoneOutgoing') || new Audio('https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3');
 
+        // USE ABSOLUTE PATH FOR SIGNALING (moved to root to bypass .htaccess)
+        const signalingUrl = '<?php echo BASE_URL; ?>/signaling.php';
+
         function startCall() {
             if (!isIncoming) {
+                console.log("Initiating dating call to:", otherUserId);
                 // Initiate via signaling
                 const fd = new FormData();
                 fd.append('action', 'initiate_call');
@@ -171,20 +246,27 @@ include '../includes/header.php';
                 fd.append('call_type', 'dating');
                 fd.append('is_video', isVideo);
 
-                fetch('../includes/signaling.php', { method: 'POST', body: fd })
+                fetch(signalingUrl, { method: 'POST', body: fd })
                     .then(r => r.json())
                     .then(data => {
+                        console.log("Call init response:", data);
                         if (data.success) {
                             callId = data.call_id;
                             ringtoneOut.play().catch(e => console.warn("Sound blocked", e));
                             checkCallResponse();
                         } else {
-                            alert("Could not start call: " + data.error);
+                            alert("Could not start call: " + (data.error || 'Unknown error'));
                             window.location.href = 'dating_chat.php?user_id=' + otherUserId;
                         }
+                    })
+                    .catch(err => {
+                        console.error("Fetch error:", err);
+                        alert("Connection error. Please try again.");
+                        window.location.href = 'dating_chat.php?user_id=' + otherUserId;
                     });
             } else {
                 // Directly join for incoming
+                console.log("Joining incoming call room:", roomId);
                 initializeJitsi();
             }
         }
@@ -192,19 +274,29 @@ include '../includes/header.php';
         function checkCallResponse() {
             if (isIncoming || !callId) return;
 
-            fetch('../includes/signaling.php?action=get_call_status&call_id=' + callId)
+            fetch(signalingUrl + '?action=get_call_status&call_id=' + callId)
                 .then(r => r.json())
                 .then(data => {
+                    console.log("Call status poll:", data.status);
                     if (data.status === 'accepted') {
                         ringtoneOut.pause();
                         initializeJitsi();
                     } else if (data.status === 'rejected') {
                         ringtoneOut.pause();
                         document.getElementById('callStatusText').textContent = "Call Declined";
+                        document.getElementById('callStatusText').classList.add('text-danger');
+                        setTimeout(() => window.location.href = 'dating_chat.php?user_id=' + otherUserId, 2000);
+                    } else if (data.status === 'ended') {
+                        ringtoneOut.pause();
+                        document.getElementById('callStatusText').textContent = "Call Ended";
                         setTimeout(() => window.location.href = 'dating_chat.php?user_id=' + otherUserId, 2000);
                     } else {
                         setTimeout(checkCallResponse, 3000);
                     }
+                })
+                .catch(err => {
+                    console.warn("Poll error", err);
+                    setTimeout(checkCallResponse, 5000);
                 });
         }
 
@@ -248,6 +340,13 @@ include '../includes/header.php';
         }
 
         function endCall() {
+            if (callId) {
+                console.log("Ending call via signaling:", callId);
+                const fd = new FormData();
+                fd.append('action', 'end_call');
+                fd.append('call_id', callId);
+                fetch(signalingUrl, { method: 'POST', body: fd }).catch(e => console.error("Signaling end failed", e));
+            }
             if (api) api.dispose();
             if (ringtoneOut) ringtoneOut.pause();
             window.location.href = 'dating_chat.php?user_id=' + otherUserId;

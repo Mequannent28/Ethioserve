@@ -160,6 +160,76 @@ h6 {
     margin-bottom: 30px;
 }
 
+/* Admin Dashboard Action Buttons */
+.btn-action {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px !important;
+    border: none !important;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    color: white !important;
+}
+
+.btn-action i {
+    font-size: 1rem;
+    color: white !important;
+}
+
+.btn-view-vivid {
+    background: #00b4d8 !important;
+}
+
+.btn-view-vivid:hover {
+    background: #0077b6 !important;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 180, 216, 0.3);
+}
+
+.btn-view-vivid:active, .btn-view-vivid:focus {
+    background: #00e0ff !important;
+    transform: scale(0.95);
+    filter: brightness(1.2);
+    box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.4) !important;
+}
+
+.btn-edit-vivid {
+    background: #4361ee !important;
+}
+
+.btn-edit-vivid:hover {
+    background: #3a0ca3 !important;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+.btn-edit-vivid:active, .btn-edit-vivid:focus {
+    background: #7085ff !important;
+    transform: scale(0.95);
+    filter: brightness(1.2);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.4) !important;
+}
+
+.btn-delete-vivid {
+    background: #ef233c !important;
+}
+
+.btn-delete-vivid:hover {
+    background: #d90429 !important;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 35, 60, 0.3);
+}
+
+.btn-delete-vivid:active, .btn-delete-vivid:focus {
+    background: #ff4d6d !important;
+    transform: scale(0.95);
+    filter: brightness(1.2);
+    box-shadow: 0 0 0 3px rgba(239, 35, 60, 0.4) !important;
+}
+
 @media (min-width: 768px) {
     .service-grid {
         grid-template-columns: repeat(4, 1fr);

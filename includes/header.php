@@ -42,9 +42,19 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
     <!-- Splash screen for iOS -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <!-- Preconnect to CDNs for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Google Fonts - Load async to prevent render blocking -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet">
+    </noscript>
 
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -471,6 +481,24 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     </a>
                                 </li>
 
+                                <?php if ($user_role == 'employer'): ?>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item py-2 fw-bold text-primary-green"
+                                            href="<?php echo $base_url; ?>/employer/dashboard.php">
+                                            <i class="fas fa-briefcase me-2"></i> Recruitment Portal</a></li>
+                                    <li><a class="dropdown-item py-1" href="<?php echo $base_url; ?>/employer/applications.php">
+                                            <i class="fas fa-user-tie me-2 text-muted" style="width: 20px;"></i> View
+                                            Applications</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-1"
+                                            href="<?php echo $base_url; ?>/employer/jobs_management.php">
+                                            <i class="fas fa-tasks me-2 text-muted" style="width: 20px;"></i> Manage
+                                            Vacancies</a>
+                                    </li>
+                                <?php endif; ?>
+
                                 <?php if ($user_role == 'customer'): ?>
                                     <li>
                                         <hr class="dropdown-divider">
@@ -562,18 +590,6 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                             href="<?php echo $base_url; ?>/doctor/dashboard.php#chats">
                                             <i class="fas fa-comments me-2 text-muted" style="width: 20px;"></i> Patient
                                             Chats</a></li>
-                                <?php elseif ($user_role == 'employer'): ?>
-                                    <li><a class="dropdown-item py-2 fw-bold"
-                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php">
-                                            <i class="fas fa-user-tie me-2 text-warning"></i> My Dashboard</a></li>
-                                    <li><a class="dropdown-item py-1"
-                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php?view=applications">
-                                            <i class="fas fa-users me-2 text-muted" style="width: 20px;"></i> All Applicants</a>
-                                    </li>
-                                    <li><a class="dropdown-item py-1"
-                                            href="<?php echo $base_url; ?>/customer/employer_dashboard.php">
-                                            <i class="fas fa-comments me-2 text-muted" style="width: 20px;"></i> Candidate
-                                            Chats</a></li>
                                 <?php elseif ($user_role == 'restaurant'): ?>
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/restaurant/dashboard.php">
@@ -644,12 +660,23 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     <li class="mb-2">
                                         <small class="d-block text-muted fw-bold">Customer</small>
                                         <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
-                                            <small class="text-dark">customer1@ethioserve.com</small>
-                                            <button onclick="copyToClipboard('customer1@ethioserve.com')"
+                                            <small class="text-dark">customer1</small>
+                                            <button onclick="copyToClipboard('customer1')"
                                                 class="btn btn-xs text-primary"><i class="far fa-copy"></i></button>
                                         </div>
                                         <small class="text-muted fst-italic ms-1" style="font-size:0.75rem">Pass:
-                                            customer123</small>
+                                            password</small>
+                                    </li>
+                                    <!-- Employer -->
+                                    <li class="mb-2">
+                                        <small class="d-block text-muted fw-bold">Employer (Red Cloud ICT)</small>
+                                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                            <small class="text-dark">cloud_company</small>
+                                            <button onclick="copyToClipboard('cloud_company')"
+                                                class="btn btn-xs text-primary"><i class="far fa-copy"></i></button>
+                                        </div>
+                                        <small class="text-muted fst-italic ms-1" style="font-size:0.75rem">Pass:
+                                            password</small>
                                     </li>
                                 </ul>
                             </div>
@@ -660,34 +687,39 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
         </div>
     </nav>
 
-    </script>
 
     <!-- Incoming Call Modal -->
     <div class="modal fade" id="incomingCallModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
-        style="z-index: 9999;">
+        style="z-index: 10001;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 rounded-5 shadow-lg bg-dark text-white text-center p-4">
-                <div class="modal-body">
+                <div class="modal-body py-4">
                     <div class="position-relative d-inline-block mb-4">
-                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg"
-                            style="width:100px;height:100px;">
-                            <i class="fas fa-video display-4 text-white"></i>
+                        <div id="callerIconCircle"
+                            class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg"
+                            style="width:110px;height:110px;">
+                            <i class="fas fa-video display-5 text-white"></i>
                         </div>
                         <div class="position-absolute top-0 start-0 w-100 h-100 rounded-circle border border-4 border-primary animate-ping"
                             style="animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
                     </div>
-                    <h4 class="fw-bold mb-1" id="callerNameDisp">Incoming Call...</h4>
-                    <p class="text-white-50 mb-4" id="callerDetailDisp">Someone is calling you for a video consultation.
-                    </p>
+                    <div class="call-type-badge mb-2">
+                        <span id="callTypeLabel" class="badge rounded-pill bg-danger px-3 py-2 text-uppercase fw-bold"
+                            style="font-size:0.7rem; letter-spacing:1px;">Dating Call</span>
+                    </div>
+                    <h3 class="fw-bold mb-1" id="callerNameDisp">Incoming...</h3>
+                    <p class="text-white-50 mb-4" id="callerDetailDisp">Someone is calling you.</p>
 
-                    <div class="d-flex justify-content-center gap-4">
-                        <button id="declineCallBtn" class="btn btn-danger rounded-circle p-3 shadow-lg"
-                            style="width:70px;height:70px;" title="Decline">
+                    <div class="d-flex justify-content-center gap-4 mt-2">
+                        <button id="declineCallBtn"
+                            class="btn btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg hover-scale"
+                            style="width:75px;height:75px;" title="Decline">
                             <i class="fas fa-phone-slash fs-3"></i>
                         </button>
-                        <button id="acceptCallBtn" class="btn btn-success rounded-circle p-3 shadow-lg"
-                            style="width:70px;height:70px;" title="Accept">
-                            <i class="fas fa-phone fs-3"></i>
+                        <button id="acceptCallBtn"
+                            class="btn btn-success rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg hover-scale animate__animated animate__pulse animate__infinite"
+                            style="width:85px;height:85px;" title="Accept">
+                            <i class="fas fa-phone fs-2"></i>
                         </button>
                     </div>
                 </div>
@@ -695,10 +727,11 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
         </div>
     </div>
 
-    <audio id="ringtoneIncoming" loop preload="auto">
+    <!-- Audio: preload=none prevents downloading on every page load -->
+    <audio id="ringtoneIncoming" loop preload="none">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-marimba-ringtone-1359.mp3" type="audio/mpeg">
     </audio>
-    <audio id="ringtoneOutgoing" loop preload="auto">
+    <audio id="ringtoneOutgoing" loop preload="none">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3"
             type="audio/mpeg">
     </audio>
@@ -715,6 +748,14 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
 
         #incomingCallModal .modal-content {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
+        }
+
+        .hover-scale {
+            transition: transform 0.2s;
+        }
+
+        .hover-scale:hover {
+            transform: scale(1.1);
         }
     </style>
 
@@ -749,10 +790,15 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                 document.addEventListener('touchstart', unlockAudio);
 
                 function checkIncomingCalls() {
+                    // Skip if already on a video call page to avoid modal popping up during call
+                    if (window.location.pathname.includes('video_call.php')) {
+                        return;
+                    }
+
                     const formData = new FormData();
                     formData.append('action', 'check_incoming');
 
-                    fetch('<?php echo $base_url; ?>/includes/signaling.php', {
+                    fetch('<?php echo $base_url; ?>/signaling.php', {
                         method: 'POST',
                         body: formData
                     })
@@ -762,12 +808,20 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                 console.log("%c[CALL SYSTEM] Incoming call detected", "color: white; background: #2E7D32; padding: 5px; border-radius: 5px; font-weight: bold;");
                                 activeIncomingCall = data.call;
                                 document.getElementById('callerNameDisp').textContent = data.call.caller_name;
-                                document.getElementById('callerDetailDisp').textContent = (data.call.call_type === 'telemed' ? 'Incoming medical consultation...' : 'Incoming dating call...');
+                                const isDating = data.call.call_type === 'dating';
+                                document.getElementById('callTypeLabel').textContent = isDating ? 'Dating Call' : 'Video Consultation';
+                                document.getElementById('callTypeLabel').className = isDating ? 'badge rounded-pill bg-danger px-3 py-2 text-uppercase fw-bold' : 'badge rounded-pill bg-primary px-3 py-2 text-uppercase fw-bold';
+                                document.getElementById('callerDetailDisp').textContent = isDating ? 'Someone wants to chat with you!' : 'A doctor is ready for your consultation.';
 
-                                // Update icon based on video/audio
-                                const callIcon = document.querySelector('#incomingCallModal .display-4');
+                                // Update icon and colors based on video/audio
+                                const callIcon = document.querySelector('#incomingCallModal .display-5');
+                                const iconCircle = document.getElementById('callerIconCircle');
                                 if (callIcon) {
-                                    callIcon.className = (data.call.is_video == 1 ? 'fas fa-video display-4 text-white' : 'fas fa-phone display-4 text-white');
+                                    const isVideo = data.call.is_video == 1;
+                                    callIcon.className = isVideo ? 'fas fa-video display-5 text-white' : 'fas fa-phone display-5 text-white';
+                                    if (iconCircle) {
+                                        iconCircle.className = isDating ? (isVideo ? 'bg-danger rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg' : 'bg-success rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg') : 'bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-lg';
+                                    }
                                 }
 
                                 const modal = getModal();
@@ -792,7 +846,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                     fd.append('call_id', activeIncomingCall.id);
                     fd.append('status', 'accepted');
 
-                    fetch('<?php echo $base_url; ?>/includes/signaling.php', { method: 'POST', body: fd })
+                    fetch('<?php echo $base_url; ?>/signaling.php', { method: 'POST', body: fd })
                         .then(() => {
                             if (ringtoneIn) ringtoneIn.pause();
                             let redirectUrl = '';
@@ -806,7 +860,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                 }
                             } else {
                                 // It's a dating call
-                                redirectUrl = '<?php echo $base_url; ?>/customer/dating_video_call.php?user_id=' + activeIncomingCall.caller_id + '&room_id=' + activeIncomingCall.room_id + '&incoming=1&is_video=' + activeIncomingCall.is_video;
+                                redirectUrl = '<?php echo $base_url; ?>/customer/dating_video_call.php?user_id=' + activeIncomingCall.caller_id + '&room_id=' + activeIncomingCall.room_id + '&incoming=1&is_video=' + activeIncomingCall.is_video + '&call_id=' + activeIncomingCall.call_id;
                             }
                             window.location.href = redirectUrl;
                         });
@@ -819,7 +873,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                     fd.append('call_id', activeIncomingCall.id);
                     fd.append('status', 'rejected');
 
-                    fetch('<?php echo $base_url; ?>/includes/signaling.php', { method: 'POST', body: fd })
+                    fetch('<?php echo $base_url; ?>/signaling.php', { method: 'POST', body: fd })
                         .then(() => {
                             if (ringtoneIn) ringtoneIn.pause();
                             const modal = getModal();

@@ -4,6 +4,27 @@ require_once '../includes/db.php';
 
 $user_id = $_SESSION['id'] ?? null;
 
+// ── Fetch User Details for Pre-filling ────────────────────────────
+$current_user = null;
+if ($user_id) {
+    try {
+        $stmt = $pdo->prepare("SELECT full_name, email FROM users WHERE id = ?");
+        $stmt->execute([$user_id]);
+        $current_user = $stmt->fetch();
+
+        // Also get phone from profile if exists
+        $stmt = $pdo->prepare("SELECT phone, cv_url, portfolio_url FROM job_profiles WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $uprof = $stmt->fetch();
+        if ($uprof) {
+            $current_user['phone'] = $uprof['phone'];
+            $current_user['cv_url'] = $uprof['cv_url'];
+            $current_user['portfolio_url'] = $uprof['portfolio_url'];
+        }
+    } catch (Exception $e) {
+    }
+}
+
 // ── Handle Quick Apply ────────────────────────────────────────────
 $apply_success = false;
 $apply_error = '';
@@ -12,23 +33,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_job'])) {
         redirectWithMessage('../login.php', 'warning', 'Please login to apply for jobs.');
     }
     $job_id = intval($_POST['job_id']);
+    $name = sanitize($_POST['applicant_name'] ?? '');
+    $email = sanitize($_POST['applicant_email'] ?? '');
+    $phone = sanitize($_POST['applicant_phone'] ?? '');
+    $portfolio = sanitize($_POST['portfolio_url'] ?? '');
     $cover = sanitize($_POST['cover_letter'] ?? '');
+    $university = sanitize($_POST['university'] ?? '');
+    $gpa = floatval($_POST['gpa'] ?? 0);
+
     try {
         $chk = $pdo->prepare("SELECT id FROM job_applications WHERE job_id=? AND applicant_id=?");
         $chk->execute([$job_id, $user_id]);
         if ($chk->fetch()) {
             $apply_error = 'You have already applied for this job.';
         } else {
-            // Get CV from profile if available
-            $prof = $pdo->prepare("SELECT cv_url FROM job_profiles WHERE user_id=?");
-            $prof->execute([$user_id]);
-            $cv_url = $prof->fetchColumn() ?: null;
+            // Handle Photo Upload (3x4)
+            $photo_url = null;
+            if (isset($_FILES['applicant_photo']) && $_FILES['applicant_photo']['error'] === UPLOAD_ERR_OK) {
+                $photo_dir = '../uploads/profiles/';
+                if (!is_dir($photo_dir))
+                    mkdir($photo_dir, 0777, true);
 
-            $pdo->prepare("INSERT INTO job_applications (job_id, applicant_id, cover_letter, cv_url) VALUES (?,?,?,?)")
-                ->execute([$job_id, $user_id, $cover, $cv_url]);
+                $img_ext = strtolower(pathinfo($_FILES['applicant_photo']['name'], PATHINFO_EXTENSION));
+                $img_allowed = ['jpg', 'jpeg', 'png'];
 
-            $pdo->prepare("UPDATE job_listings SET views=views+1 WHERE id=?")->execute([$job_id]);
-            $apply_success = true;
+                if (in_array($img_ext, $img_allowed)) {
+                    $photo_name = 'photo_' . $user_id . '_' . time() . '.' . $img_ext;
+                    if (move_uploaded_file($_FILES['applicant_photo']['tmp_name'], $photo_dir . $photo_name)) {
+                        $photo_url = 'uploads/profiles/' . $photo_name;
+                    }
+                } else {
+                    $apply_error = 'Invalid photo format. Please upload JPG or PNG.';
+                }
+            }
+
+            // Handle CV Upload
+            $cv_url = $_POST['existing_cv'] ?? null;
+            if (isset($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK && !$apply_error) {
+                $upload_dir = '../uploads/cvs/';
+                if (!is_dir($upload_dir))
+                    mkdir($upload_dir, 0777, true);
+
+                $file_ext = strtolower(pathinfo($_FILES['cv_file']['name'], PATHINFO_EXTENSION));
+                $allowed = ['pdf', 'doc', 'docx'];
+
+                if (in_array($file_ext, $allowed)) {
+                    $new_filename = 'cv_' . $user_id . '_' . time() . '.' . $file_ext;
+                    if (move_uploaded_file($_FILES['cv_file']['tmp_name'], $upload_dir . $new_filename)) {
+                        $cv_url = 'uploads/cvs/' . $new_filename;
+
+                        // Optionally update user profile with latest CV
+                        $pdo->prepare("INSERT INTO job_profiles (user_id, cv_url) VALUES (?, ?) ON DUPLICATE KEY UPDATE cv_url = ?")
+                            ->execute([$user_id, $cv_url, $cv_url]);
+                    }
+                } else {
+                    $apply_error = 'Invalid CV file format. Please upload PDF, DOC, or DOCX.';
+                }
+            }
+
+            // Handle Recommendation Upload
+            $recommendation_url = null;
+            if (isset($_FILES['recommendation_file']) && $_FILES['recommendation_file']['error'] === UPLOAD_ERR_OK && !$apply_error) {
+                $upload_dir = '../uploads/docs/';
+                if (!is_dir($upload_dir))
+                    mkdir($upload_dir, 0777, true);
+
+                $file_ext = strtolower(pathinfo($_FILES['recommendation_file']['name'], PATHINFO_EXTENSION));
+                if (in_array($file_ext, ['pdf', 'doc', 'docx', 'jpg', 'png'])) {
+                    $new_filename = 'rec_' . $user_id . '_' . time() . '.' . $file_ext;
+                    if (move_uploaded_file($_FILES['recommendation_file']['tmp_name'], $upload_dir . $new_filename)) {
+                        $recommendation_url = 'uploads/docs/' . $new_filename;
+                    }
+                }
+            }
+
+            // Handle Certificates Upload
+            $certificates_url = null;
+            if (isset($_FILES['certificates_file']) && $_FILES['certificates_file']['error'] === UPLOAD_ERR_OK && !$apply_error) {
+                $upload_dir = '../uploads/docs/';
+                if (!is_dir($upload_dir))
+                    mkdir($upload_dir, 0777, true);
+
+                $file_ext = strtolower(pathinfo($_FILES['certificates_file']['name'], PATHINFO_EXTENSION));
+                if (in_array($file_ext, ['pdf', 'doc', 'docx', 'jpg', 'png'])) {
+                    $new_filename = 'cert_' . $user_id . '_' . time() . '.' . $file_ext;
+                    if (move_uploaded_file($_FILES['certificates_file']['tmp_name'], $upload_dir . $new_filename)) {
+                        $certificates_url = 'uploads/docs/' . $new_filename;
+                    }
+                }
+            }
+
+            if (!$apply_error) {
+                $pdo->prepare("INSERT INTO job_applications (job_id, applicant_id, applicant_name, applicant_email, applicant_phone, applicant_photo, cover_letter, cv_url, portfolio_url, university, gpa, recommendation_url, certificates_url) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$job_id, $user_id, $name, $email, $phone, $photo_url, $cover, $cv_url, $portfolio, $university, $gpa, $recommendation_url, $certificates_url]);
+
+                $pdo->prepare("UPDATE job_listings SET views=views+1 WHERE id=?")->execute([$job_id]);
+                $apply_success = true;
+            }
         }
     } catch (Exception $e) {
         $apply_error = 'Application failed: ' . $e->getMessage();
@@ -507,8 +608,10 @@ include '../includes/header.php';
                                 <div class="d-flex gap-3">
                                     <!-- Company Logo -->
                                     <div class="flex-shrink-0">
-                                        <?php if (!empty($job['logo_url'])): ?>
-                                            <img src="<?php echo htmlspecialchars($job['logo_url']); ?>" class="rounded-3" width="56"
+                                        <?php if (!empty($job['logo_url'])):
+                                            $logo_path = (strpos($job['logo_url'], 'http') === 0) ? $job['logo_url'] : '../' . ltrim($job['logo_url'], './');
+                                            ?>
+                                            <img src="<?php echo htmlspecialchars($logo_path); ?>" class="rounded-3" width="56"
                                                 height="56" style="object-fit:cover;border:1px solid #e0e0e0;">
                                         <?php else: ?>
                                             <div class="rounded-3 d-flex align-items-center justify-content-center fw-bold text-white"
@@ -678,8 +781,10 @@ include '../includes/header.php';
                 <?php foreach ($services as $svc): ?>
                     <div class="col-md-6 col-lg-4">
                         <div class="card border-0 shadow-sm rounded-4 h-100 hover-lift overflow-hidden">
-                            <?php if (!empty($svc['image_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($svc['image_url']); ?>" style="height:180px;object-fit:cover;"
+                            <?php if (!empty($svc['image_url'])):
+                                $svc_img = (strpos($svc['image_url'], 'http') === 0) ? $svc['image_url'] : '../' . ltrim($svc['image_url'], './');
+                                ?>
+                                <img src="<?php echo htmlspecialchars($svc_img); ?>" style="height:180px;object-fit:cover;"
                                     class="card-img-top">
                             <?php else: ?>
                                 <div style="height:140px;background:linear-gradient(135deg,#1565C0,#0d47a1);"
@@ -816,11 +921,27 @@ include '../includes/header.php';
                                     </div>
                                 </div>
                             <?php endif; ?>
-                            <div class="ms-auto d-flex gap-2">
-                                <?php if ($app['cv_url'] || $app['profile_cv']): ?>
-                                    <a href="<?php echo htmlspecialchars($app['cv_url'] ?: $app['profile_cv']); ?>" target="_blank"
+                            <div class="ms-auto d-flex gap-2 flex-wrap justify-content-end">
+                                <?php
+                                $cv_path = $app['cv_url'] ?: $app['profile_cv'];
+                                if ($cv_path):
+                                    $display_cv = (strpos($cv_path, 'http') === 0) ? $cv_path : '../' . ltrim($cv_path, './');
+                                    ?>
+                                    <a href="<?php echo htmlspecialchars($display_cv); ?>" target="_blank"
                                         class="btn btn-sm btn-outline-primary rounded-pill">
-                                        <i class="fas fa-file-pdf me-1"></i>View CV
+                                        <i class="fas fa-file-pdf me-1"></i>CV
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (!empty($app['recommendation_url'])): ?>
+                                    <a href="../<?php echo htmlspecialchars(ltrim($app['recommendation_url'], './')); ?>"
+                                        target="_blank" class="btn btn-sm btn-outline-info rounded-pill">
+                                        <i class="fas fa-award me-1"></i>Rec. Letter
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (!empty($app['certificates_url'])): ?>
+                                    <a href="../<?php echo htmlspecialchars(ltrim($app['certificates_url'], './')); ?>" target="_blank"
+                                        class="btn btn-sm btn-outline-success rounded-pill">
+                                        <i class="fas fa-certificate me-1"></i>Certificates
                                     </a>
                                 <?php endif; ?>
                             </div>
@@ -945,7 +1066,7 @@ include '../includes/header.php';
 
 <!-- ══════════════════════ APPLY MODAL ════════════════════════════ -->
 <div class="modal fade" id="applyModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 rounded-4 shadow">
             <div class="modal-header border-0 p-4 pb-0">
                 <div>
@@ -954,22 +1075,120 @@ include '../includes/header.php';
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" class="modal-body p-4">
+            <form method="POST" enctype="multipart/form-data" class="modal-body p-4">
                 <?php echo csrfField(); ?>
                 <input type="hidden" name="apply_job" value="1">
                 <input type="hidden" name="job_id" id="applyJobId">
-                <div class="mb-3">
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">3x4 Photo *</label>
+                        <div class="photo-upload-container position-relative bg-light rounded-4 d-flex align-items-center justify-content-center border"
+                            style="height:140px; width:105px; overflow:hidden;">
+                            <input type="file" name="applicant_photo"
+                                class="position-absolute w-100 h-100 opacity-0 cursor-pointer" accept="image/*"
+                                onchange="previewApplicationPhoto(this)" required>
+                            <img id="photo-preview-img" src="../assets/img/placeholder_3x4.png"
+                                class="w-100 h-100 object-fit-cover d-none">
+                            <div id="photo-placeholder" class="text-center text-muted">
+                                <i class="fas fa-camera fs-2 mb-1"></i>
+                                <div style="font-size:0.6rem;">Upload 3x4</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Full Name *</label>
+                                <input type="text" name="applicant_name"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    value="<?php echo htmlspecialchars($current_user['full_name'] ?? ''); ?>" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Email Address *</label>
+                                <input type="email" name="applicant_email"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    value="<?php echo htmlspecialchars($current_user['email'] ?? ''); ?>" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Phone Number *</label>
+                                <input type="text" name="applicant_phone"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    value="<?php echo htmlspecialchars($current_user['phone'] ?? ''); ?>"
+                                    placeholder="e.g. +251 912..." required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Portfolio Link (optional)</label>
+                                <input type="url" name="portfolio_url"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    value="<?php echo htmlspecialchars($current_user['portfolio_url'] ?? ''); ?>"
+                                    placeholder="https://...">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold">University / College</label>
+                                <input type="text" name="university"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    placeholder="e.g. Addis Ababa University">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">GPA</label>
+                                <input type="number" step="0.01" name="gpa"
+                                    class="form-control rounded-pill border-0 bg-light px-4 py-2"
+                                    placeholder="e.g. 3.75">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">CV / Resume *</label>
+                        <div class="card border-dashed p-3 text-center bg-light rounded-4 h-100">
+                            <?php if (!empty($current_user['cv_url'])): ?>
+                                <div class="mb-2">
+                                    <span class="badge bg-success"><i class="fas fa-file-pdf me-1"></i> Current CV
+                                        Loaded</span>
+                                    <input type="hidden" name="existing_cv" value="<?php echo $current_user['cv_url']; ?>">
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" name="cv_file" class="form-control form-control-sm"
+                                accept=".pdf,.doc,.docx" <?php echo empty($current_user['cv_url']) ? 'required' : ''; ?>>
+                            <p class="text-muted small mt-2 mb-0">PDF, DOC, DOCX (Max 5MB)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Certificates (optional)</label>
+                        <div class="card border-dashed p-3 text-center bg-light rounded-4 h-100">
+                            <input type="file" name="certificates_file" class="form-control form-control-sm"
+                                accept=".pdf,.jpg,.png">
+                            <p class="text-muted small mt-2 mb-0">Merge multiple into one PDF if possible</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 pt-2">
+                    <label class="form-label small fw-bold">Recommendation Letters (optional)</label>
+                    <div class="card border-dashed p-3 text-center bg-light rounded-4">
+                        <input type="file" name="recommendation_file" class="form-control form-control-sm"
+                            accept=".pdf,.jpg,.png">
+                        <p class="text-muted small mt-2 mb-0">Upload any recommendation letter from past employers or
+                            professors</p>
+                    </div>
+                </div>
+
+                <div class="mb-4">
                     <label class="form-label small fw-bold">Cover Letter <span
                             class="text-muted fw-normal">(optional)</span></label>
-                    <textarea name="cover_letter" class="form-control border-0 bg-light" rows="5"
+                    <textarea name="cover_letter" class="form-control border-0 bg-light" rows="4"
                         style="border-radius:15px;"
                         placeholder="Introduce yourself and explain why you're the perfect fit..."></textarea>
                 </div>
+
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary rounded-pill flex-grow-1 py-2 fw-bold">
+                    <button type="submit" class="btn btn-primary rounded-pill flex-grow-1 py-3 fw-bold">
                         <i class="fas fa-paper-plane me-2"></i>Submit Application
                     </button>
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3"
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
                         data-bs-dismiss="modal">Cancel</button>
                 </div>
                 <p class="text-center text-muted small mt-3"><i class="fas fa-shield-alt me-1"></i>Your info is private
@@ -1176,6 +1395,9 @@ include '../includes/header.php';
     }
 </style>
 
+<!-- SweetAlert2 for Premium Popups -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <!-- ══════════════════════ SCRIPTS ════════════════════════════════ -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1238,7 +1460,38 @@ include '../includes/header.php';
                 new bootstrap.Modal(document.getElementById('applyModal')).show();
             }, 350);
         });
+
+        // Show Success Popup if application was successful
+        <?php if ($apply_success): ?>
+            Swal.fire({
+                title: 'Application Sent! 🚀',
+                text: 'Your application has been successfully submitted. Good luck!',
+                icon: 'success',
+                showConfirmButton: true,
+                confirmButtonText: 'Track Application',
+                confirmButtonColor: '#1565C0',
+                showCancelButton: true,
+                cancelButtonText: 'Close',
+                backdrop: `rgba(21, 101, 192, 0.2)`
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '?tab=my_apps';
+                }
+            });
+        <?php endif; ?>
     });
+
+    function previewApplicationPhoto(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('photo-preview-img').src = e.target.result;
+                document.getElementById('photo-preview-img').classList.remove('d-none');
+                document.getElementById('photo-placeholder').classList.add('d-none');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 
 <?php include '../includes/footer.php'; ?>

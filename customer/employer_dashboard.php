@@ -482,7 +482,8 @@ include '../includes/header.php';
                                         </div>
                                         <p
                                             class="text-muted small mb-1 text-truncate <?php echo $msg['is_read'] == 0 ? 'fw-bold text-dark' : ''; ?>">
-                                            <?php echo htmlspecialchars($msg['message']); ?></p>
+                                            <?php echo htmlspecialchars($msg['message']); ?>
+                                        </p>
                                         <div class="small text-primary-emphasis fw-medium" style="font-size: 0.65rem;">
                                             #<?php echo htmlspecialchars($msg['job_title']); ?>
                                         </div>
@@ -739,6 +740,14 @@ include '../includes/header.php';
                                                         <?php echo htmlspecialchars($app['app_location']); ?>
                                                     </div>
                                                 <?php endif; ?>
+                                                <?php if (!empty($app['university'])): ?>
+                                                    <div class="text-primary small fw-bold mt-1"><i
+                                                            class="fas fa-graduation-cap me-1"></i>
+                                                        <?php echo htmlspecialchars($app['university']); ?>
+                                                        <?php if ($app['gpa'] > 0): ?> (GPA:
+                                                            <?php echo number_format($app['gpa'], 2); ?>)<?php endif; ?>
+                                                    </div>
+                                                <?php endif; ?>
                                                 <!-- Skills -->
                                                 <?php if ($app['skills']): ?>
                                                     <div class="d-flex flex-wrap gap-1 mt-1">
@@ -750,11 +759,25 @@ include '../includes/header.php';
                                                         <?php endforeach; ?>
                                                     </div>
                                                 <?php endif; ?>
-                                                <div class="d-flex gap-2 mt-2">
+                                                <div class="d-flex gap-2 mt-2 flex-wrap">
                                                     <?php if ($app['cv_url']): ?>
-                                                        <a href="<?php echo htmlspecialchars($app['cv_url']); ?>" target="_blank"
+                                                        <a href="../<?php echo htmlspecialchars(ltrim($app['cv_url'], './')); ?>"
+                                                            target="_blank"
                                                             class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1"
                                                             style="font-size:0.72rem;"><i class="fas fa-file-pdf me-1"></i>CV</a>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($app['recommendation_url'])): ?>
+                                                        <a href="../<?php echo htmlspecialchars(ltrim($app['recommendation_url'], './')); ?>"
+                                                            target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-2 py-1"
+                                                            style="font-size:0.72rem;"><i
+                                                                class="fas fa-award me-1"></i>Recommendation</a>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($app['certificates_url'])): ?>
+                                                        <a href="../<?php echo htmlspecialchars(ltrim($app['certificates_url'], './')); ?>"
+                                                            target="_blank"
+                                                            class="btn btn-sm btn-outline-success rounded-pill px-2 py-1"
+                                                            style="font-size:0.72rem;"><i
+                                                                class="fas fa-certificate me-1"></i>Certificates</a>
                                                     <?php endif; ?>
                                                     <?php if ($app['portfolio_url']): ?>
                                                         <a href="<?php echo htmlspecialchars($app['portfolio_url']); ?>" target="_blank"

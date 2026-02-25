@@ -98,6 +98,11 @@ foreach ($materials as $m) {
                     <h2 class="fw-bold mb-0">Manage Exchange Material</h2>
                     <p class="text-muted">Review and manage community marketplace listings</p>
                 </div>
+                <div class="d-flex gap-2">
+                    <a href="add_exchange.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Item
+                    </a>
+                </div>
             </div>
 
             <!-- Stats -->
@@ -249,8 +254,8 @@ foreach ($materials as $m) {
                                                         <div class="mb-3">
                                                             <label class="form-label small fw-bold">Adjust Status</label>
                                                             <select name="status" class="form-select rounded-pill">
-                                                                <option value="available" <?php echo $item['status'] === 'available' ? 'selected' : ''; ?>
-                                                                    >Available</option>
+                                                                <option value="available" <?php echo $item['status'] === 'available' ? 'selected' : ''; ?>>
+                                                                    Available</option>
                                                                 <option value="sold" <?php echo $item['status'] === 'sold' ? 'selected' : ''; ?>>Sold</option>
                                                                 <option value="hidden" <?php echo $item['status'] === 'hidden' ? 'selected' : ''; ?>>Hidden</option>
                                                                 <option value="pending" <?php echo $item['status'] === 'pending' ? 'selected' : ''; ?>>Pending Approval</option>

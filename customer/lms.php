@@ -112,7 +112,7 @@ $subject_colors = [
     'Geography' => '#E65100',
     'History' => '#5D4037',
     'Economics' => '#F57F17',
-    'ICT' => '#263238'
+    'ICT' => '#387da0ff'
 ];
 
 $subject_icons = [

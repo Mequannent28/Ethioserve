@@ -12,3 +12,4 @@ services:
         value: production
       - key: BASE_URL
         value: ""
+    healthCheckPath: /customer/index.php

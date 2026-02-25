@@ -536,6 +536,72 @@ function sendOrderEmail($pdo, $order_id)
     }
 }
 
+
+/**
+ * Send Job Application Status Update Email
+ */
+function sendJobApplicationEmail($pdo, $application_id)
+{
+    try {
+        $stmt = $pdo->prepare("
+            SELECT ja.*, jl.title as job_title, jc.company_name, u.full_name, u.email
+            FROM job_applications ja
+            JOIN job_listings jl ON ja.job_id = jl.id
+            JOIN job_companies jc ON jl.company_id = jc.id
+            JOIN users u ON ja.applicant_id = u.id
+            WHERE ja.id = ?
+        ");
+        $stmt->execute([$application_id]);
+        $app = $stmt->fetch();
+
+        if (!$app || empty($app['email']))
+            return false;
+
+        $status = ucfirst($app['status']);
+        $company = $app['company_name'];
+        $job = $app['job_title'];
+        $name = $app['full_name'];
+
+        $subject = "Application Update: {$job} at {$company}";
+
+        $message_content = "";
+        if ($app['status'] === 'shortlisted') {
+            $message_content = "Great news! You have been <strong>shortlisted</strong> for the position. The team will review your profile further.";
+        } elseif ($app['status'] === 'interviewed') {
+            $date = $app['interview_date'] ? date('M d, Y \a\t h:i A', strtotime($app['interview_date'])) : 'to be decided';
+            $message_content = "We would like to invite you for an <strong>interview</strong> for the {$job} position.<br><br><strong>Scheduled Time:</strong> {$date}";
+        } elseif ($app['status'] === 'hired') {
+            $message_content = "Congratulations! You have been <strong>hired</strong> for the position of {$job}. Our HR team will contact you soon with the next steps.";
+        } elseif ($app['status'] === 'rejected') {
+            $message_content = "Thank you for your interest in the {$job} position. After careful consideration, we will not be moving forward with your application at this time.";
+        } else {
+            $message_content = "The status of your application for {$job} has been updated to <strong>{$status}</strong>.";
+        }
+
+        $html_body = "
+        <div style='max-width:600px;margin:20px auto;font-family:Arial,sans-serif;color:#333;line-height:1.6;'>
+            <div style='background:#1B5E20;padding:30px;text-align:center;border-radius:10px 10px 0 0;'>
+                <h1 style='color:#FFB300;margin:0;'>EthioServe Jobs</h1>
+            </div>
+            <div style='background:#fff;padding:40px;border:1px solid #eee;border-top:none;'>
+                <h2>Hello {$name},</h2>
+                <p>{$message_content}</p>
+                <p style='margin-top:30px;'>Best regards,<br>The Recruitment Team at <strong>{$company}</strong></p>
+                <hr style='border:none;border-top:1px solid #eee;margin:30px 0;'>
+                <p style='font-size:12px;color:#888;'>This is an automated message from EthioServe Platform.</p>
+            </div>
+        </div>";
+
+        $headers = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: EthioServe Jobs <noreply@ethioserve.com>\r\n";
+
+        return @mail($app['email'], $subject, $html_body, $headers);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 /**
  * Send Payment Successful Notification Email
  * Sends a premium confirmation receipt to Customer, Provider (Hotel/Restaurant), and Admin

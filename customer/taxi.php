@@ -1426,8 +1426,21 @@ include('../includes/header.php');
 
         // === Addis Ababa All Known Locations ===
         const popularDestinations = [
+            // ===== SUB-CITIES & GENERAL AREAS (First for quick selection) =====
+            { name: 'Bole Sub-City', area: 'Bole', icon: 'fas fa-map-marker-alt', km: 7 },
+            { name: 'Piazza (Arada Sub-City)', area: 'Arada', icon: 'fas fa-map-marker-alt', km: 5 },
+            { name: 'Mercato (Addis Ketema)', area: 'Addis Ketema', icon: 'fas fa-store', km: 6 },
+            { name: 'Kirkos Sub-City', area: 'Kirkos', icon: 'fas fa-building', km: 4 },
+            { name: 'Yeka Sub-City (Megenagna)', area: 'Yeka', icon: 'fas fa-map-pin', km: 9 },
+            { name: 'Lideta Sub-City', area: 'Lideta', icon: 'fas fa-landmark', km: 5 },
+            { name: 'Gulele Sub-City', area: 'Gulele', icon: 'fas fa-mountain', km: 7 },
+            { name: 'Kolfe Keranio Sub-City', area: 'Kolfe', icon: 'fas fa-home', km: 10 },
+            { name: 'Nifas Silk Lafto Sub-City', area: 'Nifas Silk', icon: 'fas fa-city', km: 8 },
+            { name: 'Akaki Kality Sub-City', area: 'Akaki', icon: 'fas fa-industry', km: 14 },
+
             // ===== AIRPORTS & TRANSPORT =====
-            { name: 'Bole International Airport', area: 'Bole', icon: 'fas fa-plane', km: 8 },
+            { name: 'Bole International Airport (Terminal 2)', area: 'Bole', icon: 'fas fa-plane', km: 8 },
+            { name: 'Bole International Airport (Terminal 1)', area: 'Bole', icon: 'fas fa-plane', km: 7 },
             { name: 'Lamberet Bus Station', area: 'Yeka', icon: 'fas fa-bus', km: 9 },
             { name: 'Autobus Tera', area: 'Mercato', icon: 'fas fa-bus', km: 7 },
             { name: 'Meskel Square LRT Station', area: 'Kirkos', icon: 'fas fa-train', km: 5 },
@@ -1722,34 +1735,49 @@ include('../includes/header.php');
         // === 1. Geolocation Detection ===
         function detectLocation() {
             if ('geolocation' in navigator) {
+                // Show detecting state
+                locSpinner.style.display = 'inline-block';
+                locIcon.style.display = 'none';
+                mapLocLabel.textContent = 'Seeking current location...';
+
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
-                        const lat = pos.coords.latitude.toFixed(4);
-                        const lon = pos.coords.longitude.toFixed(4);
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
                         // Reverse geocode using coordinate to guess area name
-                        const areaName = guessAreaFromCoords(pos.coords.latitude, pos.coords.longitude);
+                        const areaName = guessAreaFromCoords(lat, lon);
                         pickupLocation = areaName;
                         pickupInput.value = areaName;
                         mapLocLabel.textContent = areaName;
                         locSpinner.style.display = 'none';
-                        locIcon.style.display = 'inline';
+                        locIcon.style.display = 'inline-block';
+
+                        // Small visual bounce effect on map pin when found
+                        const pin = document.querySelector('.map-pin-icon');
+                        if (pin) {
+                            pin.style.animation = 'none';
+                            void pin.offsetWidth;
+                            pin.style.animation = 'pinBounce 0.5s ease-in-out 3';
+                        }
                     },
                     (err) => {
-                        // Fallback
-                        pickupLocation = 'Addis Ababa Center';
-                        pickupInput.value = 'Addis Ababa Center';
-                        mapLocLabel.textContent = 'Addis Ababa Center';
+                        console.error('Geo error:', err);
+                        // Fallback using IP or center
+                        const fallback = 'Piazza, Addis Ababa';
+                        pickupLocation = fallback;
+                        pickupInput.value = fallback;
+                        mapLocLabel.textContent = fallback;
                         locSpinner.style.display = 'none';
-                        locIcon.style.display = 'inline';
+                        locIcon.style.display = 'inline-block';
                     },
-                    { enableHighAccuracy: true, timeout: 8000 }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
                 );
             } else {
-                pickupLocation = 'Addis Ababa';
-                pickupInput.value = 'Addis Ababa';
-                mapLocLabel.textContent = 'Addis Ababa';
+                pickupLocation = 'Addis Ababa Center';
+                pickupInput.value = 'Addis Ababa Center';
+                mapLocLabel.textContent = 'Addis Ababa Center';
                 locSpinner.style.display = 'none';
-                locIcon.style.display = 'inline';
+                locIcon.style.display = 'inline-block';
             }
         }
 
@@ -1812,16 +1840,20 @@ include('../includes/header.php');
                 destSuggestions.innerHTML = `
                 <div style="padding:20px;text-align:center;color:#aaa;font-size:0.85rem;">
                     <i class="fas fa-search" style="font-size:1.2rem;display:block;margin-bottom:6px;"></i>
-                    No matching places found
+                    No matching places found. Try typing a sub-city like "Bole" or "Piazza".
                 </div>`;
             } else {
-                destSuggestions.innerHTML = filtered.slice(0, 8).map(d => `
+                // If query is empty, show a "Popular in Addis" header
+                const headerHtml = query ? '' : '<div style="padding:10px 18px; font-size:0.7rem; font-weight:800; color:#aaa; text-transform:uppercase; letter-spacing:1px; background:#fcfcfc; border-bottom:1px solid #eee;">Popuar in Addis Ababa</div>';
+
+                destSuggestions.innerHTML = headerHtml + filtered.slice(0, 12).map(d => `
                 <div class="dest-item" data-name="${d.name}" data-km="${d.km}" data-area="${d.area}">
                     <div class="dest-item-icon"><i class="${d.icon}"></i></div>
-                    <div>
+                    <div class="flex-grow-1">
                         <div class="dest-item-name">${highlightText(d.name, query)}</div>
                         <div class="dest-item-area">${d.area} · ~${d.km} km</div>
                     </div>
+                    <div style="font-size:0.6rem; color:#bbb; font-weight:700;">${d.km}km</div>
                 </div>
             `).join('');
             }

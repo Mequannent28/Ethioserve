@@ -129,6 +129,7 @@ include '../includes/header.php';
         let callId = null;
 
         const ringtoneOut = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3');
+        const signalingUrl = '<?php echo BASE_URL; ?>/signaling.php';
 
         function startCall() {
             if (!isIncoming) {
@@ -139,7 +140,7 @@ include '../includes/header.php';
                 fd.append('call_type', 'telemed');
                 fd.append('is_video', isVideo);
 
-                fetch('../includes/signaling.php', { method: 'POST', body: fd })
+                fetch(signalingUrl, { method: 'POST', body: fd })
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
@@ -158,7 +159,7 @@ include '../includes/header.php';
 
         function checkCallResponse() {
             if (isIncoming || !callId) return;
-            fetch('../includes/signaling.php?action=get_call_status&call_id=' + callId)
+            fetch(signalingUrl + '?action=get_call_status&call_id=' + callId)
                 .then(r => r.json())
                 .then(data => {
                     if (data.status === 'accepted') {
@@ -167,6 +168,10 @@ include '../includes/header.php';
                     } else if (data.status === 'rejected') {
                         ringtoneOut.pause();
                         document.getElementById('callStatusText').textContent = "Call Declined";
+                        setTimeout(() => window.location.href = 'doctor_chat.php?doctor_id=' + doctorId, 2000);
+                    } else if (data.status === 'ended') {
+                        ringtoneOut.pause();
+                        document.getElementById('callStatusText').textContent = "Call Ended";
                         setTimeout(() => window.location.href = 'doctor_chat.php?doctor_id=' + doctorId, 2000);
                     } else {
                         setTimeout(checkCallResponse, 3000);
@@ -202,6 +207,12 @@ include '../includes/header.php';
         }
 
         function endCall() {
+            if (callId) {
+                const fd = new FormData();
+                fd.append('action', 'end_call');
+                fd.append('call_id', callId);
+                fetch(signalingUrl, { method: 'POST', body: fd }).catch(() => { });
+            }
             if (api) api.dispose();
             if (ringtoneOut) ringtoneOut.pause();
             window.location.href = 'doctor_chat.php?doctor_id=' + doctorId;

@@ -113,6 +113,9 @@ foreach ($bookings as $b) {
                     <p class="text-muted mb-0">Manage customer requests and service providers</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="add_home_provider.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Provider
+                    </a>
                     <button class="btn btn-white shadow-sm rounded-pill px-4"><i
                             class="fas fa-download me-2"></i>Report</button>
                 </div>
@@ -206,11 +209,13 @@ foreach ($bookings as $b) {
                                             <div class="small"><?php echo date('M d, Y', strtotime($b['scheduled_at'])); ?>
                                             </div>
                                             <div class="fw-bold small">
-                                                <?php echo date('h:i A', strtotime($b['scheduled_at'])); ?></div>
+                                                <?php echo date('h:i A', strtotime($b['scheduled_at'])); ?>
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="small text-wrap" style="max-width: 150px;">
-                                                <?php echo htmlspecialchars($b['service_address']); ?></div>
+                                                <?php echo htmlspecialchars($b['service_address']); ?>
+                                            </div>
                                         </td>
                                         <td class="fw-bold"><?php echo number_format($b['total_price']); ?></td>
                                         <td>

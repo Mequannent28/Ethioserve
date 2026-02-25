@@ -328,27 +328,24 @@ include('../includes/header.php');
         background: #fff;
     }
 
-    .pdf-coming-soon {
-        text-align: center;
-        color: #fff;
-        padding: 60px 30px;
+    /* Modal Viewer Enhancements */
+    #bookViewerModal .modal-content {
+        background: transparent;
     }
 
-    .pdf-coming-soon i {
-        font-size: 5rem;
-        color: rgba(255, 255, 255, 0.3);
-        margin-bottom: 20px;
+    #bookViewerModal .modal-header {
+        background: rgba(0, 0, 0, 0.8) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .pdf-coming-soon h4 {
-        font-weight: 700;
-        margin-bottom: 10px;
+    #bookViewerModal .modal-body {
+        background: #333;
     }
 
-    .pdf-coming-soon p {
-        color: rgba(255, 255, 255, 0.6);
-        max-width: 400px;
-        margin: 0 auto;
+    .modal-fullscreen .modal-body iframe {
+        border-radius: 0;
     }
 </style>
 
@@ -415,7 +412,6 @@ include('../includes/header.php');
                 </div>
             <?php endfor; ?>
         </div>
-
         <!-- LMS Banner -->
         <div class="card border-0 shadow-sm overflow-hidden rounded-4 mb-4"
             style="background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);cursor:pointer;"
@@ -533,7 +529,8 @@ include('../includes/header.php');
                             </div>
 
                             <div class="d-grid gap-2">
-                                <a href="view_textbook.php?grade=<?php echo $grade; ?>&subject=<?php echo urlencode($subj); ?>&type=textbook"
+                                <a href="javascript:void(0)"
+                                    onclick="openBook('<?php echo $grade; ?>', '<?php echo urlencode($subj); ?>', 'textbook', '<?php echo htmlspecialchars($subj); ?> Grade <?php echo $grade; ?> Student Textbook')"
                                     class="btn-action-rounded justify-content-center py-2"
                                     style="background:var(--edu-primary); color:#fff;">
                                     <i class="fas fa-book-reader me-2"></i> Open Textbook
@@ -580,7 +577,8 @@ include('../includes/header.php');
                                         class="fas fa-check-circle text-success fs-6"></i> <span>Answer keys for units</span></li>
                             </ul>
 
-                            <a href="view_textbook.php?grade=<?php echo $grade; ?>&subject=<?php echo urlencode($subj); ?>&type=teacher_guide"
+                            <a href="javascript:void(0)"
+                                onclick="openBook('<?php echo $grade; ?>', '<?php echo urlencode($subj); ?>', 'teacher_guide', '<?php echo htmlspecialchars($subj); ?> Grade <?php echo $grade; ?> Teacher Guide')"
                                 class="btn-action-rounded justify-content-center py-2 w-100"
                                 style="background: #FFF3E0; color: #E65100;">
                                 <i class="fas fa-chalkboard me-2"></i> Open instructor Guide
@@ -643,6 +641,61 @@ include('../includes/header.php');
 
 </div>
 
+<!-- Book Viewer Modal -->
+<div class="modal fade" id="bookViewerModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-dark text-white p-3">
+                <i class="fas fa-book-reader me-2 text-warning"></i>
+                <h5 class="modal-title fw-bold" id="viewerTitle">Textbook Viewer</h5>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 overflow-hidden bg-secondary">
+                <div id="viewerLoader"
+                    class="position-absolute top-50 start-50 translate-middle text-center text-white">
+                    <div class="spinner-border text-light mb-2" role="status"></div>
+                    <p class="small">Loading Textbook...</p>
+                </div>
+                <iframe id="viewerIframe" src="" style="width:100%; height:100%; border:none;"
+                    onload="document.getElementById('viewerLoader').style.display='none';"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
+<script>
+    function openBook(grade, subject, type, title) {
+        const modal = new bootstrap.Modal(document.getElementById('bookViewerModal'));
+        const iframe = document.getElementById('viewerIframe');
+        const loader = document.getElementById('viewerLoader');
+        const titleEl = document.getElementById('viewerTitle');
+
+        titleEl.innerText = title;
+        loader.style.display = 'block';
+        iframe.src = `view_textbook.php?grade=${grade}&subject=${subject}&type=${type}&embed=1`;
+
+        modal.show();
+    }
+
+    // Reset iframe on close
+    document.getElementById('bookViewerModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('viewerIframe').src = '';
+    });
+
+    // Auto-open if parameters are present
+    window.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const openRes = urlParams.get('open');
+        if (openRes == '1') {
+            const grade = urlParams.get('grade');
+            const subject = urlParams.get('subject');
+            const type = urlParams.get('type') || 'textbook';
+            if (grade && subject) {
+                openBook(grade, subject, type, `${subject} Grade ${grade}`);
+            }
+        }
+    });
+</script>
 
 <?php include('../includes/footer.php'); ?>

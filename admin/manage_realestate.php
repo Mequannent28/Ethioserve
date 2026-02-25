@@ -100,6 +100,11 @@ foreach ($properties as $p) {
                     <h2 class="fw-bold mb-0">Manage Real Estate</h2>
                     <p class="text-muted">Oversee property listings and agent activities</p>
                 </div>
+                <div class="d-flex align-items-center">
+                    <a href="add_realestate.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Property
+                    </a>
+                </div>
             </div>
 
             <!-- Stats -->
@@ -251,8 +256,8 @@ foreach ($properties as $p) {
                                                         <div class="mb-3">
                                                             <label class="form-label small fw-bold">Current Status</label>
                                                             <select name="status" class="form-select rounded-pill">
-                                                                <option value="available" <?php echo $prop['status'] === 'available' ? 'selected' : ''; ?>
-                                                                    >Available</option>
+                                                                <option value="available" <?php echo $prop['status'] === 'available' ? 'selected' : ''; ?>>
+                                                                    Available</option>
                                                                 <option value="sold" <?php echo $prop['status'] === 'sold' ? 'selected' : ''; ?>>Sold</option>
                                                                 <option value="rented" <?php echo $prop['status'] === 'rented' ? 'selected' : ''; ?>>Rented</option>
                                                                 <option value="pending" <?php echo $prop['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>

@@ -48,6 +48,9 @@ if ($action === 'update_app_status') {
         $updateStmt = $pdo->prepare("UPDATE job_applications SET status = ?, notes = ?, interview_date = ?, updated_at = NOW() WHERE id = ?");
         $updateStmt->execute([$new_status, $notes, $interview_date, $app_id]);
 
+        // Trigger email notification
+        sendJobApplicationEmail($pdo, $app_id);
+
         // Define notification messages
         $notif_msgs = [
             'shortlisted' => "🎉 You've been shortlisted for the position '{$app['title']}'!",

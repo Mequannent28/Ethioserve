@@ -22,9 +22,7 @@ if (!$broker) {
     $stmt->execute([$user_id]);
     $broker = $stmt->fetch();
 }
-
 $broker_id = $broker['id'];
-
 // Fetch stats
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM referrals WHERE broker_id = ?");
 $stmt->execute([$broker_id]);
@@ -260,7 +258,8 @@ $monthly_earnings = $stmt->fetchAll();
                                         <td><?php echo htmlspecialchars($ref['hotel_name']); ?></td>
                                         <td><?php echo number_format($ref['order_amount']); ?> ETB</td>
                                         <td class="fw-bold text-success">
-                                            <?php echo number_format($ref['commission_amount'], 2); ?> ETB</td>
+                                            <?php echo number_format($ref['commission_amount'], 2); ?> ETB
+                                        </td>
                                         <td>
                                             <?php if ($ref['status'] === 'paid'): ?>
                                                 <span

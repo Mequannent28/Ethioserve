@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     }
 }
 
+// Handle manual restaurant addition removed - now handled in add_restaurant.php
+
 // Handle delete
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
@@ -124,13 +126,13 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                     <p class="text-muted mb-0">Approve, reject, or manage restaurant registrations</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="add_restaurant.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Restaurant
+                    </a>
                     <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importModal">
                         <i class="fas fa-file-excel me-2"></i>Import Excel
                     </button>
-                    <span class="badge bg-primary-green fs-6 rounded-pill px-3 py-2">
-                        <?php echo count($items); ?> Total
-                    </span>
                 </div>
             </div>
 
@@ -253,13 +255,17 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                                                     </button>
                                                 </form>
                                             <?php else: ?>
-                                                <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill"
-                                                        data-bs-toggle="modal" data-bs-target="#viewItem<?php echo $item['id']; ?>">
+                                                <div class="d-flex gap-2">
+                                                    <a href="view_restaurant.php?id=<?php echo $item['id']; ?>"
+                                                        class="btn btn-sm btn-view-vivid btn-action" title="Full Page View">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
+                                                    </a>
+                                                    <a href="edit_restaurant.php?id=<?php echo $item['id']; ?>"
+                                                        class="btn btn-sm btn-edit-vivid btn-action" title="Full Page Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
                                                     <a href="?delete=<?php echo $item['id']; ?>"
-                                                        class="btn btn-sm btn-outline-danger rounded-pill"
+                                                        class="btn btn-sm btn-delete-vivid btn-action"
                                                         onclick="return confirm('Delete this restaurant?')">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
@@ -268,78 +274,6 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
                                         </td>
                                     </tr>
 
-                                    <!-- View Modal -->
-                                    <div class="modal fade" id="viewItem<?php echo $item['id']; ?>" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                                            <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg">
-                                                <div class="modal-header border-0 pb-0">
-                                                    <h5 class="modal-title fw-bold p-3"><i
-                                                            class="fas fa-utensils text-primary-green me-2"></i>Restaurant
-                                                        Details</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body p-4">
-                                                    <div class="row g-4">
-                                                        <div class="col-md-5">
-                                                            <div class="position-relative">
-                                                                <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600'); ?>"
-                                                                    class="rounded-4 shadow-sm w-100"
-                                                                    style="height:250px;object-fit:cover;"
-                                                                    onerror="this.src='https://via.placeholder.com/300x200?text=Restaurant+Image'">
-                                                                <div class="position-absolute top-0 end-0 m-2">
-                                                                    <span
-                                                                        class="badge bg-<?php echo $item['status'] === 'approved' ? 'success' : ($item['status'] === 'pending' ? 'warning text-dark' : 'danger'); ?> rounded-pill px-3">
-                                                                        <?php echo ucfirst($item['status']); ?>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-7">
-                                                            <h3 class="fw-bold mb-1">
-                                                                <?php echo htmlspecialchars($item['name']); ?></h3>
-                                                            <p class="text-muted"><i
-                                                                    class="fas fa-utensils me-2"></i><?php echo htmlspecialchars($item['cuisine_type'] ?? 'International'); ?>
-                                                            </p>
-
-                                                            <div class="bg-light p-3 rounded-4 mb-3">
-                                                                <div class="d-flex align-items-center mb-2">
-                                                                    <i class="fas fa-map-marker-alt text-danger me-3"></i>
-                                                                    <div>
-                                                                        <small class="text-muted d-block">Location</small>
-                                                                        <span
-                                                                            class="fw-bold"><?php echo htmlspecialchars($item['address'] ?? $item['location'] ?? 'N/A'); ?></span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <h6 class="fw-bold text-muted small text-uppercase mb-3">Owner
-                                                                Information</h6>
-                                                            <div class="d-flex align-items-center mb-2">
-                                                                <i class="fas fa-user-circle text-muted me-3 fs-5"></i>
-                                                                <div>
-                                                                    <small class="text-muted d-block">Full Name</small>
-                                                                    <span
-                                                                        class="fw-bold"><?php echo htmlspecialchars($item['owner_name']); ?></span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="d-flex align-items-center">
-                                                                <i class="fas fa-envelope text-muted me-3 fs-5"></i>
-                                                                <div>
-                                                                    <small class="text-muted d-block">Email</small>
-                                                                    <span
-                                                                        class="fw-bold"><?php echo htmlspecialchars($item['owner_email']); ?></span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer border-0">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4"
-                                                        data-bs-dismiss="modal">Close</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -380,6 +314,8 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Restaurant Modal removed - handled in add_restaurant.php -->
 </body>
 
 </html>

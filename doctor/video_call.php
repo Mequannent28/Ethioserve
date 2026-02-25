@@ -34,80 +34,75 @@ if (!$customer) {
 include '../includes/header.php';
 ?>
 
-<div class="video-call-page min-vh-100 position-relative" style="background: #0a0a1a; overflow: hidden;">
+<div class="video-call-page min-vh-100 position-relative"
+    style="background: #050510; overflow: hidden; font-family: 'Poppins', sans-serif;">
 
-    <!-- Design Background (Like User Screenshot) -->
-    <div class="position-absolute top-0 start-0 w-100 h-100"
-        style="background: linear-gradient(180deg, #1a237e 0%, #0a0a1a 100%); opacity: 0.8; z-index: 0;"></div>
+    <!-- Premium Background Gradients -->
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: radial-gradient(circle at 10% 10%, rgba(27, 94, 32, 0.15) 0%, transparent 40%), 
+                    radial-gradient(circle at 90% 90%, rgba(30, 136, 229, 0.15) 0%, transparent 40%);">
+    </div>
 
-    <div class="container position-relative py-5" style="z-index: 1;">
-        <!-- Doctor Info Header (Matching Screenshot) -->
-        <div class="text-center mb-5 animate-fade-in">
-            <div class="position-relative d-inline-block mb-3">
+    <div class="container-fluid position-relative py-4 h-100 d-flex flex-column" style="z-index: 1;">
+        <!-- Doctor Info Header (Matching Screenshot Style) -->
+        <div class="text-center mb-4 animate__animated animate__fadeInDown">
+            <div class="position-relative d-inline-block mb-2">
                 <img src="<?php echo htmlspecialchars($doctor['image_url'] ?: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200'); ?>"
-                    class="rounded-circle border border-4 border-white shadow-lg" width="100" height="100"
+                    class="rounded-circle border border-3 border-white shadow-lg" width="80" height="80"
                     style="object-fit: cover;">
                 <div class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white"
-                    style="width:20px;height:20px;"></div>
+                    style="width:16px;height:16px;"></div>
             </div>
-            <h2 class="text-white fw-bold mb-1"><?php echo htmlspecialchars($doctor['name']); ?></h2>
-            <p class="text-white-50 mb-1">
+            <h4 class="text-white fw-bold mb-0"><?php echo htmlspecialchars($doctor['name']); ?></h4>
+            <p class="text-white-50 small mb-0">
                 <i class="fas fa-stethoscope me-1 text-primary"></i>
                 <?php echo htmlspecialchars($doctor['specialty_name']); ?>
-            </p>
-            <p class="text-white-50 small">
-                <i class="fas fa-map-marker-alt me-1 text-danger"></i>
-                <?php echo htmlspecialchars($doctor['location']); ?>
+                <span class="mx-2">|</span>
+                <i class="fas fa-user-injured me-1 text-warning"></i>
+                Patient: <?php echo htmlspecialchars($customer['full_name']); ?>
             </p>
         </div>
 
-        <!-- Main Video Screen -->
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="card border-0 rounded-5 overflow-hidden shadow-2xl bg-dark"
-                    style="background: #000; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-                    <div class="position-relative" style="aspect-ratio: 16/9;">
-                        <!-- Local Video (Main feed for doctor in this phase) -->
-                        <video id="localVideo" autoplay muted playsinline class="w-100 h-100"
-                            style="object-fit: cover;"></video>
+        <!-- Main Content Area -->
+        <div class="row flex-grow-1 justify-content-center align-items-center">
+            <div class="col-lg-10 h-100">
+                <div class="card border-0 rounded-5 overflow-hidden shadow-2xl h-100 position-relative"
+                    style="background: #000; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7);">
 
-                        <!-- Overlay for "Waiting for Patient" -->
-                        <div id="waitingOverlay"
-                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-black bg-opacity-75">
-                            <div class="text-center text-white">
-                                <div class="spinner-border text-primary mb-3" role="status"></div>
-                                <h4 class="fw-bold">Waiting for patient to connect...</h4>
-                                <p class="text-white-50 small">Patient:
-                                    <?php echo htmlspecialchars($customer['full_name']); ?>
-                                </p>
+                    <!-- Jitsi Container -->
+                    <div id="jitsi-container" class="w-100 h-100 d-none animate__animated animate__fadeIn"></div>
+
+                    <!-- "Waiting for Patient" UI -->
+                    <div id="waitingOverlay"
+                        class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-black bg-opacity-75 z-2">
+                        <div class="text-center text-white animate__animated animate__pulse animate__infinite">
+                            <div class="spinner-grow text-primary mb-4" role="status"
+                                style="width: 4rem; height: 4rem;"></div>
+                            <h3 class="fw-bold tracking-tight">CALLING PATIENT...</h3>
+                            <p class="text-white-50">Please wait while we connect you to
+                                <?php echo htmlspecialchars($customer['full_name']); ?>
+                            </p>
+
+                            <div class="mt-5">
+                                <button onclick="window.location.href='dashboard.php'"
+                                    class="btn btn-outline-danger btn-lg rounded-pill px-5">
+                                    <i class="fas fa-times me-2"></i>Cancel Call
+                                </button>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Patient PiP (Simulated) -->
-                        <div class="position-absolute top-4 start-4 p-3" style="top: 20px; left: 20px; width: 180px;">
-                            <div
-                                class="ratio ratio-4x3 rounded-4 overflow-hidden border border-white border-opacity-25 bg-secondary shadow-lg">
-                                <div class="d-flex align-items-center justify-content-center flex-column text-white">
-                                    <div class="bg-primary rounded-circle p-2 mb-1"><i class="fas fa-user"></i></div>
-                                    <small
-                                        style="font-size: 0.6rem;"><?php echo htmlspecialchars($customer['full_name']); ?></small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Control Buttons (Floating) -->
-                        <div
-                            class="position-absolute bottom-0 start-50 translate-middle-x mb-4 d-flex gap-3 px-4 py-3 rounded-pill bg-black bg-opacity-50 blur-card">
-                            <button id="toggleMic" class="btn btn-light rounded-circle p-3 shadow"
-                                style="width:55px;height:55px;"><i class="fas fa-microphone"></i></button>
-                            <button id="toggleCam" class="btn btn-light rounded-circle p-3 shadow"
-                                style="width:55px;height:55px;"><i class="fas fa-video"></i></button>
-                            <button id="endCall" onclick="window.location.href='dashboard.php'"
-                                class="btn btn-danger rounded-circle p-3 shadow" style="width:55px;height:55px;"><i
-                                    class="fas fa-phone-slash"></i></button>
-                            <button class="btn btn-light rounded-circle p-3 shadow" style="width:55px;height:55px;"><i
-                                    class="fas fa-cog"></i></button>
-                        </div>
+                    <!-- Custom Floating Controls -->
+                    <div id="callControls"
+                        class="position-absolute bottom-0 start-50 translate-middle-x mb-4 d-none gap-3 px-5 py-3 rounded-pill bg-black bg-opacity-40 blur-card z-3">
+                        <button id="toggleMic"
+                            class="btn btn-blur-light rounded-circle p-0 d-flex align-items-center justify-content-center"
+                            style="width:55px;height:55px;"><i class="fas fa-microphone fs-4"></i></button>
+                        <button id="toggleCam"
+                            class="btn btn-blur-light rounded-circle p-0 d-flex align-items-center justify-content-center"
+                            style="width:55px;height:55px;"><i class="fas fa-video fs-4"></i></button>
+                        <button id="endCallBtn"
+                            class="btn btn-danger rounded-circle p-0 d-flex align-items-center justify-content-center hover-scale-lg"
+                            style="width:70px;height:70px;"><i class="fas fa-phone-slash fs-3"></i></button>
                     </div>
                 </div>
             </div>
@@ -115,6 +110,7 @@ include '../includes/header.php';
     </div>
 </div>
 
+<script src='https://meet.jit.si/external_api.js'></script>
 <style>
     .video-call-page .navbar,
     .video-call-page footer {
@@ -126,90 +122,155 @@ include '../includes/header.php';
     }
 
     .blur-card {
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-blur-light {
+        background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        transition: all 0.3s ease;
     }
 
-    .animate-fade-in {
-        animation: fadeIn 1s ease-out;
+    .btn-blur-light:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        color: white;
     }
 
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
+    .hover-scale-lg:hover {
+        transform: scale(1.1);
+    }
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .tracking-tight {
+        letter-spacing: -0.05em;
+    }
+
+    .z-2 {
+        z-index: 2;
+    }
+
+    .z-3 {
+        z-index: 3;
     }
 </style>
 
 <script>
-    let localStream = null;
-    let micEnabled = true;
-    let camEnabled = true;
+    let api = null;
+    let callId = null;
+    const roomId = 'ethioserve-doc-<?php echo $doctor_user_id; ?>-patient-<?php echo $customer_id; ?>-' + Date.now();
+    const signalingUrl = '<?php echo $base_url; ?>/signaling.php';
+    const ringtoneOut = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-outgoing-call-waiting-ringtone-1353.mp3');
 
     async function initCall() {
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-
-            // Signaling: Initiate Call as Doctor
-            const room_id = 'ethioserve-doc-<?php echo $doctor_user_id; ?>-patient-<?php echo $customer_id; ?>-' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            // Initiate Call as Doctor
             const formData = new FormData();
             formData.append('action', 'initiate_call');
             formData.append('receiver_id', '<?php echo $customer_id; ?>');
             formData.append('doctor_id', '<?php echo $doctor['id']; ?>');
-            formData.append('room_id', room_id);
+            formData.append('room_id', roomId);
+            formData.append('call_type', 'telemed');
+            formData.append('is_video', 1);
 
-            const ringtoneOut = document.getElementById('ringtoneOutgoing');
-            if (ringtoneOut) ringtoneOut.play().catch(() => { });
+            ringtoneOut.play().catch(() => { });
 
-            fetch('<?php echo $base_url; ?>/includes/signaling.php', { method: 'POST', body: formData })
+            fetch(signalingUrl, { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
                     if (data.call_id) {
-                        const statusChecker = setInterval(() => {
-                            fetch('<?php echo $base_url; ?>/includes/signaling.php?action=get_call_status&call_id=' + data.call_id)
-                                .then(r => r.json())
-                                .then(s => {
-                                    if (s.status === 'accepted') {
-                                        if (ringtoneOut) ringtoneOut.pause();
-                                        clearInterval(statusChecker);
-                                        document.getElementById('waitingOverlay').classList.add('d-none');
-                                    } else if (s.status === 'rejected') {
-                                        if (ringtoneOut) ringtoneOut.pause();
-                                        clearInterval(statusChecker);
-                                        alert("Patient rejected the call.");
-                                        window.location.href = 'dashboard.php';
-                                    }
-                                });
-                        }, 3000);
+                        callId = data.call_id;
+                        checkCallResponse();
+                    } else {
+                        alert("Error: " + data.error);
+                        window.location.href = 'dashboard.php';
                     }
+                })
+                .catch(err => {
+                    console.error("Signaling error:", err);
+                    alert("Network error starting call.");
+                    window.location.href = 'dashboard.php';
                 });
 
         } catch (err) {
-            console.error("Error accessing media devices:", err);
-            alert("Please allow camera and microphone access to start the call.");
+            console.error("Initialization error:", err);
         }
     }
 
-    document.getElementById('toggleMic').onclick = function () {
-        micEnabled = !micEnabled;
-        localStream.getAudioTracks()[0].enabled = micEnabled;
-        this.innerHTML = micEnabled ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
-        this.classList.toggle('btn-danger', !micEnabled);
-        this.classList.toggle('btn-light', micEnabled);
-    };
+    function checkCallResponse() {
+        if (!callId) return;
+        fetch(signalingUrl + '?action=get_call_status&call_id=' + callId)
+            .then(r => r.json())
+            .then(s => {
+                if (s.status === 'accepted') {
+                    ringtoneOut.pause();
+                    initializeJitsi();
+                } else if (s.status === 'rejected') {
+                    ringtoneOut.pause();
+                    alert("Patient rejected the call.");
+                    window.location.href = 'dashboard.php';
+                } else if (s.status === 'ended') {
+                    ringtoneOut.pause();
+                    window.location.href = 'dashboard.php';
+                } else {
+                    setTimeout(checkCallResponse, 3000);
+                }
+            })
+            .catch(() => setTimeout(checkCallResponse, 5000));
+    }
 
+    function initializeJitsi() {
+        document.getElementById('waitingOverlay').classList.add('d-none');
+        document.getElementById('jitsi-container').classList.remove('d-none');
+        document.getElementById('callControls').classList.remove('d-none');
+        document.getElementById('callControls').classList.add('d-flex');
+
+        const domain = 'meet.jit.si';
+        const options = {
+            roomName: roomId,
+            width: '100%',
+            height: '100%',
+            parentNode: document.querySelector('#jitsi-container'),
+            userInfo: { displayName: 'Dr. <?php echo addslashes($doctor['name']); ?>' },
+            interfaceConfigOverwrite: { TOOLBAR_BUTTONS: [], SETTINGS_SECTIONS: [], SHOW_JITSI_WATERMARK: false },
+            configOverwrite: {
+                startWithAudioMuted: false,
+                startWithVideoMuted: false,
+                prejoinPageEnabled: false
+            }
+        };
+        api = new JitsiMeetExternalAPI(domain, options);
+
+        api.addEventListeners({
+            readyToClose: () => endCall(),
+            videoConferenceLeft: () => endCall()
+        });
+    }
+
+    function endCall() {
+        if (callId) {
+            const fd = new FormData();
+            fd.append('action', 'end_call');
+            fd.append('call_id', callId);
+            fetch(signalingUrl, { method: 'POST', body: fd }).catch(() => { });
+        }
+        if (api) api.dispose();
+        ringtoneOut.pause();
+        window.location.href = 'dashboard.php';
+    }
+
+    document.getElementById('endCallBtn').onclick = endCall;
+    document.getElementById('toggleMic').onclick = function () {
+        api.executeCommand('toggleAudio');
+        this.classList.toggle('btn-blur-light');
+        this.classList.toggle('btn-danger');
+    };
     document.getElementById('toggleCam').onclick = function () {
-        camEnabled = !camEnabled;
-        localStream.getVideoTracks()[0].enabled = camEnabled;
-        this.innerHTML = camEnabled ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
-        this.classList.toggle('btn-danger', !camEnabled);
-        this.classList.toggle('btn-light', camEnabled);
+        api.executeCommand('toggleVideo');
+        this.classList.toggle('btn-blur-light');
+        this.classList.toggle('btn-danger');
     };
 
     initCall();

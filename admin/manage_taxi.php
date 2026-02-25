@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     }
 }
 
+// Handle manual taxi company addition removed - now handled in add_taxi.php
+
 // Handle delete
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
@@ -120,9 +122,14 @@ try {
                     <h2 class="fw-bold mb-1"><i class="fas fa-taxi text-warning me-2"></i>Manage Taxi Companies</h2>
                     <p class="text-muted mb-0">Manage Ride, Feres, Yango and other taxi owners</p>
                 </div>
-                <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-2">
-                    <?php echo count($items); ?> Companies
-                </span>
+                <div class="d-flex gap-2">
+                    <a href="add_taxi.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Company
+                    </a>
+                    <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-2">
+                        <?php echo count($items); ?> Companies
+                    </span>
+                </div>
             </div>
 
             <!-- Stats -->
@@ -275,14 +282,19 @@ try {
                                                     </button>
                                                 </form>
                                             <?php else: ?>
-                                                <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill"
-                                                        data-bs-toggle="modal" data-bs-target="#viewItem<?php echo $item['id']; ?>">
+                                                <div class="d-flex gap-2">
+                                                    <a href="view_taxi.php?id=<?php echo $item['id']; ?>"
+                                                        class="btn btn-sm btn-view-vivid btn-action" title="Full Page View">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
+                                                    </a>
+                                                    <a href="edit_taxi.php?id=<?php echo $item['id']; ?>"
+                                                        class="btn btn-sm btn-edit-vivid btn-action" title="Full Page Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
                                                     <a href="?delete=<?php echo $item['id']; ?>"
-                                                        class="btn btn-sm btn-outline-danger rounded-pill"
-                                                        onclick="return confirm('Delete this taxi company and all its data?')">
+                                                        class="btn btn-sm btn-delete-vivid btn-action"
+                                                        onclick="return confirm('Delete this taxi company and all its data?')"
+                                                        title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
                                                 </div>
@@ -290,68 +302,6 @@ try {
                                         </td>
                                     </tr>
 
-                                    <!-- View Modal -->
-                                    <div class="modal fade" id="viewItem<?php echo $item['id']; ?>" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                                            <div class="modal-content border-0 rounded-4">
-                                                <div class="modal-header border-0 pb-0">
-                                                    <h5 class="modal-title fw-bold"><i
-                                                            class="fas fa-taxi text-warning me-2"></i>
-                                                        <?php echo htmlspecialchars($item['company_name']); ?> - Details
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body p-4">
-                                                    <div class="row g-4">
-                                                        <div class="col-md-6">
-                                                            <h6 class="fw-bold text-muted mb-2">Company Info</h6>
-                                                            <p><strong>Name:</strong>
-                                                                <?php echo htmlspecialchars($item['company_name']); ?>
-                                                            </p>
-                                                            <p><strong>Address:</strong>
-                                                                <?php echo htmlspecialchars($item['address'] ?? 'N/A'); ?>
-                                                            </p>
-                                                            <p><strong>Rating:</strong> <i class="fas fa-star text-warning"></i>
-                                                                <?php echo number_format($item['rating'] ?? 0, 1); ?>
-                                                            </p>
-                                                            <p><strong>Total Vehicles:</strong>
-                                                                <?php echo $vehicle_counts[$item['id']] ?? $item['total_vehicles'] ?? 0; ?>
-                                                            </p>
-                                                            <p><strong>Total Rides:</strong>
-                                                                <?php echo $ride_counts[$item['id']] ?? 0; ?>
-                                                            </p>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <h6 class="fw-bold text-muted mb-2">Owner & Contact</h6>
-                                                            <p><strong>Owner:</strong>
-                                                                <?php echo htmlspecialchars($item['owner_name']); ?>
-                                                            </p>
-                                                            <p><strong>Email:</strong>
-                                                                <?php echo htmlspecialchars($item['owner_email']); ?>
-                                                            </p>
-                                                            <p><strong>Phone:</strong>
-                                                                <?php echo htmlspecialchars($item['phone'] ?? 'N/A'); ?>
-                                                            </p>
-                                                            <p><strong>Status:</strong>
-                                                                <?php echo getStatusBadge($item['status']); ?>
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <?php if (!empty($item['description'])): ?>
-                                                        <hr>
-                                                        <h6 class="fw-bold text-muted">Description</h6>
-                                                        <p>
-                                                            <?php echo htmlspecialchars($item['description']); ?>
-                                                        </p>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="modal-footer border-0">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4"
-                                                        data-bs-dismiss="modal">Close</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -362,6 +312,8 @@ try {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add Taxi Modal removed - handled in add_taxi.php -->
 </body>
 
 </html>

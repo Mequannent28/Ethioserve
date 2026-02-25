@@ -1,9 +1,7 @@
 <?php
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
-
 requireRole('admin');
-
 // Handle delete
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
@@ -11,18 +9,16 @@ if (isset($_GET['delete'])) {
     $stmt->execute([$id]);
     redirectWithMessage('manage_brokers.php', 'success', 'Broker deleted');
 }
-
 // Fetch all brokers
 $items = [];
 try {
     $stmt = $pdo->query("SELECT b.*, u.full_name, u.email, u.phone, u.created_at as joined_at 
                          FROM brokers b 
-                         JOIN users u ON b.user_id = u.id 
+                       JOIN users u ON b.user_id = u.id 
                          ORDER BY b.total_earnings DESC");
     $items = $stmt->fetchAll();
 } catch (Exception $e) {
 }
-
 // Referral stats
 $total_earnings = array_sum(array_column($items, 'total_earnings'));
 $total_referrals = 0;
@@ -71,20 +67,22 @@ try {
 <body>
     <div class="dashboard-wrapper">
         <?php include('../includes/sidebar_admin.php'); ?>
-
         <div class="main-content">
             <?php echo displayFlashMessage(); ?>
-
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-1"><i class="fas fa-user-tie text-warning me-2"></i>Manage Brokers</h2>
                     <p class="text-muted mb-0">Manage broker accounts, referral codes, and commissions</p>
                 </div>
-                <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-2">
-                    <?php echo count($items); ?> Brokers
-                </span>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="add_user.php?role=broker" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Broker
+                    </a>
+                    <span class="badge bg-warning text-dark fs-6 rounded-pill px-3 py-2">
+                        <?php echo count($items); ?> Brokers
+                    </span>
+                </div>
             </div>
-
             <!-- Stats -->
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
@@ -127,7 +125,6 @@ try {
                     </div>
                 </div>
             </div>
-
             <!-- Table -->
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="table-responsive">
@@ -198,7 +195,6 @@ try {
                                             </div>
                                         </td>
                                     </tr>
-
                                     <div class="modal fade" id="viewItem<?php echo $item['id']; ?>" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered">
                                             <div class="modal-content border-0 rounded-4">
@@ -249,7 +245,6 @@ try {
             </div>
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

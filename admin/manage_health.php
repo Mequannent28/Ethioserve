@@ -65,7 +65,14 @@ $ambulances = $pdo->query("SELECT a.*, u.full_name as user_name FROM health_ambu
         <div class="main-content">
             <?php echo displayFlashMessage(); ?>
 
-            <h2 class="fw-bold mb-4">Health Services Management</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0">Health Services Management</h2>
+                <div class="d-flex gap-2">
+                    <a href="add_health_provider.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Provider
+                    </a>
+                </div>
+            </div>
 
             <ul class="nav nav-tabs mb-4 px-3" id="healthTabs">
                 <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab"

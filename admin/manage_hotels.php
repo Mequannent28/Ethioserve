@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_hotel'])) {
     }
 }
 
+// Handle manual hotel addition removed - now handled in add_hotel.php
+
 // Handle hotel deletion
 if (isset($_GET['delete'])) {
     $hotel_id = (int) $_GET['delete'];
@@ -164,6 +166,9 @@ foreach ($hotels as $h) {
                     <p class="text-muted">Approve, reject, or manage hotel registrations</p>
                 </div>
                 <div class="d-flex gap-2">
+                    <a href="add_hotel.php" class="btn btn-primary-green rounded-pill px-4">
+                        <i class="fas fa-plus me-2"></i>Add Hotel
+                    </a>
                     <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importModal">
                         <i class="fas fa-file-excel me-2"></i>Import Excel
@@ -291,19 +296,17 @@ foreach ($hotels as $h) {
                                                     </button>
                                                 </form>
                                             <?php else: ?>
-                                                <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#viewHotel<?php echo $hotel['id']; ?>" title="View Details">
+                                                <div class="d-flex gap-2">
+                                                    <a href="view_hotel.php?id=<?php echo $hotel['id']; ?>"
+                                                        class="btn btn-sm btn-view-vivid btn-action" title="Full Page View">
                                                         <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#editHotel<?php echo $hotel['id']; ?>" title="Edit">
+                                                    </a>
+                                                    <a href="edit_hotel.php?id=<?php echo $hotel['id']; ?>"
+                                                        class="btn btn-sm btn-edit-vivid btn-action" title="Full Page Edit">
                                                         <i class="fas fa-edit"></i>
-                                                    </button>
+                                                    </a>
                                                     <a href="?delete=<?php echo $hotel['id']; ?>"
-                                                        class="btn btn-sm btn-outline-danger rounded-pill"
+                                                        class="btn btn-sm btn-delete-vivid btn-action"
                                                         onclick="return confirm('Are you sure you want to delete this hotel? This will also delete all menu items and orders.')"
                                                         title="Delete">
                                                         <i class="fas fa-trash"></i>
@@ -314,189 +317,6 @@ foreach ($hotels as $h) {
                                     </tr>
 
                                     <!-- View Hotel Modal -->
-                                    <div class="modal fade" id="viewHotel<?php echo $hotel['id']; ?>" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                                            <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg">
-                                                <div class="modal-header bg-primary-green text-white border-0 py-3">
-                                                    <h5 class="modal-title fw-bold"><i class="fas fa-hotel me-2"></i> Hotel
-                                                        Profile</h5>
-                                                    <button type="button" class="btn-close btn-close-white"
-                                                        data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body p-0">
-                                                    <div class="row g-0">
-                                                        <div class="col-md-5">
-                                                            <div class="h-100 position-relative">
-                                                                <img src="<?php echo htmlspecialchars($hotel['image_url'] ?: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600'); ?>"
-                                                                    class="w-100 h-100"
-                                                                    style="object-fit:cover; min-height: 300px;">
-                                                                <div class="position-absolute top-0 start-0 m-3">
-                                                                    <?php if ($hotel['status'] === 'approved'): ?>
-                                                                        <span
-                                                                            class="badge bg-success shadow-sm rounded-pill px-3 py-2">Approved</span>
-                                                                    <?php elseif ($hotel['status'] === 'pending'): ?>
-                                                                        <span
-                                                                            class="badge bg-warning text-dark shadow-sm rounded-pill px-3 py-2">Pending</span>
-                                                                    <?php else: ?>
-                                                                        <span
-                                                                            class="badge bg-danger shadow-sm rounded-pill px-3 py-2">Rejected</span>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-7 p-4">
-                                                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                                                <div>
-                                                                    <h3 class="fw-bold mb-1 text-dark">
-                                                                        <?php echo htmlspecialchars($hotel['name']); ?></h3>
-                                                                    <p class="text-primary-green fw-medium mb-0"><i
-                                                                            class="fas fa-utensils me-2"></i><?php echo htmlspecialchars($hotel['cuisine_type'] ?? 'Restaurant'); ?>
-                                                                    </p>
-                                                                </div>
-                                                                <div class="text-end">
-                                                                    <div
-                                                                        class="badge bg-light text-warning fs-5 p-2 rounded-3 border">
-                                                                        <i class="fas fa-star"></i>
-                                                                        <?php echo number_format($hotel['rating'], 1); ?>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="bg-light rounded-4 p-3 mb-4">
-                                                                <div class="d-flex align-items-center mb-2">
-                                                                    <div
-                                                                        class="bg-white p-2 rounded-circle shadow-sm me-3 text-danger">
-                                                                        <i class="fas fa-map-marker-alt"></i></div>
-                                                                    <div>
-                                                                        <small class="text-muted d-block">Location</small>
-                                                                        <span
-                                                                            class="fw-bold"><?php echo htmlspecialchars($hotel['location']); ?></span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <h6
-                                                                class="fw-bold text-dark text-uppercase small letter-spacing-1 mb-3">
-                                                                Contact Information</h6>
-                                                            <div class="list-group list-group-flush border-0">
-                                                                <div class="list-group-item bg-transparent border-0 px-0 py-2">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-user-circle text-muted me-3 fs-5"></i>
-                                                                        <div>
-                                                                            <small class="text-muted d-block">Owner Name</small>
-                                                                            <span
-                                                                                class="fw-bold"><?php echo htmlspecialchars($hotel['owner_name']); ?></span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="list-group-item bg-transparent border-0 px-0 py-2">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-envelope text-muted me-3 fs-5"></i>
-                                                                        <div>
-                                                                            <small class="text-muted d-block">Email
-                                                                                Address</small>
-                                                                            <a href="mailto:<?php echo $hotel['owner_email']; ?>"
-                                                                                class="text-decoration-none text-dark fw-bold"><?php echo htmlspecialchars($hotel['owner_email']); ?></a>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <?php if ($hotel['owner_phone']): ?>
-                                                                    <div class="list-group-item bg-transparent border-0 px-0 py-2">
-                                                                        <div class="d-flex align-items-center">
-                                                                            <i class="fas fa-phone-alt text-muted me-3 fs-5"></i>
-                                                                            <div>
-                                                                                <small class="text-muted d-block">Phone
-                                                                                    Number</small>
-                                                                                <span
-                                                                                    class="fw-bold"><?php echo htmlspecialchars($hotel['owner_phone']); ?></span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer bg-light border-0 py-3">
-                                                    <button type="button" class="btn btn-secondary rounded-pill px-4"
-                                                        data-bs-dismiss="modal">Close</button>
-                                                    <button type="button" class="btn btn-primary-green rounded-pill px-4"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#editHotel<?php echo $hotel['id']; ?>">
-                                                        <i class="fas fa-edit me-2"></i> Edit Profile
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Edit Hotel Modal -->
-                                    <div class="modal fade" id="editHotel<?php echo $hotel['id']; ?>" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content border-0 rounded-4">
-                                                <div class="modal-header border-0">
-                                                    <h5 class="modal-title fw-bold"><i
-                                                            class="fas fa-edit text-primary me-2"></i>Edit Hotel</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <form method="POST">
-                                                    <?php echo csrfField(); ?>
-                                                    <input type="hidden" name="hotel_id" value="<?php echo $hotel['id']; ?>">
-                                                    <input type="hidden" name="edit_hotel" value="1">
-                                                    <div class="modal-body p-4">
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-bold">Hotel Name</label>
-                                                            <input type="text" name="name"
-                                                                class="form-control rounded-pill bg-light border-0 px-4"
-                                                                value="<?php echo htmlspecialchars($hotel['name']); ?>"
-                                                                required>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-bold">Location</label>
-                                                            <input type="text" name="location"
-                                                                class="form-control rounded-pill bg-light border-0 px-4"
-                                                                value="<?php echo htmlspecialchars($hotel['location']); ?>"
-                                                                required>
-                                                        </div>
-                                                        <div class="row g-3 mb-3">
-                                                            <div class="col-md-6">
-                                                                <label class="form-label small fw-bold">Cuisine Type</label>
-                                                                <input type="text" name="cuisine_type"
-                                                                    class="form-control rounded-pill bg-light border-0 px-4"
-                                                                    value="<?php echo htmlspecialchars($hotel['cuisine_type'] ?? ''); ?>">
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <label class="form-label small fw-bold">Rating</label>
-                                                                <input type="number" name="rating"
-                                                                    class="form-control rounded-pill bg-light border-0 px-4"
-                                                                    value="<?php echo $hotel['rating']; ?>" min="0" max="5"
-                                                                    step="0.1">
-                                                            </div>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-bold">Status</label>
-                                                            <select name="status"
-                                                                class="form-select rounded-pill bg-light border-0 px-4">
-                                                                <option value="approved" <?php echo $hotel['status'] === 'approved' ? 'selected' : ''; ?>>Approved
-                                                                </option>
-                                                                <option value="pending" <?php echo $hotel['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                                                <option value="rejected" <?php echo $hotel['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected
-                                                                </option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer border-0">
-                                                        <button type="button" class="btn btn-light rounded-pill px-4"
-                                                            data-bs-dismiss="modal">Cancel</button>
-                                                        <button type="submit"
-                                                            class="btn btn-primary-green rounded-pill px-4">Save
-                                                            Changes</button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
@@ -539,6 +359,11 @@ foreach ($hotels as $h) {
                 </div>
             </form>
         </div>
+    </div>
+
+    </div>
+    </form>
+    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

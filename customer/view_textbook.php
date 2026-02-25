@@ -13,6 +13,7 @@ $grade = isset($_GET['grade']) ? (int) $_GET['grade'] : 0;
 $subject = sanitize($_GET['subject'] ?? '');
 $type = sanitize($_GET['type'] ?? 'textbook');
 $resource_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$is_embedded = isset($_GET['embed']) && $_GET['embed'] == '1';
 
 $res_data = null;
 
@@ -114,7 +115,15 @@ try {
     // Silent fail
 }
 
-include('../includes/header.php');
+if (!$is_embedded) {
+    include('../includes/header.php');
+} else {
+    // Basic meta tags for embedded view
+    echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>' . $page_title . '</title>';
+    echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">';
+    echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
+    echo '<link rel="stylesheet" href="../assets/css/style.css">';
+}
 
 $color = "#1565C0"; // Default blue
 // Map subject to color
@@ -202,6 +211,27 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
         z-index: 1000;
         border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     }
+
+    <?php if ($is_embedded): ?>
+        .viewer-page-header {
+            position: static;
+            box-shadow: none;
+            background: #fff;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pdf-container {
+            height: calc(100vh - 80px) !important;
+            margin-top: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        .back-btn {
+            display: none;
+        }
+
+    <?php endif; ?>
 
     .back-btn {
         width: 40px;
@@ -477,10 +507,12 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
                     $is_external = strpos($pdf_url, 'http') === 0;
                     if (!empty($pdf_url)):
                         if ($is_external):
-                            // Use Google Docs Viewer for external PDFs to bypass CORS/Iframe blocks
-                            $viewer_url = "https://docs.google.com/viewer?url=" . urlencode($pdf_url) . "&embedded=true";
+                            // Try direct embed first (modern browsers handle this perfectly)
                             ?>
-                            <iframe src="<?php echo $viewer_url; ?>" class="pdf-viewer" style="background: #fff;"></iframe>
+                            <iframe src="<?php echo $pdf_url; ?>#toolbar=0&navpanes=0&scrollbar=0" class="pdf-viewer"
+                                style="background: #fff;"></iframe>
+
+                            <!-- Hidden fallback if iframe fails to load (client-side check is hard, so we provide clear download btn in sidebar) -->
                         <?php else: ?>
                             <object data="<?php echo $pdf_url; ?>" type="application/pdf" class="pdf-viewer">
                                 <div class="fallback-message">
@@ -529,7 +561,8 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
                                             </div>
                                             <div class="overflow-hidden">
                                                 <h6 class="fw-bold mb-0 text-dark">
-                                                    <?php echo htmlspecialchars($rel['subject']); ?></h6>
+                                                    <?php echo htmlspecialchars($rel['subject']); ?>
+                                                </h6>
                                                 <span
                                                     class="text-muted small"><?php echo ucfirst(str_replace('_', ' ', $rel['type'])); ?></span>
                                             </div>
@@ -580,7 +613,8 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
                                     </div>
                                     <div class="overflow-hidden">
                                         <h6 class="small fw-bold mb-0 text-dark text-truncate">
-                                            <?php echo htmlspecialchars($rel['subject']); ?></h6>
+                                            <?php echo htmlspecialchars($rel['subject']); ?>
+                                        </h6>
                                         <span class="text-muted"
                                             style="font-size: 0.7rem;"><?php echo ucfirst(str_replace('_', ' ', $rel['type'])); ?></span>
                                     </div>
@@ -657,4 +691,10 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
     }
 </script>
 
-<?php include('../includes/footer.php'); ?>
+<?php
+if (!$is_embedded) {
+    include('../includes/footer.php');
+} else {
+    echo '</body></html>';
+}
+?>
