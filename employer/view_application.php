@@ -16,7 +16,8 @@ if (!$application_id) {
 $stmt = $pdo->prepare("
     SELECT ja.*, jl.title as job_title, jl.location as job_location, jl.job_type,
            u.full_name as applicant_name, u.email as applicant_email, u.phone as applicant_phone,
-           jp.profile_pic, jp.headline, jp.bio, jp.skills, jp.experience_years, jp.education, jp.availability, jp.cv_url as profile_cv
+           jp.profile_pic, jp.headline, jp.bio, jp.skills, jp.experience_years, jp.education, jp.availability, jp.cv_url as profile_cv,
+           jp.location
     FROM job_applications ja
     JOIN job_listings jl ON ja.job_id = jl.id
     JOIN job_companies jc ON jl.company_id = jc.id
@@ -199,7 +200,7 @@ $page_title = "Application Review - " . $app['applicant_name'];
                                     <?php echo htmlspecialchars($app['applicant_phone'] ?: 'Not Provided'); ?>
                                 </p>
                                 <p class="mb-0"><i class="fas fa-map-marker-alt text-muted me-3"></i>
-                                    <?php echo htmlspecialchars($app['location'] ?: 'Not Disclosed'); ?>
+                                    <?php echo htmlspecialchars(($app['location'] ?? '') ?: 'Not Disclosed'); ?>
                                 </p>
                             </div>
 
