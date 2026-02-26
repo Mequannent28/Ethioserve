@@ -17,7 +17,7 @@ define('ENVIRONMENT', getenv('ENVIRONMENT') ?: 'local');
 if (ENVIRONMENT === 'production') {
     // -------- RENDER / PRODUCTION DATABASE --------
     // Self-contained MariaDB inside Docker (auto-configured)
-    define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+    define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
     define('DB_NAME', getenv('DB_NAME') ?: 'ethioserve');
     define('DB_USER', getenv('DB_USER') ?: 'ethioserve');
     define('DB_PASS', getenv('DB_PASS') ?: 'ethioserve_pass_2024');
