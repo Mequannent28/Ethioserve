@@ -21,7 +21,7 @@ if (!$item) {
 }
 
 // Stats
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM bus_vehicles WHERE company_id = ?");
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM buses WHERE company_id = ?");
 $stmt->execute([$id]);
 $vehicle_count = $stmt->fetchColumn();
 
@@ -71,7 +71,7 @@ $vehicle_count = $stmt->fetchColumn();
                             <?php echo htmlspecialchars($item['company_name']); ?>
                         </h1>
                         <p class="fs-5 mb-0"><i class="fas fa-map-marker-alt me-2"></i>
-                            <?php echo htmlspecialchars($item['location'] ?? 'N/A'); ?>
+                            <?php echo htmlspecialchars($item['address'] ?? 'N/A'); ?>
                         </p>
                     </div>
                     <div class="mb-2"><a href="edit_bus.php?id=<?php echo $item['id']; ?>"

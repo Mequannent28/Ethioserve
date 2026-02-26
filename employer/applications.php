@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_application_st
 }
 
 // Filter by job if requested
-$filter_job_id = isset($_GET['job_id']) ? (int)$_GET['job_id'] : 0;
+$filter_job_id = isset($_GET['job_id']) ? (int) $_GET['job_id'] : 0;
 $filter_status = isset($_GET['status']) ? sanitize($_GET['status']) : '';
 
 // Fetch potential filter jobs
@@ -75,21 +75,41 @@ $applications = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Applications - EthioServe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
-        body { background-color: #f0f2f5; }
-        .main-content { padding: 30px; min-height: 100vh; }
-        .applicant-img { width: 50px; height: 50px; object-fit: cover; border-radius: 12px; }
-        .filter-section { background: #fff; border-radius: 15px; padding: 20px; }
+        body {
+            background-color: #f0f2f5;
+        }
+
+        .main-content {
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .applicant-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .filter-section {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+        }
     </style>
 </head>
+
 <body>
     <div class="dashboard-wrapper d-flex">
         <?php include('../includes/sidebar_employer.php'); ?>
@@ -122,11 +142,16 @@ $applications = $stmt->fetchAll();
                         <label class="form-label small fw-bold">Status</label>
                         <select name="status" class="form-select rounded-pill">
                             <option value="">All Statuses</option>
-                            <option value="pending" <?php echo $filter_status == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="shortlisted" <?php echo $filter_status == 'shortlisted' ? 'selected' : ''; ?>>Shortlisted</option>
-                            <option value="interviewed" <?php echo $filter_status == 'interviewed' ? 'selected' : ''; ?>>Interviewed</option>
-                            <option value="hired" <?php echo $filter_status == 'hired' ? 'selected' : ''; ?>>Hired</option>
-                            <option value="rejected" <?php echo $filter_status == 'rejected' ? 'selected' : ''; ?>>Rejected</option>
+                            <option value="pending" <?php echo $filter_status == 'pending' ? 'selected' : ''; ?>>Pending
+                            </option>
+                            <option value="shortlisted" <?php echo $filter_status == 'shortlisted' ? 'selected' : ''; ?>>
+                                Shortlisted</option>
+                            <option value="interviewed" <?php echo $filter_status == 'interviewed' ? 'selected' : ''; ?>>
+                                Interviewed</option>
+                            <option value="hired" <?php echo $filter_status == 'hired' ? 'selected' : ''; ?>>Hired
+                            </option>
+                            <option value="rejected" <?php echo $filter_status == 'rejected' ? 'selected' : ''; ?>>
+                                Rejected</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -156,16 +181,24 @@ $applications = $stmt->fetchAll();
                             </thead>
                             <tbody>
                                 <?php if (empty($applications)): ?>
-                                    <tr><td colspan="6" class="text-center py-5 text-muted">No applications matching your filters</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">No applications matching your
+                                            filters</td>
+                                    </tr>
                                 <?php else: ?>
                                     <?php foreach ($applications as $app): ?>
-                                        <tr>
+                                        <tr onclick="location.href='view_application.php?id=<?php echo $app['id']; ?>'"
+                                            style="cursor: pointer;">
                                             <td class="px-4">
                                                 <div class="d-flex align-items-center gap-3">
-                                                    <img src="<?php echo $app['profile_pic'] ?: 'https://ui-avatars.com/api/?name='.urlencode($app['applicant_name']); ?>" class="applicant-img border">
+                                                    <img src="<?php echo $app['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($app['applicant_name']); ?>"
+                                                        class="applicant-img border">
                                                     <div>
-                                                        <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($app['applicant_name']); ?></h6>
-                                                        <small class="text-muted"><?php echo htmlspecialchars($app['headline'] ?: $app['applicant_email']); ?></small>
+                                                        <h6 class="mb-0 fw-bold">
+                                                            <?php echo htmlspecialchars($app['applicant_name']); ?>
+                                                        </h6>
+                                                        <small
+                                                            class="text-muted"><?php echo htmlspecialchars($app['headline'] ?: $app['applicant_email']); ?></small>
                                                     </div>
                                                 </div>
                                             </td>
@@ -174,7 +207,8 @@ $applications = $stmt->fetchAll();
                                             <td>
                                                 <?php if ($app['interview_date']): ?>
                                                     <span class="badge bg-light text-primary border rounded-pill">
-                                                        <i class="fas fa-calendar-alt me-1"></i><?php echo date('M d, H:i', strtotime($app['interview_date'])); ?>
+                                                        <i
+                                                            class="fas fa-calendar-alt me-1"></i><?php echo date('M d, H:i', strtotime($app['interview_date'])); ?>
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="text-muted small">Not set</span>
@@ -182,74 +216,277 @@ $applications = $stmt->fetchAll();
                                             </td>
                                             <td><?php echo getStatusBadge($app['status']); ?></td>
                                             <td class="text-end px-4">
-                                                <button class="btn btn-sm btn-white border shadow-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#reviewModal<?php echo $app['id']; ?>">
-                                                    Manage
-                                                </button>
+                                                <div class="d-flex justify-content-end gap-2">
+                                                    <?php
+                                                    $unread_stmt = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE application_id = ? AND receiver_id = ? AND is_read = 0");
+                                                    $unread_stmt->execute([$app['id'], $user_id]);
+                                                    $unread_count = $unread_stmt->fetchColumn();
+                                                    ?>
+                                                    <a href="../customer/job_chat.php?application_id=<?php echo $app['id']; ?>"
+                                                        class="btn btn-sm <?php echo $unread_count > 0 ? 'btn-danger' : 'btn-outline-primary'; ?> rounded-pill px-3 position-relative"
+                                                        onclick="event.stopPropagation();">
+                                                        <i class="fas fa-comments me-1"></i>Chat
+                                                        <?php if ($unread_count > 0): ?>
+                                                            <span
+                                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                                                                <?php echo $unread_count; ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </a>
+                                                    <a href="view_application.php?id=<?php echo $app['id']; ?>"
+                                                        class="btn btn-sm btn-info text-white rounded-pill px-3"
+                                                        onclick="event.stopPropagation();">
+                                                        <i class="fas fa-eye me-1"></i>View
+                                                    </a>
+                                                    <?php if ($app['status'] !== 'rejected' && $app['status'] !== 'hired'): ?>
+                                                        <div class="d-inline-flex gap-2" onclick="event.stopPropagation();">
+                                                            <form method="POST" class="d-inline">
+                                                                <?php echo csrfField(); ?>
+                                                                <input type="hidden" name="application_id"
+                                                                    value="<?php echo $app['id']; ?>">
+                                                                <input type="hidden" name="update_application_status" value="1">
+                                                                <input type="hidden" name="status" value="hired">
+                                                                <button type="submit"
+                                                                    class="btn btn-sm btn-success rounded-pill px-3"
+                                                                    onclick="return confirm('Hire this applicant?')">
+                                                                    <i class="fas fa-check me-1"></i>Hire
+                                                                </button>
+                                                            </form>
+                                                            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#rejectModal<?php echo $app['id']; ?>">
+                                                                <i class="fas fa-times me-1"></i>Reject
+                                                            </button>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                         </tr>
 
-                                        <!-- Review Modal -->
-                                        <div class="modal fade" id="reviewModal<?php echo $app['id']; ?>" tabindex="-1">
-                                            <div class="modal-dialog modal-lg">
-                                                <div class="modal-content border-0 shadow rounded-4">
-                                                    <div class="modal-header border-0">
-                                                        <h5 class="modal-title fw-bold">Application Review</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        <!-- Reject Modal -->
+                                        <div class="modal fade" id="rejectModal<?php echo $app['id']; ?>" tabindex="-1"
+                                            onclick="event.stopPropagation();">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                                    <div class="modal-header border-0 bg-danger text-white rounded-top-4">
+                                                        <h5 class="modal-title fw-bold"><i
+                                                                class="fas fa-user-times me-2"></i>Reject Application</h5>
+                                                        <button type="button" class="btn-close btn-close-white"
+                                                            data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <form method="POST">
+                                                        <?php echo csrfField(); ?>
+                                                        <input type="hidden" name="application_id"
+                                                            value="<?php echo $app['id']; ?>">
+                                                        <input type="hidden" name="update_application_status" value="1">
+                                                        <input type="hidden" name="status" value="rejected">
                                                         <div class="modal-body p-4">
-                                                            <?php echo csrfField(); ?>
-                                                            <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                            <input type="hidden" name="update_application_status" value="1">
-
-                                                            <div class="row mb-4">
-                                                                <div class="col-md-6">
-                                                                    <label class="text-muted small text-uppercase fw-bold mb-2">Applicant Details</label>
-                                                                    <p class="mb-1"><strong>Name:</strong> <?php echo htmlspecialchars($app['applicant_name']); ?></p>
-                                                                    <p class="mb-1"><strong>Phone:</strong> <?php echo htmlspecialchars($app['applicant_phone'] ?: 'N/A'); ?></p>
-                                                                    <p class="mb-3"><strong>Email:</strong> <?php echo htmlspecialchars($app['applicant_email']); ?></p>
-                                                                    <?php if ($app['cv_url']): ?>
-                                                                        <a href="<?php echo BASE_URL . $app['cv_url']; ?>" target="_blank" class="btn btn-sm btn-info text-white rounded-pill px-3">
-                                                                            <i class="fas fa-file-pdf me-1"></i> View CV
-                                                                        </a>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="text-muted small text-uppercase fw-bold mb-2">Job Details</label>
-                                                                    <p class="mb-1"><strong>Position:</strong> <?php echo htmlspecialchars($app['job_title']); ?></p>
-                                                                    <p class="mb-1"><strong>Applied:</strong> <?php echo date('M d, Y', strtotime($app['applied_at'])); ?></p>
-                                                                </div>
-                                                            </div>
-
+                                                            <p class="mb-3">Are you sure you want to reject
+                                                                <strong><?php echo htmlspecialchars($app['applicant_name']); ?></strong>
+                                                                for the position
+                                                                <strong><?php echo htmlspecialchars($app['job_title']); ?></strong>?
+                                                            </p>
                                                             <div class="mb-3">
-                                                                <label class="form-label fw-bold">Update Status</label>
-                                                                <select name="status" class="form-select rounded-3">
-                                                                    <option value="pending" <?php echo $app['status'] == 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                                                    <option value="shortlisted" <?php echo $app['status'] == 'shortlisted' ? 'selected' : ''; ?>>Shortlisted</option>
-                                                                    <option value="interviewed" <?php echo $app['status'] == 'interviewed' ? 'selected' : ''; ?>>Interview Scheduled</option>
-                                                                    <option value="hired" <?php echo $app['status'] == 'hired' ? 'selected' : ''; ?>>Hired</option>
-                                                                    <option value="rejected" <?php echo $app['status'] == 'rejected' ? 'selected' : ''; ?>>Rejected</option>
-                                                                </select>
+                                                                <label class="form-label fw-bold small">Reason for Rejection
+                                                                    (Visible to Applicant)</label>
+                                                                <textarea name="notes"
+                                                                    class="form-control border-light shadow-sm" rows="4"
+                                                                    placeholder="Explain the reason for rejection..."
+                                                                    required></textarea>
                                                             </div>
-
-                                                            <div class="mb-3 interview-date-div" style="<?php echo $app['status'] == 'interviewed' ? '' : 'display:none;'; ?>">
-                                                                <label class="form-label fw-bold">Interview Date & Time</label>
-                                                                <input type="datetime-local" name="interview_date" class="form-control rounded-3" value="<?php echo $app['interview_date'] ? date('Y-m-d\TH:i', strtotime($app['interview_date'])) : ''; ?>">
-                                                            </div>
-
-                                                            <div class="mb-0">
-                                                                <label class="form-label fw-bold">Internal Notes</label>
-                                                                <textarea name="notes" class="form-control rounded-3" rows="3" placeholder="Add notes about this applicant..."><?php echo htmlspecialchars($app['notes'] ?? ''); ?></textarea>
+                                                            <div class="alert alert-warning small border-0 mb-0">
+                                                                <i class="fas fa-info-circle me-1"></i> The applicant will be
+                                                                notified and can see this message.
                                                             </div>
                                                         </div>
-                                                        <div class="modal-footer border-0 p-4">
-                                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                                                            <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                                                        <div class="modal-footer border-0 p-4 pt-0">
+                                                            <button type="button" class="btn btn-light rounded-pill px-4"
+                                                                data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit"
+                                                                class="btn btn-danger rounded-pill px-4 shadow">Confirm
+                                                                Rejection</button>
                                                         </div>
                                                     </form>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <!-- Review Modal -->
+                                        <div class="modal fade" id="reviewModal<?php echo $app['id']; ?>" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                                    <div class="modal-header border-0 bg-light rounded-top-4">
+                                                        <h5 class="modal-title fw-bold">Detailed Application Review</h5>
+                                                        <button type="button" class="btn-close"
+                                                            data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST">
+                                                        <div class="modal-body p-4">
+                                                            <?php echo csrfField(); ?>
+                                                            <input type="hidden" name="application_id"
+                                                                value="<?php echo $app['id']; ?>">
+                                                            <input type="hidden" name="update_application_status" value="1">
+
+                                                            <div class="row mb-4">
+                                                                <div class="col-md-4 text-center border-end">
+                                                                    <img src="<?php echo $app['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($app['applicant_name']) . '&size=150'; ?>"
+                                                                        class="img-fluid rounded-4 shadow-sm mb-3"
+                                                                        style="width: 120px; height: 120px; object-fit: cover;">
+                                                                    <h5 class="fw-bold mb-1">
+                                                                        <?php echo htmlspecialchars($app['applicant_name']); ?>
+                                                                    </h5>
+                                                                    <p class="text-primary small mb-2">
+                                                                        <?php echo htmlspecialchars($app['headline'] ?: 'Job Applicant'); ?>
+                                                                    </p>
+
+                                                                    <div class="d-grid gap-2 mt-3">
+                                                                        <?php if ($app['cv_url']): ?>
+                                                                            <a href="<?php echo BASE_URL . $app['cv_url']; ?>"
+                                                                                target="_blank"
+                                                                                class="btn btn-outline-primary rounded-pill btn-sm">
+                                                                                <i class="fas fa-file-pdf me-1"></i>View CV
+                                                                            </a>
+                                                                        <?php endif; ?>
+                                                                        <a href="../customer/job_chat.php?application_id=<?php echo $app['id']; ?>"
+                                                                            class="btn <?php echo $unread_count > 0 ? 'btn-danger' : 'btn-primary'; ?> rounded-pill btn-sm position-relative">
+                                                                            <i class="fas fa-comments me-1"></i>Chat with
+                                                                            Candidate
+                                                                            <?php if ($unread_count > 0): ?>
+                                                                                <span
+                                                                                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                                                                                    <?php echo $unread_count; ?> New
+                                                                                </span>
+                                                                            <?php endif; ?>
+                                                                        </a>
+                                                                        <a href="view_application.php?id=<?php echo $app['id']; ?>"
+                                                                            class="btn btn-outline-info rounded-pill btn-sm">
+                                                                            <i class="fas fa-expand me-1"></i>Full Page View
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-8 px-4">
+                                                                    <div class="mb-3">
+                                                                        <h6
+                                                                            class="fw-bold text-uppercase small text-muted mb-2">
+                                                                            Contact Information</h6>
+                                                                        <div class="row g-2">
+                                                                            <div class="col-6">
+                                                                                <p class="mb-0 small"><i
+                                                                                        class="fas fa-phone me-2"></i><?php echo htmlspecialchars($app['applicant_phone'] ?: 'No phone'); ?>
+                                                                                </p>
+                                                                            </div>
+                                                                            <div class="col-6">
+                                                                                <p class="mb-0 small"><i
+                                                                                        class="fas fa-envelope me-2"></i><?php echo htmlspecialchars($app['applicant_email']); ?>
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <hr class="my-3 opacity-50">
+                                                                    <div class="mb-3">
+                                                                        <h6
+                                                                            class="fw-bold text-uppercase small text-muted mb-2">
+                                                                            Job Interests</h6>
+                                                                        <p class="mb-1"><strong>Applying for:</strong>
+                                                                            <?php echo htmlspecialchars($app['job_title']); ?>
+                                                                        </p>
+                                                                        <p class="mb-0"><strong>Applied On:</strong>
+                                                                            <?php echo date('F d, Y', strtotime($app['applied_at'])); ?>
+                                                                        </p>
+                                                                    </div>
+
+                                                                    <?php
+                                                                    // Fetch additional profile info if not already in $app
+                                                                    $stmt_prof = $pdo->prepare("SELECT * FROM job_profiles WHERE user_id = ?");
+                                                                    $stmt_prof->execute([$app['applicant_id']]);
+                                                                    $full_profile = $stmt_prof->fetch();
+
+                                                                    if ($full_profile): ?>
+                                                                        <hr class="my-3 opacity-50">
+                                                                        <div class="mb-3">
+                                                                            <h6
+                                                                                class="fw-bold text-uppercase small text-muted mb-2">
+                                                                                Professional Summary</h6>
+                                                                            <p class="small text-muted">
+                                                                                <?php echo nl2br(htmlspecialchars($full_profile['bio'] ?: 'No bio provided.')); ?>
+                                                                            </p>
+                                                                        </div>
+                                                                        <div class="mb-3">
+                                                                            <h6
+                                                                                class="fw-bold text-uppercase small text-muted mb-2">
+                                                                                Skills</h6>
+                                                                            <?php
+                                                                            $skills = explode(',', $full_profile['skills'] ?? '');
+                                                                            foreach ($skills as $skill):
+                                                                                if (trim($skill)): ?>
+                                                                                    <span
+                                                                                        class="badge bg-light text-dark border rounded-pill me-1 mb-1"><?php echo htmlspecialchars(trim($skill)); ?></span>
+                                                                                <?php endif; endforeach; ?>
+                                                                        </div>
+                                                                        <div class="row small">
+                                                                            <div class="col-6 mb-2"><strong>Experience:</strong>
+                                                                                <?php echo $full_profile['experience_years']; ?>
+                                                                                years</div>
+                                                                            <div class="col-6 mb-2"><strong>Availability:</strong>
+                                                                                <?php echo ucfirst(str_replace('_', ' ', $full_profile['availability'])); ?>
+                                                                            </div>
+                                                                            <div class="col-12"><strong>Education:</strong>
+                                                                                <?php echo htmlspecialchars($full_profile['education'] ?: 'Not specified'); ?>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="bg-light p-3 rounded-3 mb-3">
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label fw-bold small">Update
+                                                                            Application Status</label>
+                                                                        <select name="status"
+                                                                            class="form-select border-0 shadow-sm">
+                                                                            <option value="pending" <?php echo $app['status'] == 'pending' ? 'selected' : ''; ?>>
+                                                                                Pending Review</option>
+                                                                            <option value="shortlisted" <?php echo $app['status'] == 'shortlisted' ? 'selected' : ''; ?>>Shortlist for Interview</option>
+                                                                            <option value="interviewed" <?php echo $app['status'] == 'interviewed' ? 'selected' : ''; ?>>Interview Scheduled</option>
+                                                                            <option value="hired" <?php echo $app['status'] == 'hired' ? 'selected' : ''; ?>>
+                                                                                Mark as Hired</option>
+                                                                            <option value="rejected" <?php echo $app['status'] == 'rejected' ? 'selected' : ''; ?>>Reject Application</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-6 interview-date-div"
+                                                                        style="<?php echo $app['status'] == 'interviewed' ? '' : 'display:none;'; ?>">
+                                                                        <label class="form-label fw-bold small">Interview Date &
+                                                                            Time</label>
+                                                                        <input type="datetime-local" name="interview_date"
+                                                                            class="form-control border-0 shadow-sm"
+                                                                            value="<?php echo $app['interview_date'] ? date('Y-m-d\TH:i', strtotime($app['interview_date'])) : ''; ?>">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="mb-0">
+                                                                <label class="form-label fw-bold small">Internal Notes &
+                                                                    Feedback</label>
+                                                                <textarea name="notes" class="form-control border-0 shadow-sm"
+                                                                    rows="3"
+                                                                    placeholder="Add private notes about this candidate..."><?php echo htmlspecialchars($app['notes'] ?? ''); ?></textarea>
+                                                                <small class="text-muted">Notes are only visible to you and your
+                                                                    team.</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-0 p-4 pt-0">
+                                                            <button type="button" class="btn btn-light rounded-pill px-4"
+                                                                data-bs-dismiss="modal">Close</button>
+                                                            <button type="submit"
+                                                                class="btn btn-primary rounded-pill px-4 shadow">Save Status &
+                                                                Notify Applicant</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
@@ -262,7 +499,7 @@ $applications = $stmt->fetchAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.querySelectorAll('select[name="status"]').forEach(select => {
-            select.addEventListener('change', function() {
+            select.addEventListener('change', function () {
                 const modal = this.closest('.modal-content');
                 const interviewDiv = modal.querySelector('.interview-date-div');
                 if (interviewDiv) {
@@ -272,4 +509,5 @@ $applications = $stmt->fetchAll();
         });
     </script>
 </body>
+
 </html>

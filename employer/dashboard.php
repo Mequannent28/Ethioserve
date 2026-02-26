@@ -295,13 +295,13 @@ $recent_applications = $stmt->fetchAll();
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table class="table align-middle mb-0">
+                                <table class="table table-hover align-middle mb-0">
                                     <thead>
                                         <tr>
                                             <th>Applicant</th>
                                             <th>Position</th>
                                             <th>Status</th>
-                                            <th class="text-end">Date</th>
+                                            <th class="text-end">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -312,11 +312,26 @@ $recent_applications = $stmt->fetchAll();
                                             </tr>
                                         <?php else: ?>
                                             <?php foreach ($recent_applications as $app): ?>
-                                                <tr>
+                                                <tr onclick="location.href='view_application.php?id=<?php echo $app['id']; ?>'"
+                                                    style="cursor: pointer;">
                                                     <td>
                                                         <div class="d-flex align-items-center gap-3">
-                                                            <img src="<?php echo $app['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($app['applicant_name']) . '&background=f0f2f5&color=1B5E20&bold=true'; ?>"
-                                                                class="profile-avatar border shadow-sm">
+                                                            <div class="position-relative">
+                                                                <img src="<?php echo $app['profile_pic'] ?: 'https://ui-avatars.com/api/?name=' . urlencode($app['applicant_name']) . '&background=f0f2f5&color=1B5E20&bold=true'; ?>"
+                                                                    class="profile-avatar border shadow-sm">
+                                                                <?php
+                                                                $unread_stmt = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE application_id = ? AND receiver_id = ? AND is_read = 0");
+                                                                $unread_stmt->execute([$app['id'], $user_id]);
+                                                                $unread_count = $unread_stmt->fetchColumn();
+                                                                if ($unread_count > 0):
+                                                                    ?>
+                                                                    <span
+                                                                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light"
+                                                                        style="font-size: 0.6rem; padding: 0.25rem 0.4rem;">
+                                                                        <?php echo $unread_count; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            </div>
                                                             <div>
                                                                 <div class="fw-bold text-dark" style="font-size: 0.9rem;">
                                                                     <?php echo htmlspecialchars($app['applicant_name']); ?>
@@ -328,10 +343,15 @@ $recent_applications = $stmt->fetchAll();
                                                         </div>
                                                     </td>
                                                     <td class="small fw-semibold text-muted">
-                                                        <?php echo htmlspecialchars($app['job_title']); ?></td>
+                                                        <?php echo htmlspecialchars($app['job_title']); ?>
+                                                    </td>
                                                     <td><?php echo getStatusBadge($app['status']); ?></td>
-                                                    <td class="text-end small text-muted">
-                                                        <?php echo date('M d, H:i', strtotime($app['applied_at'])); ?></td>
+                                                    <td class="text-end">
+                                                        <a href="view_application.php?id=<?php echo $app['id']; ?>"
+                                                            class="btn btn-sm btn-light rounded-circle shadow-sm">
+                                                            <i class="fas fa-eye text-success"></i>
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>

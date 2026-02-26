@@ -217,7 +217,7 @@ function generateTicketHTML($booking) {
                         <p><?php echo date('h:i A', strtotime($booking['departure_time'])); ?></p>
                     </div>
                     <div class="journey-arrow">
-                        ✈️ →
+                        🚌 →
                     </div>
                     <div class="journey-point">
                         <h3><?php echo htmlspecialchars($booking['destination']); ?></h3>

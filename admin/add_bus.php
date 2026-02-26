@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_bus'])) {
             }
 
             // Create Bus Company
-            $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, location, status, rating) VALUES (?, ?, ?, 'approved', 4.5)");
+            $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, address, status, rating) VALUES (?, ?, ?, 'approved', 4.5)");
             $stmt->execute([$user_id, $company_name, $location]);
             $company_id = $pdo->lastInsertId();
 

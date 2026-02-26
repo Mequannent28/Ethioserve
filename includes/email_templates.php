@@ -135,7 +135,7 @@ function sendBookingConfirmationEmail($booking, $customer_email, $customer_name)
                     <div class="route-visual">
                         <div class="route-line">
                             <div class="route-point">{$booking['origin']}</div>
-                            <div class="route-arrow">✈️ →</div>
+                            <div class="route-arrow">🚌 →</div>
                             <div class="route-point">{$booking['destination']}</div>
                         </div>
                     </div>

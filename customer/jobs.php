@@ -914,38 +914,67 @@ include '../includes/header.php';
                                 <?php echo ucfirst($app['status']); ?>
                             </span>
                             <?php if ($app['interview_date']): ?>
-                                <div class="card border-0 rounded-3 p-2 text-center" style="background:#e8f5e9;min-width:100px;">
-                                    <div class="small fw-bold text-success"><i class="fas fa-calendar-check me-1"></i>Interview</div>
-                                    <div class="small text-muted">
+                                <div class="card border-0 rounded-3 p-2 text-centershadow-sm"
+                                    style="background:#e8f5e9;min-width:140px;">
+                                    <div class="small fw-bold text-success"><i class="fas fa-calendar-check me-1"></i>Interview
+                                        Scheduled</div>
+                                    <div class="small text-muted fw-bold">
                                         <?php echo date('M d, H:i', strtotime($app['interview_date'])); ?>
                                     </div>
                                 </div>
                             <?php endif; ?>
                             <div class="ms-auto d-flex gap-2 flex-wrap justify-content-end">
                                 <?php
+                                // Fetch unread count for this application
+                                $unread_stmt = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE application_id = ? AND receiver_id = ? AND is_read = 0");
+                                $unread_stmt->execute([$app['id'], $user_id]);
+                                $app_unread = $unread_stmt->fetchColumn();
+                                ?>
+                                <a href="job_chat.php?application_id=<?php echo $app['id']; ?>"
+                                    class="btn btn-sm <?php echo $app_unread > 0 ? 'btn-danger pulse-chat' : 'btn-primary'; ?> rounded-pill px-4 shadow-sm position-relative">
+                                    <i class="fas fa-comments me-2"></i>
+                                    <?php echo $app_unread > 0 ? 'New Reply' : 'Chat with Employer'; ?>
+                                    <?php if ($app_unread > 0): ?>
+                                        <span
+                                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
+                                            <?php echo $app_unread; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </a>
+                                <?php
                                 $cv_path = $app['cv_url'] ?: $app['profile_cv'];
                                 if ($cv_path):
                                     $display_cv = (strpos($cv_path, 'http') === 0) ? $cv_path : '../' . ltrim($cv_path, './');
                                     ?>
                                     <a href="<?php echo htmlspecialchars($display_cv); ?>" target="_blank"
-                                        class="btn btn-sm btn-outline-primary rounded-pill">
-                                        <i class="fas fa-file-pdf me-1"></i>CV
+                                        class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="fas fa-file-pdf me-1"></i>View CV
                                     </a>
                                 <?php endif; ?>
                                 <?php if (!empty($app['recommendation_url'])): ?>
                                     <a href="../<?php echo htmlspecialchars(ltrim($app['recommendation_url'], './')); ?>"
-                                        target="_blank" class="btn btn-sm btn-outline-info rounded-pill">
+                                        target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-3">
                                         <i class="fas fa-award me-1"></i>Rec. Letter
                                     </a>
                                 <?php endif; ?>
                                 <?php if (!empty($app['certificates_url'])): ?>
                                     <a href="../<?php echo htmlspecialchars(ltrim($app['certificates_url'], './')); ?>" target="_blank"
-                                        class="btn btn-sm btn-outline-success rounded-pill">
+                                        class="btn btn-sm btn-outline-success rounded-pill px-3">
                                         <i class="fas fa-certificate me-1"></i>Certificates
                                     </a>
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <?php if (!empty($app['notes'])): ?>
+                            <div class="mt-3 p-3 rounded-3 bg-light border-start border-4 border-primary">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <i class="fas fa-info-circle text-primary small"></i>
+                                    <span class="fw-bold small text-muted text-uppercase" style="letter-spacing: 0.5px;">Employer
+                                        Feedback</span>
+                                </div>
+                                <p class="mb-0 small text-dark fst-italic"><?php echo nl2br(htmlspecialchars($app['notes'])); ?></p>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -1493,5 +1522,29 @@ include '../includes/header.php';
         }
     }
 </script>
+
+<style>
+    .pulse-chat {
+        animation: pulse-red 2s infinite;
+        box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    }
+
+    @keyframes pulse-red {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+        }
+
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+        }
+    }
+</style>
 
 <?php include '../includes/footer.php'; ?>

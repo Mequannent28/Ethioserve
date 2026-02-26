@@ -71,6 +71,16 @@ include '../includes/header.php';
                     </div>
                     <h5 class="fw-bold text-dark">Job & Freelance</h5>
                     <p class="text-muted small">Communicate with employers or freelance service providers.</p>
+                    <?php
+                    $job_unread_stmt = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE receiver_id = ? AND is_read = 0");
+                    $job_unread_stmt->execute([$user_id]);
+                    $job_unread = $job_unread_stmt->fetchColumn();
+                    if ($job_unread > 0):
+                        ?>
+                        <span class="badge bg-warning text-dark rounded-pill">
+                            <?php echo $job_unread; ?> New Replies
+                        </span>
+                    <?php endif; ?>
                 </div>
             </a>
         </div>

@@ -10,7 +10,7 @@ if (!$id) {
 }
 
 $stmt = $pdo->prepare("SELECT b.*, u.full_name as owner_name, u.email as owner_email, u.phone as owner_phone, u.id as user_id 
-                     FROM bus_companies b 
+                     FROM transport_companies b 
                      JOIN users u ON b.user_id = u.id 
                      WHERE b.id = ?");
 $stmt->execute([$id]);
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_changes'])) {
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("UPDATE bus_companies SET company_name = ?, location = ?, status = ?, description = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE transport_companies SET company_name = ?, address = ?, status = ?, description = ? WHERE id = ?");
             $stmt->execute([$name, $location, $status, $description, $id]);
             $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ?, phone = ? WHERE id = ?");
             $stmt->execute([$owner_name, $owner_email, $owner_phone, $item['user_id']]);
@@ -102,11 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_changes'])) {
                                     value="<?php echo htmlspecialchars($item['company_name']); ?>" required></div>
                             <div class="col-md-6"><label class="form-label small fw-bold">Primary Location</label><input
                                     type="text" name="location" class="form-control rounded-pill bg-light border-0 px-4"
-                                    value="<?php echo htmlspecialchars($item['location'] ?? ''); ?>"></div>
+                                    value="<?php echo htmlspecialchars($item['address'] ?? ''); ?>"></div>
                             <div class="col-md-6"><label class="form-label small fw-bold">Status</label>
                                 <select name="status" class="form-select rounded-pill bg-light border-0 px-4">
-                                    <option value="pending" <?php echo $item['status'] == 'pending' ? 'selected' : ''; ?>
-                                        >Pending</option>
+                                    <option value="pending" <?php echo $item['status'] == 'pending' ? 'selected' : ''; ?>>
+                                        Pending</option>
                                     <option value="approved" <?php echo $item['status'] == 'approved' ? 'selected' : ''; ?>>Approved</option>
                                     <option value="rejected" <?php echo $item['status'] == 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                                 </select>
