@@ -16,12 +16,41 @@ $fixes = [
 ];
 
 $results = [];
+
+// Fix Account: cloud_company (Employer)
+try {
+    $username = 'cloud_company';
+    $password = 'password123'; // The password we want to set
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+    // Check if user exists
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+
+    if ($user) {
+        // Update existing user: ensure role is employer AND reset password just in case
+        $stmt = $pdo->prepare("UPDATE users SET role = 'employer', password = ? WHERE username = ?");
+        $stmt->execute([$hashed_password, $username]);
+        $results[] = "✅ User '{$username}' updated: role=employer, password set to 'password123'";
+    } else {
+        // Create the user if missing
+        $stmt = $pdo->prepare("INSERT INTO users (username, password, email, full_name, phone, role) VALUES (?, ?, 'redcloud@demo.com', 'Red Cloud ICT Solutions', '+251 911 22 33 44', 'employer')");
+        $stmt->execute([$username, $hashed_password]);
+        $results[] = "✅ User '{$username}' CREATED: role=employer, password set to 'password123'";
+    }
+} catch (Exception $e) {
+    $results[] = "❌ Account fix: " . $e->getMessage();
+}
+
 foreach ($fixes as $fix) {
     try {
-        $stmt = $pdo->prepare("UPDATE users SET role = ? WHERE username = ? AND (role = '' OR role IS NULL)");
-        $stmt->execute([$fix['role'], $fix['username']]);
+        $stmt = $pdo->prepare("UPDATE users SET role = ? WHERE username = ? AND (role = '' OR role IS NULL OR role != ?)");
+        $stmt->execute([$fix['role'], $fix['username'], $fix['role']]);
         $affected = $stmt->rowCount();
-        $results[] = "✅ {$fix['username']} → {$fix['role']} ($affected row updated)";
+        if ($affected > 0) {
+            $results[] = "✅ {$fix['username']} → {$fix['role']} ({$affected} row updated)";
+        }
     } catch (Exception $e) {
         $results[] = "❌ {$fix['username']}: " . $e->getMessage();
     }
