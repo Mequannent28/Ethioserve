@@ -47,6 +47,25 @@ try {
     $results[] = "❌ activity_logs: " . $e->getMessage();
 }
 
+// Add profile_photo column if missing
+try {
+    $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(255) DEFAULT NULL");
+    $results[] = "✅ profile_photo column ensured in users table";
+} catch (Exception $e) {
+    // Try without IF NOT EXISTS (older MariaDB)
+    try {
+        $check = $pdo->query("SHOW COLUMNS FROM users LIKE 'profile_photo'")->fetch();
+        if (!$check) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) DEFAULT NULL");
+            $results[] = "✅ profile_photo column added";
+        } else {
+            $results[] = "✅ profile_photo column already exists";
+        }
+    } catch (Exception $e2) {
+        $results[] = "❌ profile_photo: " . $e2->getMessage();
+    }
+}
+
 echo "<pre style='font-family:monospace;font-size:16px;padding:20px;'>";
 echo "<strong>Role Migration Results:</strong>\n\n";
 foreach ($results as $r) {

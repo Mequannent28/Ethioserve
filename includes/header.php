@@ -450,8 +450,14 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                         <li class="nav-item dropdown ms-lg-2">
                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown"
                                 role="button" data-bs-toggle="dropdown">
-                                <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user_name); ?>&background=1B5E20&color=fff"
-                                    class="rounded-circle" width="32" height="32" alt="Profile">
+                                <?php
+                                $nav_photo = $_SESSION['profile_photo'] ?? null;
+                                $nav_photo_src = ($nav_photo && file_exists(__DIR__ . '/../' . $nav_photo))
+                                    ? $base_url . '/' . $nav_photo
+                                    : 'https://ui-avatars.com/api/?name=' . urlencode($user_name) . '&background=1B5E20&color=fff';
+                                ?>
+                                <img src="<?php echo $nav_photo_src; ?>" class="rounded-circle" width="32" height="32"
+                                    alt="Profile" style="object-fit:cover;border:2px solid #1B5E20;">
                                 <span class="d-none d-sm-inline position-relative">
                                     <?php echo htmlspecialchars($user_name); ?>
                                     <?php if ($unread_count > 0): ?>

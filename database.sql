@@ -2688,6 +2688,7 @@ CREATE TABLE `users` (
   `phone` varchar(20) DEFAULT NULL,
   `role` enum('admin','hotel','broker','transport','customer','restaurant','taxi','student','doctor','employer','dating','home_pro') DEFAULT 'customer',
   `grade` int(11) DEFAULT 0,
+  `profile_photo` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),

@@ -73,62 +73,89 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Hash password
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-                // Insert user
-                $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, phone, role, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-                $stmt->execute([$username, $email, $hashed_password, $full_name, $phone, $role]);
-                $user_id = $pdo->lastInsertId();
-
-                // If hotel role, create pending hotel entry
-                if ($role === 'hotel') {
-                    $stmt = $pdo->prepare("INSERT INTO hotels (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                    $stmt->execute([$user_id, $full_name . "'s Hotel"]);
+                // Handle profile photo upload
+                $profile_photo = null;
+                if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+                    $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    $file_type = mime_content_type($_FILES['profile_photo']['tmp_name']);
+                    $file_size = $_FILES['profile_photo']['size'];
+                    if (in_array($file_type, $allowed) && $file_size <= 3 * 1024 * 1024) {
+                        $ext = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
+                        $upload_dir = __DIR__ . '/assets/uploads/profiles/';
+                        if (!is_dir($upload_dir))
+                            mkdir($upload_dir, 0755, true);
+                        $filename = 'user_' . uniqid() . '.' . strtolower($ext);
+                        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_dir . $filename)) {
+                            $profile_photo = 'assets/uploads/profiles/' . $filename;
+                        }
+                    } else {
+                        $errors[] = "Profile photo must be JPG/PNG/GIF under 3MB";
+                    }
                 }
 
-                // If broker role, create broker entry with referral code
-                if ($role === 'broker') {
-                    $referral_code = generateReferralCode();
-                    $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
-                    $stmt->execute([$user_id, $referral_code]);
-                }
+                if (!empty($errors)) {
+                    $pdo->rollBack();
+                    $error = implode('<br>', $errors);
+                } else {
 
-                // If transport role, create pending transport company entry
-                if ($role === 'transport') {
-                    $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                    $stmt->execute([$user_id, $full_name . "'s Transport"]);
-                }
+                    // Insert user
+                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, phone, role, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                    $stmt->execute([$username, $email, $hashed_password, $full_name, $phone, $role, $profile_photo]);
+                    $user_id = $pdo->lastInsertId();
 
-                // If restaurant role, create pending restaurant entry
-                if ($role === 'restaurant') {
-                    $stmt = $pdo->prepare("INSERT INTO restaurants (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                    $stmt->execute([$user_id, $full_name . "'s Restaurant"]);
-                }
+                    // If hotel role, create pending hotel entry
+                    if ($role === 'hotel') {
+                        $stmt = $pdo->prepare("INSERT INTO hotels (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                        $stmt->execute([$user_id, $full_name . "'s Hotel"]);
+                    }
 
-                // If taxi role, create pending taxi company entry
-                if ($role === 'taxi') {
-                    $stmt = $pdo->prepare("INSERT INTO taxi_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                    $stmt->execute([$user_id, $full_name . "'s Taxi"]);
-                }
+                    // If broker role, create broker entry with referral code
+                    if ($role === 'broker') {
+                        $referral_code = generateReferralCode();
+                        $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
+                        $stmt->execute([$user_id, $referral_code]);
+                    }
 
-                // If employer role, create job company entry
-                if ($role === 'employer') {
-                    $stmt = $pdo->prepare("INSERT INTO job_companies (user_id, company_name, created_at) VALUES (?, ?, NOW())");
-                    $stmt->execute([$user_id, $full_name . "'s Company"]);
-                }
+                    // If transport role, create pending transport company entry
+                    if ($role === 'transport') {
+                        $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                        $stmt->execute([$user_id, $full_name . "'s Transport"]);
+                    }
 
-                // If dating role, ensure profile is initialized (optional but good)
-                if ($role === 'dating') {
-                    $stmt = $pdo->prepare("INSERT INTO dating_profiles (user_id, age, gender, looking_for) VALUES (?, 25, 'female', 'male')");
-                    $stmt->execute([$user_id]);
-                }
+                    // If restaurant role, create pending restaurant entry
+                    if ($role === 'restaurant') {
+                        $stmt = $pdo->prepare("INSERT INTO restaurants (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                        $stmt->execute([$user_id, $full_name . "'s Restaurant"]);
+                    }
 
-                $pdo->commit();
+                    // If taxi role, create pending taxi company entry
+                    if ($role === 'taxi') {
+                        $stmt = $pdo->prepare("INSERT INTO taxi_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                        $stmt->execute([$user_id, $full_name . "'s Taxi"]);
+                    }
 
-                // Auto-login after registration
-                $_SESSION['user_id'] = $user_id;
-                $_SESSION['username'] = $username;
-                $_SESSION['role'] = $role;
-                $_SESSION['full_name'] = $full_name;
-                $_SESSION['email'] = $email;
+                    // If employer role, create job company entry
+                    if ($role === 'employer') {
+                        $stmt = $pdo->prepare("INSERT INTO job_companies (user_id, company_name, created_at) VALUES (?, ?, NOW())");
+                        $stmt->execute([$user_id, $full_name . "'s Company"]);
+                    }
+
+                    // If dating role, ensure profile is initialized (optional but good)
+                    if ($role === 'dating') {
+                        $stmt = $pdo->prepare("INSERT INTO dating_profiles (user_id, age, gender, looking_for) VALUES (?, 25, 'female', 'male')");
+                        $stmt->execute([$user_id]);
+                    }
+
+                    $pdo->commit();
+
+                    // Auto-login after registration
+                    $_SESSION['user_id'] = $user_id;
+                    $_SESSION['username'] = $username;
+                    $_SESSION['role'] = $role;
+                    $_SESSION['full_name'] = $full_name;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['profile_photo'] = $profile_photo;
+                } // end if(!empty($errors)) else block
 
                 // Handle redirect
                 $redirect = $_GET['redirect'] ?? '';
@@ -193,8 +220,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" autocomplete="off">
+                        <form method="POST" autocomplete="off" enctype="multipart/form-data">
                             <?php echo csrfField(); ?>
+
+                            <!-- Profile Photo Upload -->
+                            <div class="mb-4 text-center">
+                                <div id="photo-preview-wrapper" class="position-relative d-inline-block mb-2">
+                                    <img id="photo-preview"
+                                        src="https://ui-avatars.com/api/?name=Your+Photo&background=1B5E20&color=fff&size=100"
+                                        class="rounded-circle shadow" width="90" height="90"
+                                        style="object-fit:cover;border:3px solid #1B5E20;">
+                                    <label for="profile_photo"
+                                        class="position-absolute bottom-0 end-0 bg-primary-green text-white rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width:28px;height:28px;cursor:pointer;border:2px solid #fff;">
+                                        <i class="fas fa-camera" style="font-size:0.7rem;"></i>
+                                    </label>
+                                </div>
+                                <input type="file" name="profile_photo" id="profile_photo" accept="image/*"
+                                    class="d-none">
+                                <div class="text-muted small">Click the camera icon to add a profile photo (optional)
+                                </div>
+                            </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -389,10 +435,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         document.querySelector('form').addEventListener('submit', function (e) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
-
             if (password !== confirmPassword) {
                 e.preventDefault();
                 alert('Passwords do not match!');
+            }
+        });
+
+        // Live photo preview
+        document.getElementById('profile_photo').addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('photo-preview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
     </script>

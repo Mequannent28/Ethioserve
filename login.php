@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['email'] = $user['email'];
+                $_SESSION['profile_photo'] = $user['profile_photo'] ?? null;
 
                 // Log activity
                 logActivity('Login', 'Successfully logged in - ' . strtoupper($user['role']), $user['id']);
