@@ -17,30 +17,43 @@ $fixes = [
 
 $results = [];
 
-// Fix Account: cloud_company (Employer)
+// Fix Account: mequalimaz2015@gmail.com (Main Account)
 try {
-    $username = 'cloud_company';
-    $password = 'password123'; // The password we want to set
+    $email = 'mequalimaz2015@gmail.com';
+    $password = 'password123';
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    // Check if user exists
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
-    $stmt->execute([$username]);
+    $stmt = $pdo->prepare("SELECT id, username FROM users WHERE email = ?");
+    $stmt->execute([$email]);
     $user = $stmt->fetch();
 
     if ($user) {
-        // Update existing user: ensure role is employer AND reset password just in case
-        $stmt = $pdo->prepare("UPDATE users SET role = 'employer', password = ? WHERE username = ?");
-        $stmt->execute([$hashed_password, $username]);
-        $results[] = "✅ User '{$username}' updated: role=employer, password set to 'password123'";
+        $stmt = $pdo->prepare("UPDATE users SET role = 'employer', password = ? WHERE email = ?");
+        $stmt->execute([$hashed_password, $email]);
+        $results[] = "✅ User '{$user['username']}' ({$email}) updated: role=employer, password set to 'password123'";
     } else {
-        // Create the user if missing
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, email, full_name, phone, role) VALUES (?, ?, 'redcloud@demo.com', 'Red Cloud ICT Solutions', '+251 911 22 33 44', 'employer')");
-        $stmt->execute([$username, $hashed_password]);
-        $results[] = "✅ User '{$username}' CREATED: role=employer, password set to 'password123'";
+        $stmt = $pdo->prepare("INSERT INTO users (username, password, email, full_name, role) VALUES ('admin_user', ?, ?, 'Mequannent G.', 'employer')");
+        $stmt->execute([$hashed_password, $email]);
+        $results[] = "✅ Account created for {$email}: role=employer, password set to 'password123'";
     }
 } catch (Exception $e) {
-    $results[] = "❌ Account fix: " . $e->getMessage();
+    $results[] = "❌ Email fix: " . $e->getMessage();
+}
+
+// Fix Account: cloud_company (Demo)
+try {
+    $username = 'cloud_company';
+    $password = 'password123';
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    if ($stmt->fetch()) {
+        $stmt = $pdo->prepare("UPDATE users SET role = 'employer', password = ? WHERE username = ?");
+        $stmt->execute([$hashed_password, $username]);
+        $results[] = "✅ User '{$username}' updated to employer and password reset";
+    }
+} catch (Exception $e) {
+    $results[] = "❌ Demo fix: " . $e->getMessage();
 }
 
 foreach ($fixes as $fix) {
