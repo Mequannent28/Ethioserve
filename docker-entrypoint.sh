@@ -49,7 +49,7 @@ echo "Starting MariaDB (Low Memory Mode)..."
 
 # Wait for MariaDB
 echo "  → Waiting for database to start..."
-MAX_WAIT=90
+MAX_WAIT=120
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if mysqladmin ping --silent 2>/dev/null; then
