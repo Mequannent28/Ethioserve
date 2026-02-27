@@ -8,12 +8,18 @@ $pass = DB_PASS;
 $port = DB_PORT;
 $charset = DB_CHARSET;
 
-// MySQL DSN
-$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
-
-// Fallback to socket in Render production to avoid 127.0.0.1 loopback restrictions
-if (ENVIRONMENT === 'production') {
-     $dsn = "mysql:unix_socket=/var/run/mysqld/mysqld.sock;dbname=$db;charset=$charset";
+// DSN Selection Logic
+if (ENVIRONMENT === 'production' && ($host === 'localhost' || $host === '127.0.0.1')) {
+     // Use unix socket for local MariaDB in self-contained Docker on Render
+     if (file_exists('/var/run/mysqld/mysqld.sock')) {
+          $dsn = "mysql:unix_socket=/var/run/mysqld/mysqld.sock;dbname=$db;charset=$charset";
+     } else {
+          // Fallback to TCP if socket is missing
+          $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+     }
+} else {
+     // Standard TCP connection for Local XAMPP or Remote Databases (like Managed Render DB)
+     $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 }
 
 $options = [
