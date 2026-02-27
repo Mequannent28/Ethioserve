@@ -22,6 +22,7 @@ sed -i "s|/var/www/html|/var/www/html|g" /etc/apache2/sites-available/000-defaul
 echo "[2/4] Starting Database Engine..."
 mkdir -p /var/run/mysqld /var/lib/mysql
 chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
+chmod 777 /var/run/mysqld
 
 # Prepare Database Variables
 DB_NAME=${DB_NAME:-ethioserve}
