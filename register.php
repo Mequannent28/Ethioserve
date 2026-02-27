@@ -68,6 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if (empty($errors)) {
             try {
+                // Ensure profile_photo column exists (auto-migration)
+                try {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(255) DEFAULT NULL");
+                } catch (Exception $ex) { /* ignore if already exists */
+                }
+
                 $pdo->beginTransaction();
 
                 // Hash password
@@ -89,78 +95,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             $profile_photo = 'assets/uploads/profiles/' . $filename;
                         }
                     } else {
-                        $errors[] = "Profile photo must be JPG/PNG/GIF under 3MB";
+                        throw new Exception("Profile photo must be JPG/PNG/GIF/WebP under 3MB");
                     }
                 }
 
-                if (!empty($errors)) {
-                    $pdo->rollBack();
-                    $error = implode('<br>', $errors);
-                } else {
+                // Insert user
+                $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, phone, role, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->execute([$username, $email, $hashed_password, $full_name, $phone, $role, $profile_photo]);
+                $user_id = $pdo->lastInsertId();
 
-                    // Insert user
-                    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, full_name, phone, role, profile_photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-                    $stmt->execute([$username, $email, $hashed_password, $full_name, $phone, $role, $profile_photo]);
-                    $user_id = $pdo->lastInsertId();
+                // If hotel role, create pending hotel entry
+                if ($role === 'hotel') {
+                    $stmt = $pdo->prepare("INSERT INTO hotels (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Hotel"]);
+                }
 
-                    // If hotel role, create pending hotel entry
-                    if ($role === 'hotel') {
-                        $stmt = $pdo->prepare("INSERT INTO hotels (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                        $stmt->execute([$user_id, $full_name . "'s Hotel"]);
-                    }
+                // If broker role, create broker entry with referral code
+                if ($role === 'broker') {
+                    $referral_code = generateReferralCode();
+                    $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
+                    $stmt->execute([$user_id, $referral_code]);
+                }
 
-                    // If broker role, create broker entry with referral code
-                    if ($role === 'broker') {
-                        $referral_code = generateReferralCode();
-                        $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
-                        $stmt->execute([$user_id, $referral_code]);
-                    }
+                // If transport role, create pending transport company entry
+                if ($role === 'transport') {
+                    $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Transport"]);
+                }
 
-                    // If transport role, create pending transport company entry
-                    if ($role === 'transport') {
-                        $stmt = $pdo->prepare("INSERT INTO transport_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                        $stmt->execute([$user_id, $full_name . "'s Transport"]);
-                    }
+                // If restaurant role, create pending restaurant entry
+                if ($role === 'restaurant') {
+                    $stmt = $pdo->prepare("INSERT INTO restaurants (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Restaurant"]);
+                }
 
-                    // If restaurant role, create pending restaurant entry
-                    if ($role === 'restaurant') {
-                        $stmt = $pdo->prepare("INSERT INTO restaurants (user_id, name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                        $stmt->execute([$user_id, $full_name . "'s Restaurant"]);
-                    }
+                // If taxi role, create pending taxi company entry
+                if ($role === 'taxi') {
+                    $stmt = $pdo->prepare("INSERT INTO taxi_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Taxi"]);
+                }
 
-                    // If taxi role, create pending taxi company entry
-                    if ($role === 'taxi') {
-                        $stmt = $pdo->prepare("INSERT INTO taxi_companies (user_id, company_name, status, created_at) VALUES (?, ?, 'pending', NOW())");
-                        $stmt->execute([$user_id, $full_name . "'s Taxi"]);
-                    }
+                // If employer role, create job company entry
+                if ($role === 'employer') {
+                    $stmt = $pdo->prepare("INSERT INTO job_companies (user_id, company_name, created_at) VALUES (?, ?, NOW())");
+                    $stmt->execute([$user_id, $full_name . "'s Company"]);
+                }
 
-                    // If employer role, create job company entry
-                    if ($role === 'employer') {
-                        $stmt = $pdo->prepare("INSERT INTO job_companies (user_id, company_name, created_at) VALUES (?, ?, NOW())");
-                        $stmt->execute([$user_id, $full_name . "'s Company"]);
-                    }
+                // If dating role, initialize profile
+                if ($role === 'dating') {
+                    $stmt = $pdo->prepare("INSERT INTO dating_profiles (user_id, age, gender, looking_for) VALUES (?, 25, 'female', 'male')");
+                    $stmt->execute([$user_id]);
+                }
 
-                    // If dating role, ensure profile is initialized (optional but good)
-                    if ($role === 'dating') {
-                        $stmt = $pdo->prepare("INSERT INTO dating_profiles (user_id, age, gender, looking_for) VALUES (?, 25, 'female', 'male')");
-                        $stmt->execute([$user_id]);
-                    }
+                $pdo->commit();
 
-                    $pdo->commit();
-
-                    // Auto-login after registration
-                    $_SESSION['user_id'] = $user_id;
-                    $_SESSION['username'] = $username;
-                    $_SESSION['role'] = $role;
-                    $_SESSION['full_name'] = $full_name;
-                    $_SESSION['email'] = $email;
-                    $_SESSION['profile_photo'] = $profile_photo;
-                } // end if(!empty($errors)) else block
+                // Auto-login after registration
+                $_SESSION['user_id'] = $user_id;
+                $_SESSION['username'] = $username;
+                $_SESSION['role'] = $role;
+                $_SESSION['full_name'] = $full_name;
+                $_SESSION['email'] = $email;
+                $_SESSION['profile_photo'] = $profile_photo;
 
                 // Handle redirect
                 $redirect = $_GET['redirect'] ?? '';
                 if (!empty($redirect)) {
                     header("Location: " . $redirect);
+                    exit();
                 } else {
                     $success = "Registration successful! You are now logged in.";
                 }
@@ -169,12 +170,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_POST = [];
 
             } catch (Exception $e) {
-                $pdo->rollBack();
-                $error = "Registration failed. Please try again.";
+                if ($pdo->inTransaction())
+                    $pdo->rollBack();
+                $error = "Registration failed: " . $e->getMessage();
             }
         } else {
             $error = implode("<br>", $errors);
         }
+
     }
 }
 ?>
