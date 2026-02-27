@@ -78,7 +78,8 @@ mysql -u root -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';"
 mysql -u root -e "FLUSH PRIVILEGES;"
 
 # Import initial data
-TABLE_COUNT=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME';")
+TABLE_COUNT=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME';" 2>/dev/null)
+TABLE_COUNT=${TABLE_COUNT:-0}
 if [ "$TABLE_COUNT" -le 0 ]; then
     if [ -f "/var/www/html/database.sql" ]; then
         echo "  → Importing initial database schema (UTF-8)..."

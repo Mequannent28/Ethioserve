@@ -10,6 +10,12 @@ $charset = DB_CHARSET;
 
 // MySQL DSN
 $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+
+// Fallback to socket in Render production to avoid 127.0.0.1 loopback restrictions
+if (ENVIRONMENT === 'production' && ($host === 'localhost' || $host === '127.0.0.1') && file_exists('/var/run/mysqld/mysqld.sock')) {
+     $dsn = "mysql:unix_socket=/var/run/mysqld/mysqld.sock;dbname=$db;charset=$charset";
+}
+
 $options = [
      PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
