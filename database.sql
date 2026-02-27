@@ -606,6 +606,7 @@ UNLOCK TABLES;
 -- Table structure for table `dating_profiles`
 --
 
+
 DROP TABLE IF EXISTS `dating_profiles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -831,13 +832,11 @@ CREATE TABLE `exchange_materials` (
 --
 -- Dumping data for table `exchange_materials`
 --
-
 LOCK TABLES `exchange_materials` WRITE;
 /*!40000 ALTER TABLE `exchange_materials` DISABLE KEYS */;
 INSERT INTO `exchange_materials` VALUES (1,10,'Mobile','iPhone 15 Pro Max - 256GB','Brand new iPhone 15 Pro Max, Natural Titanium. Never opened, full warranty.',125000.00,'new','https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80','Bole, Addis Ababa','0911223344','available','2026-02-18 18:05:57','2026-02-18 18:05:57'),(2,11,'Computers','MacBook Pro M2 - 16GB RAM','Slightly used MacBook Pro with M2 chip. Excellent condition, no scratches.',180000.00,'used','https://images.unsplash.com/photo-1517336714460-4c98882c3fae?auto=format&fit=crop&w=800&q=80','Haya Hulet, Addis Ababa','0922334455','available','2026-02-18 18:05:57','2026-02-18 18:05:57'),(3,12,'Electronics','Sony PS5 Console with 2 Controllers','PlayStation 5 Disc Version. Includes 2 DualSense controllers and 3 games.',65000.00,'new','https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=800&q=80','Piazza, Addis Ababa','0933445566','available','2026-02-18 18:05:57','2026-02-18 18:05:57'),(4,10,'Furniture','Modern Leather Sofa Set','Elegant 3-seater leather sofa. Dark brown color, very comfortable.',45000.00,'used','https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80','Sarbet, Addis Ababa','0911223344','available','2026-02-18 18:05:58','2026-02-18 18:05:58'),(5,24,'Vehicles','Toyota Vitz 2015','Very clean Toyota Vitz, 2015 model. Low mileage, fuel efficient.',1200000.00,'used','https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80','Gurd Shola, Addis Ababa','0944556677','available','2026-02-18 18:05:58','2026-02-18 18:05:58');
 /*!40000 ALTER TABLE `exchange_materials` ENABLE KEYS */;
 UNLOCK TABLES;
-
 --
 -- Table structure for table `experiences`
 --
@@ -1008,7 +1007,6 @@ CREATE TABLE `health_ambulance_requests` (
 --
 -- Dumping data for table `health_ambulance_requests`
 --
-
 LOCK TABLES `health_ambulance_requests` WRITE;
 /*!40000 ALTER TABLE `health_ambulance_requests` DISABLE KEYS */;
 /*!40000 ALTER TABLE `health_ambulance_requests` ENABLE KEYS */;
@@ -1043,7 +1041,6 @@ CREATE TABLE `health_appointments` (
 --
 -- Dumping data for table `health_appointments`
 --
-
 LOCK TABLES `health_appointments` WRITE;
 /*!40000 ALTER TABLE `health_appointments` DISABLE KEYS */;
 INSERT INTO `health_appointments` VALUES (1,57,1,'virtual','2026-02-26 13:44:00','pending','sdf',NULL,NULL,'2026-02-19 20:41:11'),(2,57,1,'in_person','2026-02-19 23:46:00','pending','sdf',NULL,NULL,'2026-02-19 20:43:42'),(3,10,7,'in_person','2026-03-05 14:44:00','confirmed','asdfvb',NULL,NULL,'2026-02-19 20:44:25'),(4,10,7,'in_person','2026-02-21 23:46:00','confirmed','s',NULL,NULL,'2026-02-19 20:46:57');
@@ -1874,11 +1871,9 @@ LOCK TABLES `lms_attempts` WRITE;
 INSERT INTO `lms_attempts` VALUES (1,47,1,0.00,0,0,'in_progress','2026-02-15 18:20:42',NULL,0),(2,47,1,0.00,0,0,'in_progress','2026-02-15 18:21:55',NULL,0),(3,47,1,0.00,5,0,'completed','2026-02-15 18:22:21','2026-02-15 18:22:46',20),(4,47,1,0.00,5,0,'completed','2026-02-15 18:22:55','2026-02-15 18:22:57',24),(5,47,1,60.00,5,3,'completed','2026-02-15 18:22:59','2026-02-15 18:24:03',59),(6,47,1,0.00,0,0,'in_progress','2026-02-15 18:24:51',NULL,0),(7,47,1,60.00,5,3,'completed','2026-02-15 18:24:56','2026-02-15 18:24:57',63),(8,47,1,0.00,0,0,'in_progress','2026-02-15 18:24:59',NULL,0),(9,47,1,0.00,0,0,'in_progress','2026-02-15 18:25:07',NULL,0),(10,10,8,40.00,5,2,'completed','2026-02-15 18:25:13','2026-02-15 18:27:17',116),(11,47,24,0.00,0,0,'in_progress','2026-02-15 18:25:26',NULL,0),(12,47,3,80.00,5,4,'completed','2026-02-15 18:53:58','2026-02-15 18:57:03',174),(13,47,3,80.00,5,4,'completed','2026-02-15 18:57:03','2026-02-15 18:57:03',175),(14,1,16,0.00,5,0,'completed','2026-02-15 19:50:03','2026-02-15 19:50:37',22),(15,1,16,0.00,0,0,'in_progress','2026-02-15 19:50:38',NULL,0),(16,1,8,0.00,5,0,'completed','2026-02-15 19:51:21','2026-02-15 19:51:45',17),(17,1,8,0.00,5,0,'completed','2026-02-15 19:51:48','2026-02-15 19:51:48',19),(18,1,8,0.00,5,0,'completed','2026-02-15 19:51:58','2026-02-15 19:52:40',30),(19,1,8,0.00,5,0,'completed','2026-02-15 19:52:42','2026-02-15 19:52:52',33),(20,1,8,0.00,0,0,'in_progress','2026-02-15 19:52:54',NULL,0),(21,1,8,0.00,0,0,'in_progress','2026-02-15 19:53:09',NULL,0),(22,1,8,0.00,5,0,'completed','2026-02-15 19:57:04','2026-02-15 19:57:08',3),(23,47,33,0.00,0,0,'in_progress','2026-02-17 20:02:05',NULL,0),(24,10,1,0.00,0,0,'in_progress','2026-02-19 11:56:28',NULL,0),(25,47,7,0.00,0,0,'in_progress','2026-02-20 13:15:15',NULL,0);
 /*!40000 ALTER TABLE `lms_attempts` ENABLE KEYS */;
 UNLOCK TABLES;
-
 --
 -- Table structure for table `lms_exams`
 --
-
 DROP TABLE IF EXISTS `lms_exams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2068,7 +2063,6 @@ CREATE TABLE `orders` (
 --
 -- Dumping data for table `orders`
 --
-
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
 INSERT INTO `orders` VALUES (1,10,1,1750.00,'delivered','chapa','pending','2026-02-15 09:51:52'),(2,10,1,500.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(3,10,1,600.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(4,10,1,700.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(5,10,1,800.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(6,10,1,900.00,'delivered',NULL,'pending','2026-02-15 10:14:05'),(7,1,2,300.00,'pending','chapa','pending','2026-02-15 10:30:11'),(8,1,15,1940.00,'pending','chapa','paid','2026-02-15 10:31:28'),(9,10,1,950.00,'delivered','chapa','paid','2026-02-15 10:48:46'),(10,1,13,1000.00,'pending','chapa','paid','2026-02-15 10:53:58'),(11,10,1,950.00,'delivered','chapa','paid','2026-02-15 10:57:25'),(12,10,15,1320.00,'pending','chapa','paid','2026-02-15 18:17:04'),(13,10,1,920.00,'delivered','chapa','paid','2026-02-15 19:33:47'),(14,2,13,750.00,'pending','chapa','paid','2026-02-17 19:33:55'),(15,10,2,3150.00,'pending','chapa','paid','2026-02-18 10:23:21'),(16,10,13,820.00,'pending','chapa','paid','2026-02-19 09:18:04'),(17,10,1,1270.00,'delivered','chapa','paid','2026-02-19 10:33:10'),(18,10,1,1520.00,'delivered','chapa','paid','2026-02-19 11:47:41');
@@ -2245,9 +2239,35 @@ LOCK TABLES `referrals` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `activity_logs`
+--
+DROP TABLE IF EXISTS `activity_logs`;
+CREATE TABLE `activity_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `activity_type` varchar(50) NOT NULL,
+  `description` text DEFAULT NULL,
+  `platform` varchar(50) DEFAULT 'WEB',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `activity_type` (`activity_type`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `activity_logs`
+--
+LOCK TABLES `activity_logs` WRITE;
+/*!40000 ALTER TABLE `activity_logs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `activity_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `rental_requests`
 --
-
 DROP TABLE IF EXISTS `rental_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2592,7 +2612,6 @@ UNLOCK TABLES;
 --
 -- Table structure for table `taxi_vehicles`
 --
-
 DROP TABLE IF EXISTS `taxi_vehicles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2611,20 +2630,16 @@ CREATE TABLE `taxi_vehicles` (
   CONSTRAINT `taxi_vehicles_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `taxi_companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 --
 -- Dumping data for table `taxi_vehicles`
 --
-
 LOCK TABLES `taxi_vehicles` WRITE;
 /*!40000 ALTER TABLE `taxi_vehicles` DISABLE KEYS */;
 /*!40000 ALTER TABLE `taxi_vehicles` ENABLE KEYS */;
 UNLOCK TABLES;
-
 --
 -- Table structure for table `transport_companies`
 --
-
 DROP TABLE IF EXISTS `transport_companies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2679,21 +2694,16 @@ CREATE TABLE `users` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 --
 -- Dumping data for table `users`
 --
-
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'admin','$2y$10$v4HRmyJWN6V/L6gc4432r.wISFEhN7mf4ZfgrGeCjhGbkkBdTJFE6','admin@ethioserve.com','System Admin',NULL,'admin',0,'2026-02-15 09:28:00'),(2,'hilton_owner','$2y$10$iCR1X92BJzslir25JHlMs.gH/X7UG/5e9V3w/f9e6aSiMK91EzPMq','hilton@ethioserve.com','Hilton Addis',NULL,'hotel',0,'2026-02-15 09:28:00'),(3,'sheraton_owner','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','sheraton@ethioserve.com','Sheraton Addis',NULL,'hotel',0,'2026-02-15 09:28:00'),(4,'broker1','$2y$10$qxj40xZSUVpUdO0ubx75n.q0ZcfSejpNMByNjoYwsp/jW4Tur5/nO','broker1@ethioserve.com','Abebe Bikila',NULL,'broker',0,'2026-02-15 09:28:00'),(5,'golden_bus','$2y$10$8zeSjO/OKkwpliGr7bvgEei7/Et7LuCT.Ed62nC6/ZAbLaua2.7fG','golden@ethioserve.com','Golden Bus',NULL,'transport',1,'2026-02-15 09:28:00'),(6,'walya_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','walya@ethioserve.com','Walya Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(7,'gion_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','gion@ethioserve.com','Gion Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(8,'geda_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','geda@ethioserve.com','Geda Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(9,'awash_bus','$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','awash@ethioserve.com','Awash Bus',NULL,'transport',0,'2026-02-15 09:28:00'),(10,'customer1','$2y$10$p8hUutp/B0JR.Y76MM4P2OsADVEvtuzZt44fNW5aFYH4lNi/OxrI2','customer1@ethioserve.com','Abeba Tadesse','+251911111111','customer',1,'2026-02-15 09:28:56'),(11,'customer2','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','customer2@ethioserve.com','Dawit Mekonnen','+251922222222','customer',0,'2026-02-15 09:28:56'),(12,'customer3','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','customer3@ethioserve.com','Selam Hailu','+251933333333','customer',0,'2026-02-15 09:28:56'),(13,'hotel_lucy','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','lucy@ethioserve.com','Lucy Hotel','+251944444444','hotel',0,'2026-02-15 09:28:56'),(14,'hotel_getfam','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','getfam@ethioserve.com','Getfam Hotel','+251955555555','hotel',0,'2026-02-15 09:28:57'),(15,'hotel_eliana','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','eliana@ethioserve.com','Eliana Hotel','+251966666666','hotel',0,'2026-02-15 09:28:57'),(16,'broker_abel','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','abel@ethioserve.com','Abel Kebede','+251977777777','broker',0,'2026-02-15 09:28:58'),(17,'broker_marta','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','marta@ethioserve.com','Marta Solomon','+251988888888','broker',0,'2026-02-15 09:28:58'),(18,'transport_selam','$2y$10$KjJk8352QAHlMguMAR5VbuMBxtV3ibVjFikQM9cx/d/vUePOxor0C','selam_bus@ethioserve.com','Selam Bus','+251999999999','transport',0,'2026-02-15 09:28:58'),(19,'hotel_owner','$2y$10$IKk5hVopHDQFk/dYiIxF2.UP3EmQEfw28Ii09dVi57MiULvC9NiAS','hotels@ethioserve.com','Ethiopia Hotel Services',NULL,'hotel',0,'2026-02-15 09:29:00'),(20,'eth_rest_owner','$2y$10$ifVUtwjnQj9ljLddyOJA1eO3qtARi1vK3c/rmTHNHj5zU5cYIPrZ6','restaurants@ethioserve.com','Ethiopian Restaurant Services',NULL,'hotel',0,'2026-02-15 09:29:01'),(21,'ride_ethiopia','$2y$10$VDXfggb.i1BStAxeewVv9ed/QidgIlk/XWOJ7c3XT44c6N/B1dNsS','ride@ethioserve.com','Ride Ethiopia','+251911100100','',0,'2026-02-15 09:29:17'),(23,'feres','$2y$10$ObS3crijaW8ibrwSY9YOMuVi9ARUY9lfhEOuNNWOA6clbDoFIqNzm','feres@ethioserve.com','Feres Transport','+251911200200','',0,'2026-02-15 09:29:28'),(24,'rider_0918592028','$2y$10$dL.bUCEfeH9e.3lj1H1T0eubtxh5uhrFxsaaZ.aS.vCdHaUO4iKhy','rider_0918592028@ethioserve.temp','Mequannent Worku','0918592028','customer',0,'2026-02-15 09:43:50'),(25,'yango','$2y$10$VjPBJVe3TncPndlv6HT.GuYRFnQFLBlTHtjJsg1UAWVyL.k4b35Gi','yango@ethioserve.com','Yango Ethiopia','+251911300300','',0,'2026-02-15 10:04:19'),(26,'cust1','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust1@test.com','Abebe Kabede',NULL,'customer',0,'2026-02-15 10:19:48'),(27,'cust2','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust2@test.com','Tadesse Lemma',NULL,'customer',0,'2026-02-15 10:19:49'),(28,'cust3','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust3@test.com','Mulugeta Tesfaye',NULL,'customer',0,'2026-02-15 10:19:49'),(29,'cust4','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust4@test.com','Sara Hagos',NULL,'customer',0,'2026-02-15 10:19:49'),(30,'cust5','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust5@test.com','Daniel Girma',NULL,'customer',0,'2026-02-15 10:19:49'),(31,'cust6','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust6@test.com','Lidya Solomon',NULL,'customer',0,'2026-02-15 10:19:49'),(32,'haile_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','haile@hailehotels.com','Haile Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(33,'kuriftu_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@kurifturesort.com','Kuriftu Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(34,'skylight_hotel_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@ethiopianskylighthotel.com','Skylight Hotel Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(35,'elilly_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@elillyhotel.com','Elilly International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(36,'jupiter_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@jupiterhotel.com','Jupiter International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(37,'golden_tulip_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@goldentuliptana.com','Golden Tulip Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(39,'safe_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','safe@ethioserve.com','Safe Ride','+2518210','taxi',0,'2026-02-15 10:20:39'),(40,'little_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','little@ethioserve.com','Little Ride','+2516000','taxi',0,'2026-02-15 10:20:39'),(41,'zayride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','zay@ethioserve.com','ZayRide','+2518199','taxi',0,'2026-02-15 10:20:39'),(47,'student1','$2y$10$UDuE.Vajj4nM1sEsVUoJw.j5Jx9/ZRtV0tj2hLAIHfZFVeRYMnwJa','student@ethioserve.com','Abebe Student',NULL,'student',0,'2026-02-15 11:26:52'),(48,'selam_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','selam@demo.com','Selam Hailu',NULL,'dating',0,'2026-02-19 01:55:50'),(49,'dawit_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','dawit@demo.com','Dawit Mekonnen',NULL,'dating',0,'2026-02-19 01:55:50'),(50,'beaza_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','beaza@demo.com','Beaza Tadesse',NULL,'dating',0,'2026-02-19 01:55:50'),(51,'aman_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','aman@demo.com','Aman Yoseph',NULL,'dating',0,'2026-02-19 01:55:51'),(52,'eden_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','eden@demo.com','Eden Tesfaye',NULL,'dating',0,'2026-02-19 01:55:51'),(53,'test_dating_user','$2y$10$Jn77CVZ/wlgy6W/wULEQ5u/Gq9EWDp1cJVSz89tpuFmJWBMdxyYom','test_dating@ethioserve.com','Dating Tester',NULL,'customer',0,'2026-02-19 02:01:54'),(54,'lucy_restaurant','$2y$10$oMUZFVl7xXGA3xYeyYbTn.GXrowGcggAVtKYYK3JVCI0cDxrmAZna','rest@demo.com','Lucy Restaurant Pro','0922334455','restaurant',0,'2026-02-19 20:17:57'),(55,'ride_addis','$2y$10$w8QcdzYhSF8D2KOQH9mD.eBx4SP7vVkCmlCFwh3ZFfxdS9z7poBU2','taxi@demo.com','Ride Taxi Service','0933445566','taxi',0,'2026-02-19 20:17:58'),(56,'cloud_company','$2y$10$Sy5/s25BiCMIKDkzE1lK0ezxlvfhn6UybKRYCHeMSTju.1msqkr26','redcloud@demo.com','Red Cloud ICT Solution','0912121212','',0,'2026-02-19 20:17:59'),(57,'dr_dawit','$2y$10$eon3YfrBGLa45SD26ZbriuqhTO7Ssoso5UtVGcS.eg5i7hll3RW3O','doctor@demo.com','Dr. Dawit Telemed','0931313131','doctor',0,'2026-02-19 20:17:59'),(58,'dr_abebe','$2y$10$mBsj6Ad84LdQkgxELS6SCOw7gi3SSQMSDpbML0elRfDq6gc6tIlhq','abebe@demo.com','Dr. Abebe Molla',NULL,'',0,'2026-02-19 20:48:05'),(59,'taxi_demo','$2y$10$QR27lAkFn49Nm2mShBJMXevMmEjf2ra2QmzY33QJBrs0/.QubqPUm','taxi_demo@ethioserve.com','Taxi Demo Manager','0933346272','taxi',0,'2026-02-20 06:34:03'),(60,'hotel_demo','$2y$10$xw9cBTyxcayyj8F7L.pLiOesLaV0OQiIwDcGPe7lyk6gR8iZ9OHUW','hotel_demo@ethioserve.com','Hotel Demo Manager','0962481243','hotel',0,'2026-02-20 06:34:04'),(61,'restaurant_demo','$2y$10$wR5iKyq3/U2TcLTaMuuE0.Le.cejHG/Ml1PTUKlyekMoATIewQ226','restaurant_demo@ethioserve.com','Restaurant Demo Owner','0951973428','restaurant',0,'2026-02-20 06:34:04'),(62,'transport_demo','$2y$10$EUuTsIxBY7zp6IYvYOP/GusnPwFYaefx8jDQA8bI6gT3T.qmD1Oo2','transport_demo@ethioserve.com','Transport Demo Owner','0969971395','transport',0,'2026-02-20 06:34:04'),(63,'broker_demo','$2y$10$WLBH615diDxd/lbJUU9KxOqIdiKrKdzlrCdWTIyAl9npRgtEPzvFu','broker_demo@ethioserve.com','Real Estate Broker Demo','0980877307','broker',0,'2026-02-20 06:34:05'),(64,'doctor_demo','$2y$10$Gaex8PDM/Cd9nPPPCmW0xOQqk4LhQRJN36TverB3ZcIEexO3VIUZW','doctor_demo@ethioserve.com','Doctor Demo Account','0990913558','doctor',0,'2026-02-20 06:34:05'),(65,'student_demo','$2y$10$CY0RDZUR76rtW8ePRDSM.eSYc2UUiJ1HNlY/ophstltX4YJUHQRzO','student_demo@ethioserve.com','Education Demo Student','0979209266','student',0,'2026-02-20 06:34:05'),(66,'customer_demo','$2y$10$Yjy.3qvbajV178FjvrWTY.NO0DOhqAIj3.ewayyPn.DynXF8O.4eW','customer_demo@ethioserve.com','General Customer Demo','0981047210','customer',0,'2026-02-20 06:34:05'),(67,'employer_demo','$2y$10$oO5bJ.XT8UCb2u4209fMwu/f0iprzT1YGXIFZOXy20Eq52zudORuK','employer_demo@ethioserve.com','Job Employer Demo','0944264441','employer',0,'2026-02-20 06:34:05'),(68,'dating_demo','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','dating_demo@ethioserve.com','Dating Demo User','0984533133','dating',0,'2026-02-20 06:34:06'),(69,'pro_demo','$2y$10$e1oybpCBU/wiDCR9xgKTaeAcFPTCGw5V997I0qG0fXhNvT/M7UFWO','pro_demo@ethioserve.com','Home Service Pro Demo','0911731197','home_pro',0,'2026-02-20 06:34:06'),(70,'mequannent','$2y$10$dhDVJHHp9.u1H53f1e462u00ZzEn29DKpe2L/B6btVB9g1DQQ0qYK','mequannent@ethioserve.com','Mequannent G.',NULL,'home_pro',0,'2026-02-20 06:38:12'),(71,'chala','$2y$10$RdtT1fafaruDN6GuDYyOieqM17zGSMyBtFDNU2m9N4xeVqDsj46qy','chala@ethioserve.com','Chala K.',NULL,'home_pro',0,'2026-02-20 06:38:13'),(72,'bekele','$2y$10$yxWiX4bdzgM7NM9ErNbu0uEaoqrPwqjzqP3R1fUMJ/apXnoMDmyue','bekele@ethioserve.com','Bekele T.',NULL,'home_pro',0,'2026-02-20 06:38:13'),(73,'muluken','$2y$10$PBdXBzSj.m8/Y5g4qQIvA.MDy0hCX2ykIie16nAGuzzstSddmJGUi','muluken@ethioserve.com','Muluken S.',NULL,'home_pro',0,'2026-02-20 06:38:14'),(74,'Walelgn','$2y$10$18xfLp8E9mb5ArT3rL2ooe8rSbS2fyPSIW0HmZNS.ap/mw3wH34Au','mequannentgashaw12@gmail.com','Gedamu','+251912698553','customer',0,'2026-02-21 12:51:51'),(75,'Gedamu','$2y$10$ugVfJlyAMjntsRD71hpqD.eX4K6xyLz65QYWpQZzS3gKk0cmu7HK.','gedualpha1989@gmail.com','Gedamu','+251912627366','customer',0,'2026-02-21 13:05:03');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+INSERT INTO `users` VALUES (21,'ride_ethiopia','$2y$10$VDXfggb.i1BStAxeewVv9ed/QidgIlk/XWOJ7c3XT44c6N/B1dNsS','ride@ethioserve.com','Ride Ethiopia','+251911100100','taxi',0,'2026-02-15 09:29:17'),(23,'feres','$2y$10$ObS3crijaW8ibrwSY9YOMuVi9ARUY9lfhEOuNNWOA6clbDoFIqNzm','feres@ethioserve.com','Feres Transport','+251911200200','taxi',0,'2026-02-15 09:29:28'),(24,'rider_0918592028','$2y$10$dL.bUCEfeH9e.3lj1H1T0eubtxh5uhrFxsaaZ.aS.vCdHaUO4iKhy','rider_0918592028@ethioserve.temp','Mequannent Worku','0918592028','customer',0,'2026-02-15 09:43:50'),(25,'yango','$2y$10$VjPBJVe3TncPndlv6HT.GuYRFnQFLBlTHtjJsg1UAWVyL.k4b35Gi','yango@ethioserve.com','Yango Ethiopia','+251911300300','taxi',0,'2026-02-15 10:04:19'),(26,'cust1','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust1@test.com','Abebe Kabede',NULL,'customer',0,'2026-02-15 10:19:48'),(27,'cust2','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust2@test.com','Tadesse Lemma',NULL,'customer',0,'2026-02-15 10:19:49'),(28,'cust3','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust3@test.com','Mulugeta Tesfaye',NULL,'customer',0,'2026-02-15 10:19:49'),(29,'cust4','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust4@test.com','Sara Hagos',NULL,'customer',0,'2026-02-15 10:19:49'),(30,'cust5','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust5@test.com','Daniel Girma',NULL,'customer',0,'2026-02-15 10:19:49'),(31,'cust6','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','cust6@test.com','Lidya Solomon',NULL,'customer',0,'2026-02-15 10:19:49'),(32,'haile_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','haile@hailehotels.com','Haile Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(33,'kuriftu_resort_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@kurifturesort.com','Kuriftu Resort Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(34,'skylight_hotel_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@ethiopianskylighthotel.com','Skylight Hotel Admin',NULL,'hotel',0,'2026-02-15 10:19:49'),(35,'elilly_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@elillyhotel.com','Elilly International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(36,'jupiter_international_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@jupiterhotel.com','Jupiter International Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(37,'golden_tulip_owner','$2y$10$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','info@goldentuliptana.com','Golden Tulip Admin',NULL,'hotel',0,'2026-02-15 10:19:50'),(39,'safe_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','safe@ethioserve.com','Safe Ride','+2518210','taxi',0,'2026-02-15 10:20:39'),(40,'little_ride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','little@ethioserve.com','Little Ride','+2516000','taxi',0,'2026-02-15 10:20:39'),(41,'zayride','$2y$10$QrT66AqwtLkDVYsr5.LDH.VJcbvDnyU7TnFGUxoSMXUHUH.1J87CG','zay@ethioserve.com','ZayRide','+2518199','taxi',0,'2026-02-15 10:20:39'),(47,'student1','$2y$10$UDuE.Vajj4nM1sEsVUoJw.j5Jx9/ZRtV0tj2hLAIHfZFVeRYMnwJa','student@ethioserve.com','Abebe Student',NULL,'student',0,'2026-02-15 11:26:52'),(48,'selam_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','selam@demo.com','Selam Hailu',NULL,'dating',0,'2026-02-19 01:55:50'),(49,'dawit_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','dawit@demo.com','Dawit Mekonnen',NULL,'dating',0,'2026-02-19 01:55:50'),(50,'beaza_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','beaza@demo.com','Beaza Tadesse',NULL,'dating',0,'2026-02-19 01:55:50'),(51,'aman_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','aman@demo.com','Aman Yoseph',NULL,'dating',0,'2026-02-19 01:55:51'),(52,'eden_dating','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','eden@demo.com','Eden Tesfaye',NULL,'dating',0,'2026-02-19 01:55:51'),(53,'test_dating_user','$2y$10$Jn77CVZ/wlgy6W/wULEQ5u/Gq9EWDp1cJVSz89tpuFmJWBMdxyYom','test_dating@ethioserve.com','Dating Tester',NULL,'customer',0,'2026-02-19 02:01:54'),(54,'lucy_restaurant','$2y$10$oMUZFVl7xXGA3xYeyYbTn.GXrowGcggAVtKYYK3JVCI0cDxrmAZna','rest@demo.com','Lucy Restaurant Pro','0922334455','restaurant',0,'2026-02-19 20:17:57'),(55,'ride_addis','$2y$10$w8QcdzYhSF8D2KOQH9mD.eBx4SP7vVkCmlCFwh3ZFfxdS9z7poBU2','taxi@demo.com','Ride Taxi Service','0933445566','taxi',0,'2026-02-19 20:17:58'),(56,'cloud_company','$2y$10$Sy5/s25BiCMIKDkzE1lK0ezxlvfhn6UybKRYCHeMSTju.1msqkr26','redcloud@demo.com','Red Cloud ICT Solution','0912121212','employer',0,'2026-02-19 20:17:59'),(57,'dr_dawit','$2y$10$eon3YfrBGLa45SD26ZbriuqhTO7Ssoso5UtVGcS.eg5i7hll3RW3O','doctor@demo.com','Dr. Dawit Telemed','0931313131','doctor',0,'2026-02-19 20:17:59'),(58,'dr_abebe','$2y$10$mBsj6Ad84LdQkgxELS6SCOw7gi3SSQMSDpbML0elRfDq6gc6tIlhq','abebe@demo.com','Dr. Abebe Molla',NULL,'doctor',0,'2026-02-19 20:48:05'),(59,'taxi_demo','$2y$10$QR27lAkFn49Nm2mShBJMXevMmEjf2ra2QmzY33QJBrs0/.QubqPUm','taxi_demo@ethioserve.com','Taxi Demo Manager','0933346272','taxi',0,'2026-02-20 06:34:03'),(60,'hotel_demo','$2y$10$xw9cBTyxcayyj8F7L.pLiOesLaV0OQiIwDcGPe7lyk6gR8iZ9OHUW','hotel_demo@ethioserve.com','Hotel Demo Manager','0962481243','hotel',0,'2026-02-20 06:34:04'),(61,'restaurant_demo','$2y$10$wR5iKyq3/U2TcLTaMuuE0.Le.cejHG/Ml1PTUKlyekMoATIewQ226','restaurant_demo@ethioserve.com','Restaurant Demo Owner','0951973428','restaurant',0,'2026-02-20 06:34:04'),(62,'transport_demo','$2y$10$EUuTsIxBY7zp6IYvYOP/GusnPwFYaefx8jDQA8bI6gT3T.qmD1Oo2','transport_demo@ethioserve.com','Transport Demo Owner','0969971395','transport',0,'2026-02-20 06:34:04'),(63,'broker_demo','$2y$10$WLBH615diDxd/lbJUU9KxOqIdiKrKdzlrCdWTIyAl9npRgtEPzvFu','broker_demo@ethioserve.com','Real Estate Broker Demo','0980877307','broker',0,'2026-02-20 06:34:05'),(64,'doctor_demo','$2y$10$Gaex8PDM/Cd9nPPPCmW0xOQqk4LhQRJN36TverB3ZcIEexO3VIUZW','doctor_demo@ethioserve.com','Doctor Demo Account','0990913558','doctor',0,'2026-02-20 06:34:05'),(65,'student_demo','$2y$10$CY0RDZUR76rtW8ePRDSM.eSYc2UUiJ1HNlY/ophstltX4YJUHQRzO','student_demo@ethioserve.com','Education Demo Student','0979209266','student',0,'2026-02-20 06:34:05'),(66,'customer_demo','$2y$10$Yjy.3qvbajV178FjvrWTY.NO0DOhqAIj3.ewayyPn.DynXF8O.4eW','customer_demo@ethioserve.com','General Customer Demo','0981047210','customer',0,'2026-02-20 06:34:05'),(67,'employer_demo','$2y$10$oO5bJ.XT8UCb2u4209fMwu/f0iprzT1YGXIFZOXy20Eq52zudORuK','employer_demo@ethioserve.com','Job Employer Demo','0944264441','employer',0,'2026-02-20 06:34:05'),(68,'dating_demo','$2y$10$QXUDphHZcdLrMMOFlinG.OXLvQdEZj2I21EfPJE.mMbNdtivKrdI.','dating_demo@ethioserve.com','Dating Demo User','0984533133','dating',0,'2026-02-20 06:34:06'),(69,'pro_demo','$2y$10$e1oybpCBU/wiDCR9xgKTaeAcFPTCGw5V997I0qG0fXhNvT/M7UFWO','pro_demo@ethioserve.com','Home Service Pro Demo','0911731197','home_pro',0,'2026-02-20 06:34:06'),(70,'mequannent','$2y$10$dhDVJHHp9.u1H53f1e462u00ZzEn29DKpe2L/B6btVB9g1DQQ0qYK','mequannent@ethioserve.com','Mequannent G.',NULL,'home_pro',0,'2026-02-20 06:38:12'),(71,'chala','$2y$10$RdtT1fafaruDN6GuDYyOieqM17zGSMyBtFDNU2m9N4xeVqDsj46qy','chala@ethioserve.com','Chala K.',NULL,'home_pro',0,'2026-02-20 06:38:13'),(72,'bekele','$2y$10$yxWiX4bdzgM7NM9ErNbu0uEaoqrPwqjzqP3R1fUMJ/apXnoMDmyue','bekele@ethioserve.com','Bekele T.',NULL,'home_pro',0,'2026-02-20 06:38:13'),(73,'muluken','$2y$10$PBdXBzSj.m8/Y5g4qQIvA.MDy0hCX2ykIie16nAGuzzstSddmJGUi','muluken@ethioserve.com','Muluken S.',NULL,'home_pro',0,'2026-02-20 06:38:14'),(74,'Walelgn','$2y$10$18xfLp8E9mb5ArT3rL2ooe8rSbS2fyPSIW0HmZNS.ap/mw3wH34Au','mequannentgashaw12@gmail.com','Gedamu','+251912698553','customer',0,'2026-02-21 12:51:51'),(75,'Gedamu','$2y$10$ugVfJlyAMjntsRD71hpqD.eX4K6xyLz65QYWpQZzS3gKk0cmu7HK.','gedualpha1989@gmail.com','Gedamu','+251912627366','customer',0,'2026-02-21 13:05:03');/*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
-
 --
 -- Table structure for table `video_calls`
 --
-
 DROP TABLE IF EXISTS `video_calls`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2713,17 +2723,14 @@ CREATE TABLE `video_calls` (
   CONSTRAINT `video_calls_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
 --
 -- Dumping data for table `video_calls`
 --
-
 LOCK TABLES `video_calls` WRITE;
 /*!40000 ALTER TABLE `video_calls` DISABLE KEYS */;
 /*!40000 ALTER TABLE `video_calls` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -2731,5 +2738,4 @@ UNLOCK TABLES;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
 -- Dump completed on 2026-02-23 17:32:45

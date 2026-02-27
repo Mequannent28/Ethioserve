@@ -53,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['email'] = $user['email'];
 
+                // Log activity
+                logActivity('Login', 'Successfully logged in - ' . strtoupper($user['role']), $user['id']);
+
                 // Determine redirect URL
                 $redirect_url = $_SESSION['redirect_after_login'] ?? '';
                 unset($_SESSION['redirect_after_login']);

@@ -885,3 +885,25 @@ function getUnreadMessageCount()
     return $total;
 }
 
+/**
+ * Log System Activity
+ */
+function logActivity($activity_type, $description, $user_id = null)
+{
+    global $pdo;
+    try {
+        $user_id = $user_id ?: getCurrentUserId();
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? null;
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+        $platform = 'WEB';
+
+        $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, activity_type, description, platform, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$user_id, $activity_type, $description, $platform, $ip_address, $user_agent]);
+        return true;
+    } catch (Exception $e) {
+        // Silently fail to not interrupt main flow
+        return false;
+    }
+}
+
+

@@ -200,6 +200,15 @@
                     </a>
                 </li>
 
+                <!-- Activity Log -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'activity_log.php' ? 'active' : ''; ?>"
+                        href="activity_log.php">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Activity Log</span>
+                    </a>
+                </li>
+
                 <!-- View Platform -->
                 <li class="nav-item">
                     <a class="nav-link" href="../customer/index.php">

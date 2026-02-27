@@ -602,6 +602,10 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/transport/dashboard.php">
                                             <i class="fas fa-bus me-2 text-success"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'employer'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/employer/dashboard.php">
+                                            <i class="fas fa-briefcase me-2 text-primary-green"></i> My Dashboard</a></li>
                                 <?php endif; ?>
 
                                 <li>
