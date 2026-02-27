@@ -130,13 +130,12 @@ $recent_orders = $stmt->fetchAll();
             align-items: stretch;
         }
 
-        /* Adjusted for fixed sidebar */
+        /* Sidebar offset handled by sidebar_hotel.php body padding */
         .main-content {
-            margin-left: 280px;
             padding: 30px;
             background-color: #f0f2f5;
             min-height: 100vh;
-            width: calc(100% - 280px);
+            width: 100%;
         }
 
         .admin-stat-card {
