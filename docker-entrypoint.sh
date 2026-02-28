@@ -16,7 +16,6 @@ PORT=${PORT:-80}
 echo "[1/4] Configuring Apache on port $PORT..."
 sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf
 sed -i "s|<VirtualHost \*:80>|<VirtualHost *:$PORT>|g" /etc/apache2/sites-available/000-default.conf
-sed -i "s|/var/www/html|/var/www/html|g" /etc/apache2/sites-available/000-default.conf
 
 # 3. Setup MariaDB
 echo "[2/4] Starting Database Engine..."
@@ -80,59 +79,72 @@ mysql -u root -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%' WITH GRAN
 mysql -u root -e "FLUSH PRIVILEGES;"
 echo "  ✓ Database users configured."
 
-# Import initial data - check specifically for 'users' table (critical for login)
-USERS_EXISTS=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME' AND table_name='users';" 2>/dev/null)
-USERS_EXISTS=${USERS_EXISTS:-0}
+# ---------------------------------------------------------------------------
+# Import database.sql — check for 'orders' table (a good indicator of
+# a complete import, since it's deeper in the alphabet than 'users')
+# ---------------------------------------------------------------------------
+ORDERS_EXISTS=$(mysql -u root -N -s -e \
+    "SELECT COUNT(*) FROM information_schema.tables \
+     WHERE table_schema='$DB_NAME' AND table_name='orders';" 2>/dev/null)
+ORDERS_EXISTS=${ORDERS_EXISTS:-0}
 
-if [ "$USERS_EXISTS" -le 0 ]; then
-    echo "  ⚠ 'users' table not found. Importing database..."
+if [ "$ORDERS_EXISTS" -le 0 ]; then
+    echo "  ⚠ Database incomplete or empty. Performing full import..."
+
     if [ -f "/var/www/html/database.sql" ]; then
-        echo "  → Importing database schema (UTF-8)..."
-        # Show ALL errors so we can debug failures
-        mysql -u root --default-character-set=utf8mb4 $DB_NAME < /var/www/html/database.sql 2>&1
-        IMPORT_RC=$?
-        if [ $IMPORT_RC -eq 0 ]; then
-            echo "  ✓ Database import complete."
-        else
-            echo "  ✗ Database import had errors (exit code: $IMPORT_RC)"
-        fi
 
-        # Verify users table was created
-        USERS_CHECK=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME' AND table_name='users';" 2>/dev/null)
-        USERS_CHECK=${USERS_CHECK:-0}
-        if [ "$USERS_CHECK" -le 0 ]; then
-            echo "  ✗ CRITICAL: 'users' table STILL missing after import!"
-            echo "  → Creating minimal 'users' table as fallback..."
-            mysql -u root $DB_NAME -e "
-                CREATE TABLE IF NOT EXISTS users (
-                    id int(11) NOT NULL AUTO_INCREMENT,
-                    username varchar(50) NOT NULL,
-                    password varchar(255) NOT NULL,
-                    email varchar(100) NOT NULL,
-                    full_name varchar(100) DEFAULT NULL,
-                    phone varchar(20) DEFAULT NULL,
-                    role enum('admin','hotel','broker','transport','customer','restaurant','taxi','student','doctor','employer','dating','home_pro') DEFAULT 'customer',
-                    grade int(11) DEFAULT 0,
-                    profile_photo varchar(255) DEFAULT NULL,
-                    created_at timestamp NOT NULL DEFAULT current_timestamp(),
-                    PRIMARY KEY (id),
-                    UNIQUE KEY username (username),
-                    UNIQUE KEY email (email)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-                INSERT IGNORE INTO users (id,username,password,email,full_name,phone,role) VALUES
-                (1,'admin','\$2y\$10\$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','admin@ethioserve.com','System Admin','+251911000000','admin'),
-                (10,'customer1','\$2y\$10\$Td/vgNsfastC/uqSraemWupzMdkGzuP2E18JNdafnVc6g2UIJGMXS','customer1@ethioserve.com','Abeba Tadesse','+251911111111','customer');
-            "
-            echo "  ✓ Fallback users table created with admin + customer1 accounts."
-        else
-            echo "  ✓ Verified: 'users' table exists with data."
-        fi
+        # Drop & recreate for a guaranteed clean slate
+        echo "  → Resetting database..."
+        mysql -u root -e "DROP DATABASE IF EXISTS \`$DB_NAME\`;"
+        mysql -u root -e "CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        mysql -u root -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost' WITH GRANT OPTION;"
+        mysql -u root -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%' WITH GRANT OPTION;"
+        mysql -u root -e "FLUSH PRIVILEGES;"
+
+        # Build a wrapper SQL that disables FK checks around the import
+        WRAPPER_SQL="/tmp/import_wrapper.sql"
+        echo "SET FOREIGN_KEY_CHECKS=0;" > "$WRAPPER_SQL"
+        echo "SET sql_mode='';" >> "$WRAPPER_SQL"
+        cat /var/www/html/database.sql >> "$WRAPPER_SQL"
+        echo "SET FOREIGN_KEY_CHECKS=1;" >> "$WRAPPER_SQL"
+
+        echo "  → Importing database.sql with --force (errors are non-fatal)..."
+        mysql -u root \
+              --force \
+              --default-character-set=utf8mb4 \
+              "$DB_NAME" < "$WRAPPER_SQL" 2>&1
+        IMPORT_RC=$?
+        rm -f "$WRAPPER_SQL"
+
+        # Count tables created
+        TABLE_COUNT=$(mysql -u root -N -s -e \
+            "SELECT COUNT(*) FROM information_schema.tables \
+             WHERE table_schema='$DB_NAME';" 2>/dev/null)
+        TABLE_COUNT=${TABLE_COUNT:-0}
+        echo "  → Import done (exit=$IMPORT_RC). Tables created: $TABLE_COUNT"
+
+        # Verify critical tables
+        for TBL in users orders hotels bookings; do
+            EXISTS=$(mysql -u root -N -s -e \
+                "SELECT COUNT(*) FROM information_schema.tables \
+                 WHERE table_schema='$DB_NAME' AND table_name='$TBL';" 2>/dev/null)
+            EXISTS=${EXISTS:-0}
+            if [ "$EXISTS" -gt 0 ]; then
+                echo "  ✓ Table '$TBL' OK"
+            else
+                echo "  ✗ Table '$TBL' MISSING after import!"
+            fi
+        done
+
     else
-        echo "  ✗ CRITICAL: database.sql not found!"
+        echo "  ✗ CRITICAL: /var/www/html/database.sql not found!"
     fi
+
 else
-    TABLE_COUNT=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME';" 2>/dev/null)
-    echo "  ✓ Database already populated ($TABLE_COUNT tables, users table found)."
+    TABLE_COUNT=$(mysql -u root -N -s -e \
+        "SELECT COUNT(*) FROM information_schema.tables \
+         WHERE table_schema='$DB_NAME';" 2>/dev/null)
+    echo "  ✓ Database already fully populated ($TABLE_COUNT tables found)."
 fi
 
 # 5. Final Start
