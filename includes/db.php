@@ -46,28 +46,32 @@ foreach ($dsns as $dsn) {
           $success = true;
 
           // AUTO-INITIALIZE: If 'users' table is missing, try to import database.sql
-          try {
-               $check = $pdo->query("SHOW TABLES LIKE 'users'");
-               if ($check->rowCount() == 0) {
-                    $sql_path = dirname(__DIR__) . '/database.sql';
-                    if (file_exists($sql_path)) {
-                         $sql_content = file_get_contents($sql_path);
-                         if (!empty($sql_content)) {
-                              // Strip LOCK/UNLOCK TABLES statements - they cause
-                              // "Table was not locked" errors when run via PDO
-                              $sql_content = preg_replace('/^\s*LOCK TABLES.*$/mi', '', $sql_content);
-                              $sql_content = preg_replace('/^\s*UNLOCK TABLES.*$/mi', '', $sql_content);
-                              $pdo->exec($sql_content);
-                              // Safety: release any remaining table locks
-                              try {
-                                   $pdo->exec('UNLOCK TABLES');
-                              } catch (Exception $ue) {
+          // NOTE: Only attempt in development. In production, docker-entrypoint.sh handles this
+          // much more reliably via the mysql CLI. PDO::exec() can't handle large multi-statement SQL.
+          if (ENVIRONMENT !== 'production') {
+               try {
+                    $check = $pdo->query("SHOW TABLES LIKE 'users'");
+                    if ($check->rowCount() == 0) {
+                         $sql_path = dirname(__DIR__) . '/database.sql';
+                         if (file_exists($sql_path)) {
+                              $sql_content = file_get_contents($sql_path);
+                              if (!empty($sql_content)) {
+                                   // Strip LOCK/UNLOCK TABLES statements - they cause
+                                   // "Table was not locked" errors when run via PDO
+                                   $sql_content = preg_replace('/^\s*LOCK TABLES.*$/mi', '', $sql_content);
+                                   $sql_content = preg_replace('/^\s*UNLOCK TABLES.*$/mi', '', $sql_content);
+                                   $pdo->exec($sql_content);
+                                   // Safety: release any remaining table locks
+                                   try {
+                                        $pdo->exec('UNLOCK TABLES');
+                                   } catch (Exception $ue) {
+                                   }
                               }
                          }
                     }
+               } catch (Exception $e_init) {
+                    // Silent fail during initialization to allow basic connection
                }
-          } catch (Exception $e_init) {
-               // Silent fail during initialization to allow basic connection
           }
 
           break;
