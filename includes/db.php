@@ -44,6 +44,23 @@ foreach ($dsns as $dsn) {
      try {
           $pdo = new PDO($dsn, $user, $pass, $options);
           $success = true;
+
+          // AUTO-INITIALIZE: If 'users' table is missing, try to import database.sql
+          try {
+               $check = $pdo->query("SHOW TABLES LIKE 'users'");
+               if ($check->rowCount() == 0) {
+                    $sql_path = dirname(__DIR__) . '/database.sql';
+                    if (file_exists($sql_path)) {
+                         $sql_content = file_get_contents($sql_path);
+                         if (!empty($sql_content)) {
+                              $pdo->exec($sql_content);
+                         }
+                    }
+               }
+          } catch (Exception $e_init) {
+               // Silent fail during initialization to allow basic connection
+          }
+
           break;
      } catch (PDOException $e) {
           $last_error = $e->getMessage();
