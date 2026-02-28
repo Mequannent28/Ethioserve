@@ -93,10 +93,9 @@ foreach ($orders as $order) {
         }
 
         .main-content {
-            margin-left: 280px;
-            width: calc(100% - 280px);
             padding: 30px;
             min-height: 100vh;
+            flex-grow: 1;
         }
 
         @media (max-width: 991px) {

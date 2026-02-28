@@ -41,6 +41,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link-portal <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
+                    href="reports.php">
+                    <i class="fas fa-chart-line"></i> <span>Business Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link-portal" href="../customer/index.php">
                     <i class="fas fa-store"></i> <span>View Storefront</span>
                 </a>

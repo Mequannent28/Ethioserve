@@ -37,6 +37,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link-employer <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/employer/reports.php">
+                    <i class="fas fa-chart-pie"></i> <span>Hiring Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link-employer" href="<?php echo BASE_URL; ?>/customer/jobs.php">
                     <i class="fas fa-search"></i> <span>View All Jobs</span>
                 </a>

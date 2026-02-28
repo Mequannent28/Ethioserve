@@ -2,18 +2,15 @@
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
 requireRole('hotel');
-
 $user_id = getCurrentUserId();
 $success_msg = '';
 $error_msg = '';
-
 // Handle Profile Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     if (verifyCSRFToken($_POST['csrf_token'])) {
         $full_name = sanitize($_POST['full_name']);
         $email = sanitize($_POST['email']);
         $phone = sanitize($_POST['phone']);
-
         try {
             $stmt = $pdo->prepare("UPDATE users SET full_name = ?, email = ?, phone = ? WHERE id = ?");
             $stmt->execute([$full_name, $email, $phone, $user_id]);
@@ -24,21 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         }
     }
 }
-
 // Handle Password Change
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     if (verifyCSRFToken($_POST['csrf_token'])) {
         $current_password = $_POST['current_password'];
         $new_password = $_POST['new_password'];
         $confirm_password = $_POST['confirm_password'];
-
         if ($new_password !== $confirm_password) {
             $error_msg = "New passwords do not match.";
         } else {
             $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
             $stmt->execute([$user_id]);
             $user = $stmt->fetch();
-
             if (password_verify($current_password, $user['password'])) {
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                 $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
@@ -50,7 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         }
     }
 }
-
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
@@ -79,10 +72,9 @@ $user = $stmt->fetch();
         }
 
         .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
             padding: 30px;
             min-height: 100vh;
+            flex-grow: 1;
         }
 
         @media (max-width: 768px) {

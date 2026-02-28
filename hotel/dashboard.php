@@ -105,6 +105,22 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute([$hotel_id]);
 $recent_orders = $stmt->fetchAll();
+
+// Get room statuses
+$stmt = $pdo->prepare("
+    SELECT status, COUNT(*) as count 
+    FROM hotel_rooms 
+    WHERE hotel_id = ? 
+    GROUP BY status
+");
+$stmt->execute([$hotel_id]);
+$room_stats_raw = $stmt->fetchAll();
+$room_stats = ['available' => 0, 'occupied' => 0, 'maintenance' => 0];
+foreach ($room_stats_raw as $rs) {
+    if (isset($room_stats[$rs['status']])) {
+        $room_stats[$rs['status']] = $rs['count'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -225,6 +241,54 @@ $recent_orders = $stmt->fetchAll();
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Pending Orders</p>
                         <h2 class="fw-bold mb-0"><?php echo number_format($pending_orders_count); ?></h2>
                         <p class="small mb-0 mt-2"><i class="fas fa-clock me-1"></i> Needs attention</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room Status and Quick Actions -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                        <div
+                            class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-bed text-primary-green me-2"></i>Real-time Room
+                                Status</h5>
+                            <a href="rooms_management.php" class="btn btn-sm btn-light rounded-pill">Manage Rooms</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-4 border-end">
+                                    <h3 class="fw-bold text-success mb-1"><?php echo $room_stats['available']; ?></h3>
+                                    <p class="text-muted small mb-0 fw-bold uppercase">Free Rooms</p>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <h3 class="fw-bold text-danger mb-1"><?php echo $room_stats['occupied']; ?></h3>
+                                    <p class="text-muted small mb-0 fw-bold uppercase">Occupied</p>
+                                </div>
+                                <div class="col-4">
+                                    <h3 class="fw-bold text-warning mb-1"><?php echo $room_stats['maintenance']; ?></h3>
+                                    <p class="text-muted small mb-0 fw-bold uppercase">Maintenance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-success text-white">
+                        <div class="card-body p-4 d-flex flex-column justify-content-center">
+                            <h5 class="fw-bold mb-3">Quick Actions</h5>
+                            <div class="d-grid gap-2">
+                                <a href="rooms_management.php" class="btn btn-light rounded-pill btn-sm">
+                                    <i class="fas fa-plus-circle me-1"></i> Add New Room
+                                </a>
+                                <a href="menu_management.php" class="btn btn-light rounded-pill btn-sm">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Food Menu
+                                </a>
+                                <a href="transactions.php" class="btn btn-warning rounded-pill btn-sm fw-bold">
+                                    <i class="fas fa-file-invoice-dollar me-1"></i> View Transactions
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -32,7 +32,7 @@ if (!empty($_GET['activity_type']) && $_GET['activity_type'] !== 'All Activities
 }
 
 if (!empty($_GET['date'])) {
-    $where .= " AND DATE(created_at) = ?";
+    $where .= " AND DATE(al.created_at) = ?";
     $params[] = $_GET['date'];
 }
 
@@ -390,11 +390,11 @@ $activity_types = $pdo->query("SELECT DISTINCT activity_type FROM activity_logs 
                             <div class="filter-label">Platform</div>
                             <select name="platform" class="form-select mb-3">
                                 <option>All Platforms</option>
-                                <option value="WEB" <?php echo ($_GET['platform'] ?? '') === 'WEB' ? 'selected' : ''; ?>
-                                    >Web Dashboard</option>
+                                <option value="WEB" <?php echo ($_GET['platform'] ?? '') === 'WEB' ? 'selected' : ''; ?>>
+                                    Web Dashboard</option>
                                 <option value="MOBILE" <?php echo ($_GET['platform'] ?? '') === 'MOBILE' ? 'selected' : ''; ?>>Mobile App</option>
-                                <option value="API" <?php echo ($_GET['platform'] ?? '') === 'API' ? 'selected' : ''; ?>
-                                    >API Integration</option>
+                                <option value="API" <?php echo ($_GET['platform'] ?? '') === 'API' ? 'selected' : ''; ?>>
+                                    API Integration</option>
                             </select>
 
                             <div class="filter-label">Activity Type</div>

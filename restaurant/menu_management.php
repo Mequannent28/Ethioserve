@@ -24,9 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
         $description = sanitize($_POST['description'] ?? '');
         $price = (float) $_POST['price'];
         $category = sanitize($_POST['category']);
+        $image_url = sanitize($_POST['image_url'] ?? '');
 
-        $stmt = $pdo->prepare("INSERT INTO restaurant_menu (restaurant_id, name, description, price, category) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$restaurant_id, $name, $description, $price, $category]);
+        // Handle File Upload
+        $uploaded_image = handleImageUpload('image_file');
+        if ($uploaded_image) {
+            $image_url = $uploaded_image;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO restaurant_menu (restaurant_id, name, description, price, category, image_url) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$restaurant_id, $name, $description, $price, $category, $image_url]);
         redirectWithMessage('menu_management.php', 'success', 'Menu item added!');
     }
 
@@ -145,6 +152,40 @@ foreach ($menu_items as $item) {
         .unavailable {
             opacity: 0.5;
         }
+
+        /* Premium Buttons */
+        .btn-premium {
+            border: none;
+            color: white !important;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
+        }
+
+        .btn-premium:active {
+            transform: translateY(0);
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #117343 0%, #28a745 100%);
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
     </style>
 </head>
 
@@ -162,18 +203,18 @@ foreach ($menu_items as $item) {
                     <p class="text-muted">Manage your restaurant menu items</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-premium btn-excel rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importExcelModal">
                         <i class="fas fa-file-excel me-2"></i>Import Excel
                     </button>
                     <form method="POST">
                         <?php echo csrfField(); ?>
                         <button type="submit" name="import_demo_menu" value="1"
-                            class="btn btn-outline-info rounded-pill px-4">
+                            class="btn btn-premium btn-demo rounded-pill px-4">
                             <i class="fas fa-magic me-2"></i>Demo Menu
                         </button>
                     </form>
-                    <button class="btn btn-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                    <button class="btn btn-premium btn-add rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#addItemModal">
                         <i class="fas fa-plus me-2"></i>Add Item
                     </button>
@@ -201,7 +242,12 @@ foreach ($menu_items as $item) {
                             <?php foreach ($items as $item): ?>
                                 <div class="col-md-4">
                                     <div
-                                        class="card border-0 shadow-sm menu-item-card <?php echo !$item['is_available'] ? 'unavailable' : ''; ?>">
+                                        class="card border-0 shadow-sm menu-item-card mb-3 <?php echo !$item['is_available'] ? 'unavailable' : ''; ?>">
+                                        <?php if ($item['image_url']): ?>
+                                            <img src="<?php echo htmlspecialchars($item['image_url']); ?>" class="card-img-top"
+                                                alt="<?php echo htmlspecialchars($item['name']); ?>"
+                                                style="height: 180px; object-fit: cover; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                                        <?php endif; ?>
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <h6 class="fw-bold mb-0">
@@ -253,7 +299,7 @@ foreach ($menu_items as $item) {
     <!-- Add Item Modal -->
     <div class="modal fade" id="addItemModal" tabindex="-1">
         <div class="modal-dialog">
-            <form method="POST" class="modal-content">
+            <form method="POST" enctype="multipart/form-data" class="modal-content">
                 <?php echo csrfField(); ?>
                 <div class="modal-header border-0">
                     <h5 class="modal-title fw-bold">Add Menu Item</h5>
@@ -286,6 +332,15 @@ foreach ($menu_items as $item) {
                         <label class="form-label">Price (ETB)</label>
                         <input type="number" name="price" class="form-control" required step="0.01" min="1"
                             placeholder="0.00">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image URL (Optional)</label>
+                        <input type="url" name="image_url" class="form-control"
+                            placeholder="https://images.com/photo.jpg">
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Or Upload Image</label>
+                        <input type="file" name="image_file" class="form-control" accept="image/*">
                     </div>
                 </div>
                 <div class="modal-footer border-0">

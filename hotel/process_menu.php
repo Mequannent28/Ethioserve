@@ -1,18 +1,25 @@
 <?php
-session_start();
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 // Auth Check
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'hotel') {
-    header("Location: ../login.php");
-    exit();
-}
+requireRole('hotel');
+$user_id = getCurrentUserId();
 
-$user_id = $_SESSION['user_id'];
+// Get hotel for this user
 $stmt = $pdo->prepare("SELECT id FROM hotels WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $hotel = $stmt->fetch();
+if (!$hotel)
+    die("Hotel record not found.");
 $hotel_id = $hotel['id'];
+
+// CSRF Check for POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+        die("CSRF token validation failed. Please try again.");
+    }
+}
 
 $action = $_GET['action'] ?? '';
 
@@ -21,30 +28,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = $_POST['name'];
         $category_id = $_POST['category_id'];
         $price = $_POST['price'];
+        $tax_rate = $_POST['tax_rate'] ?? 15;
         $description = $_POST['description'];
         $image_url = $_POST['image_url'];
 
-        $stmt = $pdo->prepare("INSERT INTO menu_items (hotel_id, category_id, name, description, price, image_url) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$hotel_id, $category_id, $name, $description, $price, $image_url]);
+        // Handle File Upload
+        $uploaded_image = handleImageUpload('image_file');
+        if ($uploaded_image) {
+            $image_url = $uploaded_image;
+        }
 
-        header("Location: menu_management.php?success=added");
-        exit();
+        $stmt = $pdo->prepare("INSERT INTO menu_items (hotel_id, category_id, name, description, price, tax_rate, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$hotel_id, $category_id, $name, $description, $price, $tax_rate, $image_url]);
+
+        redirectWithMessage('menu_management.php', 'success', 'Menu item added successfully!');
 
     } elseif ($action === 'edit') {
         $id = $_POST['id'];
         $name = $_POST['name'];
         $category_id = $_POST['category_id'];
         $price = $_POST['price'];
+        $tax_rate = $_POST['tax_rate'] ?? 15;
         $description = $_POST['description'];
         $image_url = $_POST['image_url'];
         $is_available = isset($_POST['is_available']) ? 1 : 0;
 
-        // Ensure the item belongs to this hotel
-        $stmt = $pdo->prepare("UPDATE menu_items SET name = ?, category_id = ?, price = ?, description = ?, image_url = ?, is_available = ? WHERE id = ? AND hotel_id = ?");
-        $stmt->execute([$name, $category_id, $price, $description, $image_url, $is_available, $id, $hotel_id]);
+        // Handle File Upload
+        $uploaded_image = handleImageUpload('image_file');
+        if ($uploaded_image) {
+            $image_url = $uploaded_image;
+        }
 
-        header("Location: menu_management.php?success=updated");
-        exit();
+        // Ensure the item belongs to this hotel
+        $stmt = $pdo->prepare("UPDATE menu_items SET name = ?, category_id = ?, price = ?, tax_rate = ?, description = ?, image_url = ?, is_available = ? WHERE id = ? AND hotel_id = ?");
+        $stmt->execute([$name, $category_id, $price, $tax_rate, $description, $image_url, $is_available, $id, $hotel_id]);
+
+        redirectWithMessage('menu_management.php', 'success', 'Menu item updated successfully!');
     } elseif ($action === 'import_demo') {
         // Ensure standard categories exist
         $std_categories = ['Breakfast', 'Lunch', 'Main Course', 'Appetizer', 'Drinks', 'Dessert'];
@@ -78,8 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$hotel_id, $cat_id, $item[0], $item[1], $item[2], $item[4]]);
         }
 
-        header("Location: menu_management.php?success=imported");
-        exit();
+        redirectWithMessage('menu_management.php', 'success', 'Demo menu imported successfully!');
     } elseif ($action === 'import_csv') {
         if (isset($_FILES['menu_csv']) && $_FILES['menu_csv']['error'] === UPLOAD_ERR_OK) {
             $file = $_FILES['menu_csv']['tmp_name'];
@@ -95,15 +113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $cat_map[strtolower($row['name'])] = $row['id'];
                 }
 
-                $stmt = $pdo->prepare("INSERT INTO menu_items (hotel_id, category_id, name, description, price, is_available) VALUES (?, ?, ?, ?, ?, 1)");
+                $stmt = $pdo->prepare("INSERT INTO menu_items (hotel_id, category_id, name, description, price, tax_rate, is_available) VALUES (?, ?, ?, ?, ?, ?, 1)");
                 $count = 0;
 
                 while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                    // Item, Category, Price, Description
+                    // Item, Category, Price, Description, TaxCode
                     $name = $data[0] ?? '';
                     $cat_name = $data[1] ?? 'Main Course';
                     $price = (float) ($data[2] ?? 0);
                     $desc = $data[3] ?? '';
+                    $tax_code = $data[4] ?? 0;
+
+                    $tax_rate = ($tax_code == 1) ? 15.00 : 0.00;
 
                     if (!empty($name)) {
                         $cat_id = $cat_map[strtolower($cat_name)] ?? null;
@@ -115,17 +136,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $cat_map[strtolower($cat_name)] = $cat_id;
                         }
 
-                        $stmt->execute([$hotel_id, $cat_id, $name, $desc, $price]);
+                        $stmt->execute([$hotel_id, $cat_id, $name, $desc, $price, $tax_rate]);
                         $count++;
                     }
                 }
                 fclose($handle);
-                header("Location: menu_management.php?success=imported&count=$count");
-                exit();
+                redirectWithMessage('menu_management.php', 'success', "Successfully imported $count items from CSV!");
             }
         }
-        header("Location: menu_management.php?error=upload_failed");
-        exit();
+        redirectWithMessage('menu_management.php', 'error', 'Error uploading the CSV file.');
     }
 }
 
@@ -134,7 +153,6 @@ if ($action === 'delete') {
     $stmt = $pdo->prepare("DELETE FROM menu_items WHERE id = ? AND hotel_id = ?");
     $stmt->execute([$id, $hotel_id]);
 
-    header("Location: menu_management.php?success=deleted");
-    exit();
+    redirectWithMessage('menu_management.php', 'success', 'Menu item deleted successfully!');
 }
 ?>

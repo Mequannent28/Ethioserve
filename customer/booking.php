@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
     $booking_date = sanitize($_POST['booking_date'] ?? '');
     $booking_time = sanitize($_POST['booking_time'] ?? '');
     $num_guests = (int) ($_POST['num_guests'] ?? 1);
+    $room_id = (int) ($_POST['room_id'] ?? 0);
     $notes = sanitize($_POST['notes'] ?? '');
     
     // Guest info (for non-logged-in users)
@@ -57,6 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
     if ($booking_datetime < time()) {
         $errors[] = 'Booking date must be in the future';
     }
+
+    if ($booking_type === 'room' && !$room_id) {
+        $errors[] = 'Please select a specific room';
+    }
     
     // If not logged in, require guest info
     if (!$is_logged_in) {
@@ -69,12 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
             $customer_id = $is_logged_in ? getCurrentUserId() : 0;
             
             $stmt = $pdo->prepare("
-                INSERT INTO bookings (customer_id, hotel_id, booking_date, booking_time, booking_type, guest_name, guest_phone, guest_email, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+                INSERT INTO bookings (customer_id, hotel_id, room_id, booking_date, booking_time, booking_type, guest_name, guest_phone, guest_email, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
             $stmt->execute([
                 $customer_id,
                 $hotel_id,
+                $room_id ?: null,
                 $booking_date,
                 $booking_time,
                 $booking_type,
@@ -294,6 +300,15 @@ include('../includes/header.php');
                                         </label>
                                     </div>
                                 </div>
+
+                                <!-- Dynamic Room Selection Container -->
+                                <div class="col-12 d-none" id="roomSelectionContainer">
+                                    <label class="form-label fw-bold small text-uppercase">Select Available Room</label>
+                                    <div id="roomsList" class="row g-3">
+                                        <!-- Rooms will be loaded here via JS -->
+                                    </div>
+                                    <input type="hidden" name="room_id" id="selectedRoomId">
+                                </div>
                             
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold small text-uppercase">Pick Date</label>
@@ -409,6 +424,82 @@ include('../includes/header.php');
 <script>
 // Set minimum date to today
 document.querySelector('input[type="date"]')?.setAttribute('min', new Date().toISOString().split('T')[0]);
+
+// Dynamic Room Loading Logic
+const hotelSelect = document.querySelector('select[name="hotel_id"]');
+const bookingTypeRadios = document.querySelectorAll('input[name="booking_type"]');
+const roomContainer = document.getElementById('roomSelectionContainer');
+const roomsList = document.getElementById('roomsList');
+const roomInput = document.getElementById('selectedRoomId');
+
+function updateRooms() {
+    const hotelId = hotelSelect.value;
+    const bookingType = document.querySelector('input[name="booking_type"]:checked')?.value;
+
+    if (bookingType === 'room' && hotelId) {
+        roomContainer.classList.remove('d-none');
+        roomsList.innerHTML = '<div class="col-12 py-3 text-center"><div class="spinner-border spinner-border-sm text-primary-green me-2"></div><span class="small">Checking room availability...</span></div>';
+        
+        fetch(`ajax_get_rooms.php?hotel_id=${hotelId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.rooms.length > 0) {
+                    let html = '';
+                    data.rooms.forEach(room => {
+                        html += `
+                            <div class="col-md-6">
+                                <div class="room-option card border rounded-4 p-3 h-100 cursor-pointer transition-all" 
+                                     onclick="selectRoom(this, ${room.id})" 
+                                     style="border: 2px solid #eee !important;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0">Room ${room.room_number}</h6>
+                                        <span class="fw-bold text-primary-green">${Number(room.price_per_night).toLocaleString()} ETB</span>
+                                    </div>
+                                    <p class="small text-muted mb-0">${room.room_type}</p>
+                                    ${room.description ? `<p class="x-small text-muted mt-1 mb-0">${room.description}</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    roomsList.innerHTML = html;
+                } else {
+                    roomsList.innerHTML = '<div class="col-12 py-3"><div class="alert alert-warning small border-0 mb-0">No available rooms found for this hotel. Please choose another venue or booking type.</div></div>';
+                    roomInput.value = '';
+                }
+            })
+            .catch(err => {
+                roomsList.innerHTML = '<div class="col-12 py-3 text-danger small">Error loading rooms. Please check your connection.</div>';
+            });
+    } else {
+        roomContainer.classList.add('d-none');
+        roomInput.value = '';
+    }
+}
+
+function selectRoom(el, id) {
+    // Deselect all
+    document.querySelectorAll('.room-option').forEach(card => {
+        card.style.borderColor = '#eee';
+        card.classList.remove('bg-light');
+    });
+    // Select current
+    el.style.borderColor = '#1B5E20';
+    el.classList.add('bg-light');
+    roomInput.value = id;
+}
+
+hotelSelect.addEventListener('change', updateRooms);
+bookingTypeRadios.forEach(radio => radio.addEventListener('change', updateRooms));
+
+// Run once on load
+if (hotelSelect.value) updateRooms();
 </script>
+
+<style>
+.cursor-pointer { cursor: pointer; }
+.transition-all { transition: all 0.2s ease-in-out; }
+.room-option:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+.x-small { font-size: 0.75rem; }
+</style>
 
 <?php include('../includes/footer.php'); ?>

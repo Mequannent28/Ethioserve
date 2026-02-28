@@ -33,7 +33,25 @@
             <li class="nav-item">
                 <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'menu_management.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/hotel/menu_management.php">
-                    <i class="fas fa-utensils"></i> <span>Menu & Rooms</span>
+                    <i class="fas fa-utensils"></i> <span>Food Menu</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'rooms_management.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/hotel/rooms_management.php">
+                    <i class="fas fa-bed"></i> <span>Room Types</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'transactions.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/hotel/transactions.php">
+                    <i class="fas fa-file-invoice-dollar"></i> <span>Transactions</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/hotel/reports.php">
+                    <i class="fas fa-chart-bar"></i> <span>Analytics Reports</span>
                 </a>
             </li>
             <li class="nav-item">

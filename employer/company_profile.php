@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="card-body p-4 p-lg-5">
                                     <div class="row g-4 align-items-center mb-5">
                                         <div class="col-auto">
-                                            <img src="<?php echo $company['logo_url'] ? BASE_URL . $company['logo_url'] : 'https://ui-avatars.com/api/?name=' . urlencode($company['company_name']) . '&size=200'; ?>"
+                                            <img src="<?php echo $company['logo_url'] ? BASE_URL . '/' . $company['logo_url'] : 'https://ui-avatars.com/api/?name=' . urlencode($company['company_name']) . '&size=200'; ?>"
                                                 class="logo-preview" id="logoPreview">
                                         </div>
                                         <div class="col">

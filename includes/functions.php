@@ -6,7 +6,13 @@
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    // FIX: Handle XAMPP permission issues by using a local temp folder
+    $localTemp = dirname(__DIR__) . '/temp';
+    if (!is_writable(session_save_path()) && is_writable($localTemp)) {
+        session_save_path($localTemp);
+    }
+
+    @session_start();
 }
 
 // Ensure both session keys are set for compatibility across modules
@@ -883,6 +889,36 @@ function getUnreadMessageCount()
     }
 
     return $total;
+}
+
+/**
+ * Handle image uploads (for menu items, profiles, etc.)
+ */
+function handleImageUpload($fileFieldName, $subDir = 'menu')
+{
+    if (isset($_FILES[$fileFieldName]) && $_FILES[$fileFieldName]['error'] === UPLOAD_ERR_OK) {
+        $baseDir = dirname(__DIR__) . "/uploads/" . $subDir . "/";
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0777, true);
+        }
+
+        $fileExtension = strtolower(pathinfo($_FILES[$fileFieldName]["name"], PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (in_array($fileExtension, $allowed)) {
+            $newFileName = $subDir . '_' . uniqid() . '.' . $fileExtension;
+            $targetFile = $baseDir . $newFileName;
+
+            // Check if image is valid
+            $check = @getimagesize($_FILES[$fileFieldName]["tmp_name"]);
+            if ($check !== false) {
+                if (move_uploaded_file($_FILES[$fileFieldName]["tmp_name"], $targetFile)) {
+                    return "../uploads/" . $subDir . "/" . $newFileName;
+                }
+            }
+        }
+    }
+    return null;
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 // Check if logged in and is a hotel owner
@@ -22,11 +22,11 @@ if (!$hotel) {
 $hotel_id = $hotel['id'];
 
 // Fetch menu items for this hotel
-$stmt = $pdo->prepare("SELECT m.*, c.name as category_name 
-                       FROM menu_items m 
-                       LEFT JOIN categories c ON m.category_id = c.id 
-                       WHERE m.hotel_id = ? 
-                       ORDER BY c.name, m.name");
+$stmt = $pdo->prepare("SELECT m.*, c.name as category_name
+FROM menu_items m
+LEFT JOIN categories c ON m.category_id = c.id
+WHERE m.hotel_id = ?
+ORDER BY c.name, m.name");
 $stmt->execute([$hotel_id]);
 $menu_items = $stmt->fetchAll();
 
@@ -57,6 +57,40 @@ $categories = $stmt->fetchAll();
             padding: 40px;
             min-height: 100vh;
         }
+
+        /* Premium Buttons */
+        .btn-premium {
+            border: none;
+            color: white !important;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            filter: brightness(1.1);
+        }
+
+        .btn-premium:active {
+            transform: translateY(0);
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #117343 0%, #28a745 100%);
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
     </style>
 </head>
 
@@ -64,20 +98,22 @@ $categories = $stmt->fetchAll();
     <div class="dashboard-wrapper">
         <?php include '../includes/sidebar_hotel.php'; ?>
         <main class="main-content">
+            <?php echo displayFlashMessage(); ?>
             <div
                 class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">Menu Management</h1>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-premium btn-excel rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#importExcelModal">
                         <i class="fas fa-file-excel me-2"></i> Import Excel
                     </button>
                     <form action="process_menu.php?action=import_demo" method="POST">
-                        <button type="submit" class="btn btn-outline-info rounded-pill px-4">
+                        <?php echo csrfField(); ?>
+                        <button type="submit" class="btn btn-premium btn-demo rounded-pill px-4">
                             <i class="fas fa-magic me-2"></i> Demo Menu
                         </button>
                     </form>
-                    <button type="button" class="btn btn-primary-green rounded-pill px-4" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-premium btn-add rounded-pill px-4" data-bs-toggle="modal"
                         data-bs-target="#addItemModal">
                         <i class="fas fa-plus me-2"></i> Add New Item
                     </button>
@@ -93,6 +129,7 @@ $categories = $stmt->fetchAll();
                                 <th class="px-4">Item</th>
                                 <th>Category</th>
                                 <th>Price</th>
+                                <th>Tax (%)</th>
                                 <th>Status</th>
                                 <th class="text-end px-4">Actions</th>
                             </tr>
@@ -126,6 +163,11 @@ $categories = $stmt->fetchAll();
                                             </span></td>
                                         <td class="fw-bold text-primary-green">
                                             <?php echo number_format($item['price'], 2); ?> ETB
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info-subtle text-info">
+                                                <?php echo number_format($item['tax_rate'], 1); ?>%
+                                            </span>
                                         </td>
                                         <td>
                                             <?php if ($item['is_available']): ?>
@@ -172,7 +214,9 @@ $categories = $stmt->fetchAll();
                     <p class="text-muted small">Prepare your menu in an Excel file and save it as <strong>CSV (Comma
                             Delimited)</strong>. Use these columns:</p>
                     <div class="bg-light p-3 rounded-3 mb-3">
-                        <code class="text-dark fw-bold">Item, Category, Price, Description</code>
+                        <code class="text-dark fw-bold">Item, Category, Price, Description, TaxCode</code>
+                        <p class="mt-2 mb-0 extra-small text-muted">* Use <strong>1</strong> for 15% Tax (VAT),
+                            <strong>0</strong> for no tax.</p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Select File</label>
@@ -193,10 +237,11 @@ $categories = $stmt->fetchAll();
     <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-4">
-                <form action="process_menu.php?action=add" method="POST">
+                <form action="process_menu.php?action=add" method="POST" enctype="multipart/form-data">
+                    <?php echo csrfField(); ?>
                     <div class="modal-header border-0 pb-0">
                         <h5 class="modal-title fw-bold">Add New Food Item</h5>
-                        <button type="button" class="btn-close" data-bs-close="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
                         <div class="mb-3">
@@ -215,10 +260,15 @@ $categories = $stmt->fetchAll();
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label small fw-bold">Price (ETB)</label>
                                 <input type="number" name="price" step="0.01" class="form-control rounded-3" required
                                     placeholder="0.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tax Rate (%)</label>
+                                <input type="number" name="tax_rate" step="0.1" class="form-control rounded-3"
+                                    placeholder="e.g. 15.0" value="15">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -226,10 +276,14 @@ $categories = $stmt->fetchAll();
                             <textarea name="description" class="form-control rounded-3" rows="3"
                                 placeholder="Describe the ingredients or taste..."></textarea>
                         </div>
-                        <div class="mb-0">
+                        <div class="mb-3">
                             <label class="form-label small fw-bold">Image URL (Optional)</label>
                             <input type="url" name="image_url" class="form-control rounded-3"
                                 placeholder="https://image-link.com/photo.jpg">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold">Or Upload Photo</label>
+                            <input type="file" name="image_file" class="form-control rounded-3" accept="image/*">
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
@@ -246,11 +300,12 @@ $categories = $stmt->fetchAll();
     <div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-4">
-                <form action="process_menu.php?action=edit" method="POST">
+                <form action="process_menu.php?action=edit" method="POST" enctype="multipart/form-data">
+                    <?php echo csrfField(); ?>
                     <input type="hidden" name="id" id="edit_id">
                     <div class="modal-header border-0 pb-0">
                         <h5 class="modal-title fw-bold">Edit Food Item</h5>
-                        <button type="button" class="btn-close" data-bs-close="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
                         <div class="mb-3">
@@ -268,10 +323,15 @@ $categories = $stmt->fetchAll();
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label small fw-bold">Price (ETB)</label>
                                 <input type="number" name="price" id="edit_price" step="0.01"
                                     class="form-control rounded-3" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tax Rate (%)</label>
+                                <input type="number" name="tax_rate" id="edit_tax_rate" step="0.1"
+                                    class="form-control rounded-3">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -282,6 +342,10 @@ $categories = $stmt->fetchAll();
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Image URL</label>
                             <input type="url" name="image_url" id="edit_image_url" class="form-control rounded-3">
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold">Or Upload New Photo</label>
+                            <input type="file" name="image_file" class="form-control rounded-3" accept="image/*">
                         </div>
                         <div class="form-check form-switch mt-3">
                             <input class="form-check-input" type="checkbox" name="is_available" id="edit_is_available"
@@ -309,6 +373,7 @@ $categories = $stmt->fetchAll();
                     document.getElementById('edit_name').value = data.name;
                     document.getElementById('edit_category_id').value = data.category_id;
                     document.getElementById('edit_price').value = data.price;
+                    document.getElementById('edit_tax_rate').value = data.tax_rate;
                     document.getElementById('edit_description').value = data.description;
                     document.getElementById('edit_image_url').value = data.image_url;
                     document.getElementById('edit_is_available').checked = data.is_available == 1;

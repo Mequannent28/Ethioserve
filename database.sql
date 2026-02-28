@@ -2665,7 +2665,6 @@ CREATE TABLE `transport_companies` (
 --
 -- Dumping data for table `transport_companies`
 --
-
 LOCK TABLES `transport_companies` WRITE;
 /*!40000 ALTER TABLE `transport_companies` DISABLE KEYS */;
 INSERT INTO `transport_companies` VALUES (1,5,'Golden Bus','Premium intercity bus service with modern fleet. Comfortable seats, AC, and entertainment.',NULL,'+251911000001','golden@ethioserve.com','Lamberet Bus Station, Addis Ababa',4.5,25,'approved','2026-02-15 09:28:00'),(2,6,'Walya Bus','Reliable and affordable transport across Ethiopia. Known for punctuality.',NULL,'+251911000002','walya@ethioserve.com','Meskel Square Terminal, Addis Ababa',4.3,30,'approved','2026-02-15 09:28:00'),(3,7,'Gion Bus','Luxury travel experience with VIP and sleeper options.',NULL,'+251911000003','gion@ethioserve.com','Bole International Airport Area',4.7,20,'approved','2026-02-15 09:28:00'),(4,8,'Geda Bus','Budget-friendly travel with extensive route network.',NULL,'+251911000004','geda@ethioserve.com','Mercato Bus Terminal',4.1,35,'approved','2026-02-15 09:28:00'),(5,9,'Awash Bus','Connecting major cities with comfortable standard buses.',NULL,'+251911000005','awash@ethioserve.com','Kazanchis Bus Station',4.2,28,'approved','2026-02-15 09:28:00'),(6,18,'Selam Bus Express','Fast and comfortable intercity travel.',NULL,'+251999999999','selam_bus@ethioserve.com','Autobus Tera, Addis Ababa',4.5,15,'approved','2026-02-15 09:28:59');
