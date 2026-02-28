@@ -33,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_order_status']
         }
     }
 }
-
 // Filter by status
 $status_filter = sanitize($_GET['status'] ?? '');
 $where_clause = "WHERE o.hotel_id = ?";

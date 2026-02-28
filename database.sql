@@ -1954,6 +1954,7 @@ CREATE TABLE `menu_items` (
   `name` varchar(100) NOT NULL,
   `description` text DEFAULT NULL,
   `price` decimal(10,2) NOT NULL,
+  `tax_rate` decimal(5,2) DEFAULT 15.00,
   `image_url` varchar(255) DEFAULT NULL,
   `is_available` tinyint(1) DEFAULT 1,
   PRIMARY KEY (`id`),
