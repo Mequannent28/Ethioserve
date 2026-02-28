@@ -53,7 +53,16 @@ foreach ($dsns as $dsn) {
                     if (file_exists($sql_path)) {
                          $sql_content = file_get_contents($sql_path);
                          if (!empty($sql_content)) {
+                              // Strip LOCK/UNLOCK TABLES statements - they cause
+                              // "Table was not locked" errors when run via PDO
+                              $sql_content = preg_replace('/^\s*LOCK TABLES.*$/mi', '', $sql_content);
+                              $sql_content = preg_replace('/^\s*UNLOCK TABLES.*$/mi', '', $sql_content);
                               $pdo->exec($sql_content);
+                              // Safety: release any remaining table locks
+                              try {
+                                   $pdo->exec('UNLOCK TABLES');
+                              } catch (Exception $ue) {
+                              }
                          }
                     }
                }
