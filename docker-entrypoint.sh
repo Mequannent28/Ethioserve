@@ -330,6 +330,50 @@ if [ "$CLASS_COUNT" -le 0 ]; then
   echo "  ✓ Seeded default SMS classes and subjects."
 fi
 
+# ---------------------------------------------------------------------------
+# Seed demo School users if they don't exist
+# ---------------------------------------------------------------------------
+echo "  → Seeding demo school users..."
+PHP_HASH=$(php -r "echo password_hash('password', PASSWORD_DEFAULT);")
+
+TEACHER_EXISTS=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM $DB_NAME.users WHERE username='teacher1';" 2>/dev/null)
+TEACHER_EXISTS=${TEACHER_EXISTS:-0}
+if [ "$TEACHER_EXISTS" -le 0 ]; then
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO users (username,email,password,full_name,role,created_at) VALUES ('teacher1','teacher1@ethioserve.com','$PHP_HASH','Abebe Bikila','teacher',NOW());"
+  TEACHER_ID=$(mysql -u root -N -s -e "SELECT id FROM $DB_NAME.users WHERE username='teacher1';" 2>/dev/null)
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO sms_teachers (user_id,employee_id,specialization) VALUES ($TEACHER_ID,'TCH001','Mathematics');"
+  echo "  ✓ teacher1 created"
+fi
+
+STUDENT_EXISTS=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM $DB_NAME.users WHERE username='student1';" 2>/dev/null)
+STUDENT_EXISTS=${STUDENT_EXISTS:-0}
+if [ "$STUDENT_EXISTS" -le 0 ]; then
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO users (username,email,password,full_name,role,created_at) VALUES ('student1','student1@ethioserve.com','$PHP_HASH','Dawit Kebede','student',NOW());"
+  STUDENT_ID=$(mysql -u root -N -s -e "SELECT id FROM $DB_NAME.users WHERE username='student1';" 2>/dev/null)
+  CLASS_ID=$(mysql -u root -N -s -e "SELECT id FROM $DB_NAME.sms_classes LIMIT 1;" 2>/dev/null)
+  CLASS_ID=${CLASS_ID:-1}
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO sms_student_profiles (user_id,class_id,student_id_number,gender) VALUES ($STUDENT_ID,$CLASS_ID,'STU-001','Male');"
+  echo "  ✓ student1 created"
+fi
+
+PARENT_EXISTS=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM $DB_NAME.users WHERE username='parent1';" 2>/dev/null)
+PARENT_EXISTS=${PARENT_EXISTS:-0}
+if [ "$PARENT_EXISTS" -le 0 ]; then
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO users (username,email,password,full_name,role,created_at) VALUES ('parent1','parent1@ethioserve.com','$PHP_HASH','Kebede Michael','parent',NOW());"
+  PARENT_ID=$(mysql -u root -N -s -e "SELECT id FROM $DB_NAME.users WHERE username='parent1';" 2>/dev/null)
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO sms_parents (user_id,occupation) VALUES ($PARENT_ID,'Self-Employed');"
+  echo "  ✓ parent1 created"
+fi
+
+SADMIN_EXISTS=$(mysql -u root -N -s -e "SELECT COUNT(*) FROM $DB_NAME.users WHERE username='school_admin1';" 2>/dev/null)
+SADMIN_EXISTS=${SADMIN_EXISTS:-0}
+if [ "$SADMIN_EXISTS" -le 0 ]; then
+  mysql -u root "$DB_NAME" -e "INSERT IGNORE INTO users (username,email,password,full_name,role,created_at) VALUES ('school_admin1','school_admin1@ethioserve.com','$PHP_HASH','School Administrator','school_admin',NOW());"
+  echo "  ✓ school_admin1 created"
+fi
+
+echo "  ✓ Demo school users ready. (password = 'password')"
+
 # 5. Final Start
 echo "[4/4] Starting Apache Web Server..."
 echo "========================================="
