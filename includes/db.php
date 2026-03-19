@@ -81,12 +81,18 @@ foreach ($dsns as $dsn) {
      }
 }
 
-// Auto-Patch for New Features: Ensure Typing Indicator columns exist (for Render/Production)
+// Auto-Patch for New Features: Ensure Rental Request columns exist (for Render/Production)
 try {
-    $pdo->query("SELECT customer_typing_at FROM rental_requests LIMIT 1");
+    $pdo->query("SELECT duration_months FROM rental_requests LIMIT 1");
 } catch (Exception $e) {
     try {
-        $pdo->exec("ALTER TABLE rental_requests ADD COLUMN customer_typing_at DATETIME NULL, ADD COLUMN owner_typing_at DATETIME NULL");
+        $pdo->exec("ALTER TABLE rental_requests 
+            ADD COLUMN IF NOT EXISTS duration_months INT DEFAULT 1,
+            ADD COLUMN IF NOT EXISTS broker_id INT DEFAULT NULL,
+            ADD COLUMN IF NOT EXISTS referral_code_used VARCHAR(20) DEFAULT NULL,
+            ADD COLUMN IF NOT EXISTS chat_initiated TINYINT(1) DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS customer_typing_at DATETIME NULL,
+            ADD COLUMN IF NOT EXISTS owner_typing_at DATETIME NULL");
     } catch (Exception $ex) { /* Fail silently */ }
 }
 
