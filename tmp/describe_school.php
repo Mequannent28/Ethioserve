@@ -1,5 +1,4 @@
-<?php
-require_once 'c:/xampp/htdocs/Ethioserve-main/includes/db.php';
+require_once __DIR__ . '/../includes/db.php';
 
 $tables = ['sms_teachers', 'sms_student_profiles', 'sms_parents', 'sms_classes', 'sms_subjects'];
 foreach ($tables as $t) {
