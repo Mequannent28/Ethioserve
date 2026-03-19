@@ -8,12 +8,9 @@ function migrateSMS($pdo) {
         // 1. Ensure users table has all required roles
         $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'hotel', 'broker', 'property_owner', 'transport', 'customer', 'restaurant', 'taxi', 'student', 'teacher', 'parent', 'school_admin', 'employer', 'doctor', 'dating') DEFAULT 'customer'");
 
-        // 2. Check if a core table exists (use a more direct check)
-        try {
-            $pdo->query("SELECT id FROM sms_student_profiles LIMIT 1");
-            return; // Already migrated if this works
-        } catch (Exception $e) { /* Migration needed */ }
-
+        // 2. Run all CREATE TABLE IF NOT EXISTS queries
+        // Removed the early exit check to ensure all tables are verified/created every time
+ 
         $queries = [
             "CREATE TABLE IF NOT EXISTS `sms_classes` (
               `id` int(11) NOT NULL AUTO_INCREMENT,
