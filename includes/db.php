@@ -81,6 +81,15 @@ foreach ($dsns as $dsn) {
      }
 }
 
+// Auto-Patch for New Features: Ensure Typing Indicator columns exist (for Render/Production)
+try {
+    $pdo->query("SELECT customer_typing_at FROM rental_requests LIMIT 1");
+} catch (Exception $e) {
+    try {
+        $pdo->exec("ALTER TABLE rental_requests ADD COLUMN customer_typing_at DATETIME NULL, ADD COLUMN owner_typing_at DATETIME NULL");
+    } catch (Exception $ex) { /* Fail silently if table doesn't exist yet */ }
+}
+
 if (!$success) {
      if (ENVIRONMENT === 'production') {
           die("<h3>System Maintenance</h3>The database connection is temporarily unavailable. Error: " . htmlspecialchars($last_error));
