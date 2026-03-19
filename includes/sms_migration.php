@@ -10,7 +10,7 @@ function migrateSMS($pdo) {
 
         // 2. Check if a core table exists
         $stmt = $pdo->query("SHOW TABLES LIKE 'sms_student_profiles'");
-        if ($stmt->rowCount() > 0) return; // Already migrated
+        if ($stmt->fetch()) return; // Already migrated
 
         $queries = [
             "CREATE TABLE IF NOT EXISTS `sms_classes` (
