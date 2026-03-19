@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/functions.php';
 require_once 'includes/db.php';
+// Version: 2.0 - School & Teacher Modules Included
 
 // Redirect if already logged in
 if (isLoggedIn()) {
