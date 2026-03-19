@@ -73,13 +73,7 @@ $total_revenue = array_sum(array_column($bookings, 'total_amount'));
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .stat-card {
             transition: transform 0.3s;

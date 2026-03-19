@@ -2,7 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
-requireRole('admin');
+requireRole(['admin', 'school_admin']);
 
 // Ensure education_resources table exists
 try {
@@ -42,9 +42,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_resource'])) {
         $units = (int) ($_POST['units'] ?? 0);
         $edition = sanitize($_POST['edition'] ?? '2023');
 
+        $local_file_path = null;
+        $local_video_path = null;
+
+        // Handle File Upload
+        if (isset($_FILES['local_file']) && $_FILES['local_file']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/education/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $file_ext = pathinfo($_FILES['local_file']['name'], PATHINFO_EXTENSION);
+            $file_name = 'res_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+            if (move_uploaded_file($_FILES['local_file']['tmp_name'], $upload_dir . $file_name)) {
+                $local_file_path = $file_name;
+            }
+        }
+
+        // Handle Video Upload
+        if (isset($_FILES['local_video']) && $_FILES['local_video']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/education/videos/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $file_ext = pathinfo($_FILES['local_video']['name'], PATHINFO_EXTENSION);
+            $file_name = 'vid_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+            if (move_uploaded_file($_FILES['local_video']['tmp_name'], $upload_dir . $file_name)) {
+                $local_video_path = $file_name;
+            }
+        }
+
         try {
-            $stmt = $pdo->prepare("INSERT INTO education_resources (grade, subject, type, title, description, file_url, video_url, video_id, pages, units, edition) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$grade, $subject, $type, $title, $description, $file_url, $video_url, $video_id, $pages, $units, $edition]);
+            $stmt = $pdo->prepare("INSERT INTO education_resources (grade, subject, type, title, description, file_url, video_url, video_id, pages, units, edition, local_file_path, local_video_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$grade, $subject, $type, $title, $description, $file_url, $video_url, $video_id, $pages, $units, $edition, $local_file_path, $local_video_path]);
             redirectWithMessage('manage_education.php', 'success', 'Education resource added successfully!');
         } catch (Exception $e) {
             redirectWithMessage('manage_education.php', 'error', 'Failed to add resource: ' . $e->getMessage());
@@ -69,9 +94,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_resource'])) {
         $edition = sanitize($_POST['edition'] ?? '2023');
         $status = sanitize($_POST['status'] ?? 'active');
 
+        // Fetch current to keep files if new ones not uploaded
+        $curr = $pdo->prepare("SELECT local_file_path, local_video_path FROM education_resources WHERE id = ?");
+        $curr->execute([$id]);
+        $curr_res = $curr->fetch();
+        $local_file_path = $curr_res['local_file_path'] ?? null;
+        $local_video_path = $curr_res['local_video_path'] ?? null;
+
+        // Handle File Upload
+        if (isset($_FILES['local_file']) && $_FILES['local_file']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/education/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $file_ext = pathinfo($_FILES['local_file']['name'], PATHINFO_EXTENSION);
+            $file_name = 'res_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+            if (move_uploaded_file($_FILES['local_file']['tmp_name'], $upload_dir . $file_name)) {
+                $local_file_path = $file_name;
+            }
+        }
+
+        // Handle Video Upload
+        if (isset($_FILES['local_video']) && $_FILES['local_video']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/education/videos/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            $file_ext = pathinfo($_FILES['local_video']['name'], PATHINFO_EXTENSION);
+            $file_name = 'vid_' . time() . '_' . rand(1000, 9999) . '.' . $file_ext;
+            if (move_uploaded_file($_FILES['local_video']['tmp_name'], $upload_dir . $file_name)) {
+                $local_video_path = $file_name;
+            }
+        }
+
         try {
-            $stmt = $pdo->prepare("UPDATE education_resources SET grade=?, subject=?, type=?, title=?, description=?, file_url=?, video_url=?, video_id=?, pages=?, units=?, edition=?, status=? WHERE id=?");
-            $stmt->execute([$grade, $subject, $type, $title, $description, $file_url, $video_url, $video_id, $pages, $units, $edition, $status, $id]);
+            $stmt = $pdo->prepare("UPDATE education_resources SET grade=?, subject=?, type=?, title=?, description=?, file_url=?, video_url=?, video_id=?, pages=?, units=?, edition=?, status=?, local_file_path=?, local_video_path=? WHERE id=?");
+            $stmt->execute([$grade, $subject, $type, $title, $description, $file_url, $video_url, $video_id, $pages, $units, $edition, $status, $local_file_path, $local_video_path, $id]);
             redirectWithMessage('manage_education.php', 'success', 'Resource updated successfully!');
         } catch (Exception $e) {
             redirectWithMessage('manage_education.php', 'error', 'Failed to update: ' . $e->getMessage());
@@ -174,13 +228,7 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .stat-card {
             background: #fff;
@@ -283,13 +331,7 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
             background: #9E9E9E;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-                padding: 15px;
-            }
-        }
+        
     </style>
 </head>
 
@@ -528,6 +570,9 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                                                     <?php if ($res['video_id']): ?>
                                                         <span class="text-muted"><i class="fab fa-youtube me-1"
                                                                 style="color:#C62828;"></i>YouTube</span>
+                                                    <?php elseif ($res['local_video_path']): ?>
+                                                        <span class="text-muted"><i class="fas fa-file-video me-1"
+                                                                style="color:#C62828;"></i>Local Video</span>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                                 <br><span class="badge bg-light text-muted" style="font-size:.65rem;">
@@ -624,7 +669,7 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                         Education Resource</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" class="modal-body p-4 pt-2">
+                <form method="POST" class="modal-body p-4 pt-2" enctype="multipart/form-data">
                     <?php echo csrfField(); ?>
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -668,9 +713,12 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                                 placeholder="Brief description of the resource..."></textarea>
                         </div>
                         <div class="col-12 add-file-fields">
-                            <label class="form-label small fw-bold">File/Download URL</label>
-                            <input type="url" name="file_url" class="form-control rounded-pill bg-light border-0 px-4"
+                            <label class="form-label small fw-bold">File/Download URL (Link)</label>
+                            <input type="url" name="file_url" class="form-control rounded-pill bg-light border-0 px-4 mb-2"
                                 placeholder="https://example.com/textbook.pdf">
+                            
+                            <label class="form-label small fw-bold">OR Upload File from Computer</label>
+                            <input type="file" name="local_file" class="form-control rounded-pill bg-light border-0 px-4" accept=".pdf,.doc,.docx,.ppt,.pptx">
                         </div>
                         <div class="col-md-6 add-video-fields" style="display:none;">
                             <label class="form-label small fw-bold">YouTube Video ID</label>
@@ -682,6 +730,10 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                             <label class="form-label small fw-bold">Full Video URL</label>
                             <input type="url" name="video_url" class="form-control rounded-pill bg-light border-0 px-4"
                                 placeholder="https://youtube.com/watch?v=...">
+                        </div>
+                        <div class="col-12 add-video-fields" style="display:none;">
+                            <label class="form-label small fw-bold">OR Upload Video from Computer</label>
+                            <input type="file" name="local_video" class="form-control rounded-pill bg-light border-0 px-4" accept="video/*">
                         </div>
                         <div class="col-md-4 add-book-fields">
                             <label class="form-label small fw-bold">Units</label>
@@ -718,7 +770,7 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" class="modal-body p-4 pt-2">
+                <form method="POST" class="modal-body p-4 pt-2" enctype="multipart/form-data">
                     <?php echo csrfField(); ?>
                     <input type="hidden" name="resource_id" id="edit_id">
                     <div class="row g-3">
@@ -774,9 +826,12 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                                 style="border-radius:15px;"></textarea>
                         </div>
                         <div class="col-12 edit-file-fields">
-                            <label class="form-label small fw-bold">File/Download URL</label>
+                            <label class="form-label small fw-bold">File/Download URL (Link)</label>
                             <input type="url" name="file_url" id="edit_file_url"
-                                class="form-control rounded-pill bg-light border-0 px-4">
+                                class="form-control rounded-pill bg-light border-0 px-4 mb-2">
+                            
+                            <label class="form-label small fw-bold">OR Upload New File</label>
+                            <input type="file" name="local_file" class="form-control rounded-pill bg-light border-0 px-4" accept=".pdf,.doc,.docx,.ppt,.pptx">
                         </div>
                         <div class="col-md-6 edit-video-fields" style="display:none;">
                             <label class="form-label small fw-bold">YouTube Video ID</label>
@@ -787,6 +842,10 @@ $all_subjects = ['Amharic', 'English', 'Mathematics', 'Environmental Science', '
                             <label class="form-label small fw-bold">Full Video URL</label>
                             <input type="url" name="video_url" id="edit_video_url"
                                 class="form-control rounded-pill bg-light border-0 px-4">
+                        </div>
+                        <div class="col-12 edit-video-fields" style="display:none;">
+                            <label class="form-label small fw-bold">OR Upload New Video</label>
+                            <input type="file" name="local_video" class="form-control rounded-pill bg-light border-0 px-4" accept="video/*">
                         </div>
                         <div class="col-md-4 edit-book-fields">
                             <label class="form-label small fw-bold">Units</label>

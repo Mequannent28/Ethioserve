@@ -66,7 +66,8 @@ $user = $stmt->fetch();
     <style>
         body {
             overflow-x: hidden;
-            background-color: #f4f6f9;
+            background-color: #f0f2f5;
+            font-family: 'Poppins', sans-serif;
         }
 
         .dashboard-wrapper {
@@ -75,13 +76,14 @@ $user = $stmt->fetch();
         }
 
         .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            padding: 32px;
             min-height: 100vh;
+            background: #f0f2f5;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 991px) {
             .main-content {
                 margin-left: 0;
                 width: 100%;

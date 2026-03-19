@@ -39,12 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $skills = sanitize($_POST['skills']);
         $experience = sanitize($_POST['experience_level']);
         $deadline = $_POST['deadline'];
+        $exam_id_post = !empty($_POST['exam_id']) ? (int)$_POST['exam_id'] : null;
 
         $stmt = $pdo->prepare("
             UPDATE job_listings SET 
                 title = ?, description = ?, requirements = ?, job_type = ?, 
                 category_id = ?, location = ?, salary_min = ?, salary_max = ?, 
-                skills_required = ?, experience_level = ?, deadline = ?
+                skills_required = ?, experience_level = ?, deadline = ?, exam_id = ?
             WHERE id = ? AND company_id = ?
         ");
 
@@ -61,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $skills,
                 $experience,
                 $deadline,
+                $exam_id_post,
                 $job_id,
                 $company_id
             ])
@@ -74,6 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch categories for the select input
 $categories = $pdo->query("SELECT * FROM job_categories ORDER BY name ASC")->fetchAll();
+
+// Fetch company exams
+$exam_stmt = $pdo->prepare("SELECT id, title FROM job_exams WHERE company_id = ? ORDER BY title ASC");
+$exam_stmt->execute([$company_id]);
+$available_exams = $exam_stmt->fetchAll();
 
 ?>
 <!DOCTYPE html>
@@ -212,6 +219,30 @@ $categories = $pdo->query("SELECT * FROM job_categories ORDER BY name ASC")->fet
                                             <label class="form-label fw-bold">Requirements / Qualifications</label>
                                             <textarea name="requirements" class="form-control rounded-4"
                                                 rows="5"><?php echo htmlspecialchars($job['requirements']); ?></textarea>
+                                        </div>
+
+                                        <div class="col-12 mt-4">
+                                            <div class="card border-primary border-opacity-25 bg-light rounded-4 overflow-hidden">
+                                                <div class="card-body p-4">
+                                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                                            <i class="fas fa-file-signature"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h5 class="fw-bold mb-0">Required Assessment <span class="badge bg-primary-subtle text-primary fw-normal ms-2" style="font-size: 0.7rem;">LMS</span></h5>
+                                                            <p class="text-muted small mb-0">Candidates must complete this exam to apply</p>
+                                                        </div>
+                                                    </div>
+                                                    <select name="exam_id" class="form-select rounded-pill border-primary border-opacity-25 py-3 px-4">
+                                                        <option value="">No Exam Required</option>
+                                                        <?php foreach ($available_exams as $exam): ?>
+                                                            <option value="<?php echo $exam['id']; ?>" <?php echo $job['exam_id'] == $exam['id'] ? 'selected' : ''; ?>>
+                                                                <?php echo htmlspecialchars($exam['title']); ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

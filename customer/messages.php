@@ -98,6 +98,35 @@ include '../includes/header.php';
                 </div>
             </a>
         </div>
+
+        <!-- Real Estate Card -->
+        <div class="col-md-4 mt-4">
+            <a href="rental_requests.php" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-4 text-center transition-all message-cat-card">
+                    <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3"
+                        style="width:70px;height:70px;">
+                        <i class="fas fa-home text-info fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">Rental Inquiries</h5>
+                    <p class="text-muted small">Track your house and car rental requests and owner responses.</p>
+                    <?php
+                    // Count unread chat messages for this customer across all their rental requests
+                    $rent_unread_stmt = $pdo->prepare("
+                        SELECT COUNT(*) FROM rental_chat_messages rcm
+                        JOIN rental_requests rr ON rcm.request_id = rr.id
+                        WHERE rr.customer_id = ? AND rcm.receiver_id = ? AND rcm.is_read = 0
+                    ");
+                    $rent_unread_stmt->execute([$user_id, $user_id]);
+                    $rent_updates = $rent_unread_stmt->fetchColumn();
+                    if ($rent_updates > 0):
+                        ?>
+                        <span class="badge bg-danger rounded-pill">
+                            <?php echo $rent_updates; ?> New Messages
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </a>
+        </div>
     </div>
 </div>
 

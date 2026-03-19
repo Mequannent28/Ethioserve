@@ -415,6 +415,106 @@ $base_url = BASE_URL; ?>
     });
 </script>
 
+    <!-- Professional Role Notifications -->
+    <?php if (isset($_SESSION['user_id']) && in_array($_SESSION['user_role'] ?? '', ['doctor', 'home_pro'])): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const profApiUrl = '<?php echo BASE_URL; ?>/api.php';
+        let lastSeenProfId = 0;
+        let lastUnreadMsg = -1;
+
+        async function checkProfNotifications() {
+            const role = '<?php echo $_SESSION['user_role']; ?>';
+            let action = (role === 'doctor') ? 'get_doctor_notifications' : 'get_home_pro_notifications';
+            let idParam = (role === 'doctor') ? 'last_appt_id' : 'last_booking_id';
+
+            try {
+                const res = await fetch(`${profApiUrl}?action=${action}&${idParam}=${lastSeenProfId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const items = data.new_appointments || data.new_bookings || [];
+                    if (items.length > 0) {
+                        items.forEach(item => {
+                            const name = item.patient_name || item.customer_name;
+                            const title = (role === 'doctor') ? 'New Appointment!' : 'New Booking!';
+                            showProfToast(title, `${name} reached out to you.`, 'info', `<?php echo BASE_URL; ?>/${role}/dashboard.php`);
+                        });
+                        const maxId = Math.max(...items.map(i => parseInt(i.id)));
+                        if (maxId > lastSeenProfId) lastSeenProfId = maxId;
+                    }
+                    if (data.unread_messages !== undefined && data.unread_messages > 0 && data.unread_messages > lastUnreadMsg) {
+                        if (lastUnreadMsg !== -1) showProfToast('New Message!', `You have ${data.unread_messages} unread message(s).`, 'question', `<?php echo BASE_URL; ?>/${role}/dashboard.php`);
+                        lastUnreadMsg = data.unread_messages;
+                    } else if (data.unread_messages === 0) {
+                        lastUnreadMsg = 0;
+                    }
+                }
+            } catch (e) { console.error('Prof Notification Error:', e); }
+        }
+
+        function showProfToast(title, msg, icon, url) {
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(() => {});
+            Swal.fire({
+                title: title, text: msg, icon: icon, toast: true, position: 'top-end', 
+                showConfirmButton: true, confirmButtonText: 'View', showCancelButton: true,
+                timer: 15000, timerProgressBar: true
+            }).then(r => { if (r.isConfirmed) window.location.href = url; });
+        }
+        setInterval(checkProfNotifications, 10000);
+    </script>
+    <?php endif; ?>
+    <!-- Customer Role Notifications -->
+    <?php if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'customer'): ?>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const custApiUrl = '<?php echo BASE_URL; ?>/api.php';
+        let lastCustNotifId = 0;
+        let lastCustMsgCount = -1;
+
+        async function checkCustomerNotifications() {
+            try {
+                const res = await fetch(`${custApiUrl}?action=get_customer_notifications&last_notif_id=${lastCustNotifId}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    if (data.notifications && data.notifications.length > 0) {
+                        data.notifications.forEach(n => {
+                            showCustToast(n.title, n.message, 'info', `<?php echo BASE_URL; ?>/customer/track_order.php`);
+                        });
+                        lastCustNotifId = Math.max(...data.notifications.map(n => n.id));
+                    }
+                    if (data.unread_messages !== undefined && data.unread_messages > 0 && data.unread_messages > lastCustMsgCount) {
+                        if (lastCustMsgCount !== -1) showCustToast('New Message!', `You have ${data.unread_messages} unread message(s).`, 'question', `<?php echo BASE_URL; ?>/customer/messages.php`);
+                        lastCustMsgCount = data.unread_messages;
+                    } else if (data.unread_messages === 0) {
+                        lastCustMsgCount = 0;
+                    }
+                }
+            } catch (e) { console.error('Cust Notification Error:', e); }
+        }
+
+        function showCustToast(title, msg, icon, url) {
+            new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(() => {});
+            Swal.fire({
+                title: title, text: msg, icon: icon, toast: true, position: 'top-end', 
+                showConfirmButton: true, confirmButtonText: 'View', showCancelButton: true,
+                timer: 12000, timerProgressBar: true
+            }).then(r => { if (r.isConfirmed) window.location.href = url; });
+        }
+        
+        // Initial set
+        fetch(`${custApiUrl}?action=get_customer_notifications`).then(r => r.json()).then(d => {
+            if (d.success) {
+                if (d.notifications && d.notifications.length > 0) {
+                    lastCustNotifId = Math.max(...d.notifications.map(n => n.id));
+                }
+                lastCustMsgCount = d.unread_messages;
+            }
+            setInterval(checkCustomerNotifications, 15000);
+        });
+    </script>
+    <?php endif; ?>
 </body>
 
 </html>

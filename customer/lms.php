@@ -58,28 +58,70 @@ try {
         FOREIGN KEY (attempt_id) REFERENCES lms_attempts(id) ON DELETE CASCADE,
         FOREIGN KEY (question_id) REFERENCES lms_questions(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS lms_chapters (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        grade INT NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        chapter_number INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        content LONGTEXT,
+        video_url VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX (grade, subject)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS lms_reading_progress (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        chapter_id INT NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY (user_id, chapter_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (Exception $e) {
     // Tables may already exist
 }
 
 $grade = isset($_GET['grade']) ? (int) $_GET['grade'] : 0;
 $subject = sanitize($_GET['subject'] ?? '');
+$view_type = sanitize($_GET['view'] ?? 'list');
+$chapter_id = isset($_GET['chapter_id']) ? (int) $_GET['chapter_id'] : 0;
 
 // Get user info if logged in
 $user_id = $_SESSION['user_id'] ?? null;
+$user_grade = 0;
+$class_id = isset($_GET['class_id']) ? (int)$_GET['class_id'] : 0;
 
-// Auto-select grade if logged in
-if (!isset($_GET['grade']) && $user_id) {
+if ($user_id) {
     try {
-        $stmt = $pdo->prepare("SELECT grade FROM users WHERE id = ?");
+        // First check users table for grade and role
+        $stmt = $pdo->prepare("SELECT grade, role FROM users WHERE id = ?");
         $stmt->execute([$user_id]);
-        $stored_grade = $stmt->fetchColumn();
-        if ($stored_grade > 0) {
-            header("Location: lms.php?grade=" . $stored_grade);
-            exit;
+        $u = $stmt->fetch();
+        $user_grade = (int) ($u['grade'] ?? 0);
+        $user_role = $u['role'] ?? '';
+
+        // If grade is not set in users table and role is student, check student profile
+        if ($user_grade === 0 && $user_role === 'student') {
+            $stmt = $pdo->prepare("SELECT c.class_name, p.class_id FROM sms_student_profiles p 
+                                 JOIN sms_classes c ON p.class_id = c.id 
+                                 WHERE p.user_id = ?");
+            $stmt->execute([$user_id]);
+            $profile_data = $stmt->fetch();
+            if ($profile_data) {
+                $class_id = (int)$profile_data['class_id'];
+                $className = $profile_data['class_name'];
+                // Extract grade number from class name (e.g. "Grade 10" or "Grdae 10")
+                if (preg_match('/\d+/', $className, $matches)) {
+                    $user_grade = (int)$matches[0];
+                }
+            }
         }
-    } catch (Exception $e) {
-    }
+    } catch (Exception $e) {}
+}
+
+if ($user_grade > 0) {
+    $grade = $user_grade; // Force override
 }
 // Subjects by grade (matches education portal)
 $subjects_by_grade = [
@@ -133,15 +175,68 @@ $subject_icons = [
     'ICT' => 'laptop-code'
 ];
 
+// Fetch Chapters for selected grade + subject
+$chapters = [];
+$reading_progress = [];
+if ($grade > 0 && !empty($subject)) {
+    $query = "SELECT * FROM lms_chapters WHERE grade = ? AND subject = ? ";
+    $params = [$grade, $subject];
+    if ($class_id) {
+        $query .= " AND (class_id = ? OR class_id IS NULL) ";
+        $params[] = $class_id;
+    }
+    $query .= " ORDER BY chapter_number ASC";
+    
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $chapters = $stmt->fetchAll();
+
+    if ($user_id && !empty($chapters)) {
+        $stmt = $pdo->prepare("SELECT chapter_id FROM lms_reading_progress WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $reading_progress = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+}
+
+// Fetch single chapter if viewing
+$target_chapter = null;
+if ($view_type === 'chapter' && $chapter_id > 0) {
+    $stmt = $pdo->prepare("SELECT * FROM lms_chapters WHERE id = ?");
+    $stmt->execute([$chapter_id]);
+    $target_chapter = $stmt->fetch();
+    
+    // Mark as read if user visits
+    if ($target_chapter && $user_id) {
+        try {
+            $pdo->prepare("INSERT IGNORE INTO lms_reading_progress (user_id, chapter_id) VALUES (?,?)")->execute([$user_id, $chapter_id]);
+        } catch (Exception $e) {}
+    }
+}
+
 // Fetch exams for selected grade + subject
 $exams = [];
 $user_attempts = [];
 if ($grade > 0 && !empty($subject)) {
-    $stmt = $pdo->prepare("SELECT * FROM lms_exams WHERE grade = ? AND subject = ? AND status = 'active' ORDER BY chapter ASC");
-    $stmt->execute([$grade, $subject]);
+    $query = "SELECT * FROM lms_exams WHERE grade = ? AND subject = ? AND status = 'active' ";
+    $params = [$grade, $subject];
+    if ($class_id) {
+        $query .= " AND (class_id = ? OR class_id IS NULL) ";
+        $params[] = $class_id;
+    }
+    $query .= " ORDER BY chapter ASC";
+
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
     $exams = $stmt->fetchAll();
 
-    // Get user's best attempts
+    // Map exams to chapters
+    $chapter_exams = [];
+    foreach($exams as $e) {
+        if ($e['chapter_id']) $chapter_exams[$e['chapter_id']] = $e;
+        // Also map by chapter number if id not linked
+        else $chapter_exams['num_' . $e['chapter']] = $e;
+    }
+
     if ($user_id && !empty($exams)) {
         $exam_ids = array_column($exams, 'id');
         $placeholders = implode(',', array_fill(0, count($exam_ids), '?'));
@@ -164,8 +259,11 @@ try {
     $total_questions = $pdo->query("SELECT COUNT(*) FROM lms_questions")->fetchColumn();
 } catch (Exception $e) {
 }
-
 include('../includes/header.php');
+if (isset($_GET['iframe'])) {
+    echo '<style> header, nav, .navbar, footer, .site-footer { display: none !important; } body { padding-top: 0 !important; } </style>';
+    echo "<script>document.addEventListener('DOMContentLoaded', function() { document.querySelectorAll('a').forEach(a => { if(a.href && !a.href.startsWith('javascript:') && !a.href.startsWith('#')) { a.href += (a.href.includes('?') ? '&' : '?') + 'iframe=1'; } }); });</script>";
+}
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
@@ -625,6 +723,18 @@ include('../includes/header.php');
             <a href="education.php" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:.85rem;">
                 <i class="fas fa-arrow-left me-1"></i> Education Portal
             </a>
+            <?php if ($grade > 0): ?>
+                <span style="color:rgba(255,255,255,0.4);">/</span>
+                <a href="lms.php?grade=<?php echo $grade; ?>" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:.85rem;">
+                    Grade <?php echo $grade; ?>
+                </a>
+            <?php endif; ?>
+            <?php if (!empty($subject)): ?>
+                <span style="color:rgba(255,255,255,0.4);">/</span>
+                <a href="lms.php?grade=<?php echo $grade; ?>&subject=<?php echo urlencode($subject); ?>" style="color:rgba(255,255,255,0.7);text-decoration:none;font-size:.85rem;">
+                    <?php echo htmlspecialchars($subject); ?>
+                </a>
+            <?php endif; ?>
         </div>
         <h1><i class="fas fa-brain me-2"></i>Learning Management System</h1>
         <p>Test your knowledge with auto-graded exams for every grade and subject</p>
@@ -681,7 +791,7 @@ include('../includes/header.php');
                 } catch (Exception $e) {
                 }
                 ?>
-                <a href="<?php echo isLoggedIn() ? 'set_grade.php?redirect=lms&' : '?'; ?>grade=<?php echo $g; ?>"
+                <a href="<?php echo isLoggedIn() ? 'set_grade.php?redirect=lms&grade=' . $g : '?grade=' . $g; ?>"
                     class="grade-card">
                     <div class="grade-num">
                         <?php echo $g; ?>
@@ -703,7 +813,9 @@ include('../includes/header.php');
 
     <?php elseif (empty($subject)): ?>
         <!-- STEP 2: Select Subject -->
-        <a href="?grade=0" class="back-link"><i class="fas fa-arrow-left"></i> Back to Grades</a>
+        <?php if ($user_grade == 0): ?>
+            <a href="?grade=0" class="back-link"><i class="fas fa-arrow-left"></i> Back to Grades</a>
+        <?php endif; ?>
         <h3 class="lms-section-title">
             <i class="fas fa-book me-2" style="color:var(--lms-accent);"></i>
             Grade
@@ -744,101 +856,191 @@ include('../includes/header.php');
             <?php endforeach; ?>
         </div>
 
+    <?php elseif ($view_type === 'chapter' && $target_chapter): ?>
+        <!-- CHAPTER CONTENT VIEW -->
+        <a href="?grade=<?php echo $grade; ?>&subject=<?php echo urlencode($subject); ?>" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Chapters
+        </a>
+
+        <div class="card border-0 shadow-sm p-0 mb-4 overflow-hidden" style="background:var(--lms-card);">
+            <?php if (!empty($target_chapter['video_url'])): ?>
+                <div class="ratio ratio-16x9 bg-dark">
+                    <iframe src="<?php echo str_replace('watch?v=', 'embed/', $target_chapter['video_url']); ?>" allowfullscreen></iframe>
+                </div>
+            <?php elseif (!empty($target_chapter['local_video_path'])): ?>
+                <div class="ratio ratio-16x9 bg-dark">
+                    <video controls class="w-100 h-100">
+                        <source src="../uploads/lms/videos/<?php echo $target_chapter['local_video_path']; ?>" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            <?php endif; ?>
+            <div class="p-4 p-md-5">
+                <span class="exam-chapter mb-3">Chapter <?php echo $target_chapter['chapter_number']; ?></span>
+                <h1 class="text-white fw-bold mb-4"><?php echo htmlspecialchars($target_chapter['title']); ?></h1>
+                
+                <div class="chapter-html-content text-white opacity-90" style="line-height:1.8; font-size:1.1rem;">
+                    <?php echo $target_chapter['content']; // Trusted content from admin ?>
+                </div>
+
+                <?php if (!empty($target_chapter['document_path'])): ?>
+                    <div class="mt-4 p-3 rounded-3" style="background:rgba(255,255,255,0.05); border:1px dashed rgba(255,255,255,0.1);">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-3 bg-primary bg-opacity-10 p-3 text-primary">
+                                    <i class="fas fa-file-pdf fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="text-white mb-1">Download Study Material</h6>
+                                    <p class="text-muted small mb-0">PDF/Document provided by instructor</p>
+                                </div>
+                            </div>
+                            <a href="../uploads/lms/docs/<?php echo $target_chapter['document_path']; ?>" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline-light rounded-pill px-4">
+                               <i class="fas fa-download me-2"></i>Download
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <hr class="my-5 border-secondary opacity-25">
+
+                <!-- Associated Exam -->
+                <?php 
+                $this_exam = $chapter_exams[$target_chapter['id']] ?? ($chapter_exams['num_' . $target_chapter['chapter_number']] ?? null);
+                if ($this_exam): 
+                    $attempt = $user_attempts[$this_exam['id']] ?? null;
+                    $passed = $attempt && $attempt['best_score'] >= $this_exam['pass_percentage'];
+                ?>
+                    <div class="p-4 rounded-4" style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.2);">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h4 class="text-white fw-bold mb-2">Chapter Assessment</h4>
+                                <p class="text-muted mb-md-0">Did you finish reading? Test your knowledge with the chapter exam.</p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <?php if (!$user_id): ?>
+                                    <a href="../login.php" class="btn-take-exam">Login to Take Exam</a>
+                                <?php elseif ($passed): ?>
+                                    <div class="d-flex flex-column align-items-md-end gap-2">
+                                        <span class="score-badge score-pass"><i class="fas fa-check-circle me-1"></i>Passed: <?php echo $attempt['best_score']; ?>%</span>
+                                        <a href="take_exam.php?id=<?php echo $this_exam['id']; ?>" class="btn-take-exam btn-retake">Retake Exam</a>
+                                    </div>
+                                <?php else: ?>
+                                    <a href="take_exam.php?id=<?php echo $this_exam['id']; ?>" class="btn-take-exam">
+                                        <?php echo $attempt ? 'Retake Exam' : 'Start Exam'; ?>
+                                        <i class="fas fa-arrow-right ms-2"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
     <?php else: ?>
-        <!-- STEP 3: Exam List for Subject -->
+        <!-- STEP 3: Chapter List for Subject -->
         <a href="?grade=<?php echo $grade; ?>" class="back-link"><i class="fas fa-arrow-left"></i> Back to Subjects</a>
 
         <?php $color = $subject_colors[$subject] ?? '#1565C0'; ?>
         <h3 class="lms-section-title">
-            <span style="color:<?php echo $color; ?>;"><i
-                    class="fas fa-<?php echo $subject_icons[$subject] ?? 'book'; ?> me-2"></i></span>
-            Grade
-            <?php echo $grade; ?> —
-            <?php echo htmlspecialchars($subject); ?> Exams
+            <span style="color:<?php echo $color; ?>;"><i class="fas fa-<?php echo $subject_icons[$subject] ?? 'book'; ?> me-2"></i></span>
+            Grade <?php echo $grade; ?> — <?php echo htmlspecialchars($subject); ?> Courses
         </h3>
 
         <?php if (!$user_id): ?>
             <div class="login-prompt">
-                <p><i class="fas fa-lock me-2"></i>You need to log in to take exams and track your progress</p>
+                <p><i class="fas fa-lock me-2"></i>You need to log in to track your reading progress and take exams</p>
                 <a href="../login.php"><i class="fas fa-sign-in-alt"></i> Login / Register</a>
             </div>
         <?php endif; ?>
 
-        <?php if (empty($exams)): ?>
+        <?php if (empty($chapters) && empty($exams)): ?>
             <div class="empty-state">
                 <i class="fas fa-clipboard-list"></i>
-                <h4>No Exams Yet</h4>
-                <p>Exams for Grade
-                    <?php echo $grade; ?>
-                    <?php echo htmlspecialchars($subject); ?> haven't been added yet.<br>Please ask the admin to run the exam
-                    seeder.
-                </p>
-                <a href="education.php?grade=<?php echo $grade; ?>" class="btn-take-exam mt-3"><i
-                        class="fas fa-book-reader"></i> Study Textbook First</a>
+                <h4>No Content Yet</h4>
+                <p>Courses for Grade <?php echo $grade; ?> <?php echo htmlspecialchars($subject); ?> haven't been added yet.</p>
+                <a href="education.php?grade=<?php echo $grade; ?>" class="btn-take-exam mt-3"><i class="fas fa-book-reader"></i> Study Textbook First</a>
             </div>
         <?php else: ?>
-            <div class="row g-3">
-                <?php foreach ($exams as $exam):
-                    $attempt = $user_attempts[$exam['id']] ?? null;
-                    $passed = $attempt && $attempt['best_score'] >= $exam['pass_percentage'];
-                    ?>
+            <div class="row g-4">
+                <?php 
+                // We show Chapters primarily if they exist, otherwise show standalone exams
+                if (!empty($chapters)):
+                    foreach ($chapters as $ch):
+                        $is_read = in_array($ch['id'], $reading_progress);
+                        $this_exam = $chapter_exams[$ch['id']] ?? ($chapter_exams['num_' . $ch['chapter_number']] ?? null);
+                        $attempt = $this_exam ? ($user_attempts[$this_exam['id']] ?? null) : null;
+                        $passed = $attempt && $attempt['best_score'] >= $this_exam['pass_percentage'];
+                ?>
                     <div class="col-lg-6">
-                        <div class="exam-card">
+                        <div class="exam-card <?php echo $is_read ? 'border-success' : ''; ?>" style="height:100%; display:flex; flex-direction:column;">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="exam-chapter"><i class="fas fa-bookmark"></i> Chapter
-                                    <?php echo $exam['chapter']; ?>
-                                </span>
-                                <span class="difficulty-badge diff-<?php echo $exam['difficulty']; ?>">
-                                    <?php echo $exam['difficulty']; ?>
-                                </span>
+                                <span class="exam-chapter"><i class="fas fa-bookmark"></i> Chapter <?php echo $ch['chapter_number']; ?></span>
+                                <?php if ($is_read): ?>
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-bold" style="font-size:.65rem;">
+                                        <i class="fas fa-check-circle me-1"></i> COMPLETED
+                                    </span>
+                                <?php endif; ?>
                             </div>
-                            <h5>
-                                <?php echo htmlspecialchars($exam['chapter_title']); ?>
-                            </h5>
-                            <p class="exam-desc">
-                                <?php echo htmlspecialchars($exam['description'] ?? 'Test your knowledge on this chapter'); ?>
-                            </p>
-
-                            <div class="exam-meta">
-                                <div class="exam-meta-item"><i class="fas fa-question-circle" style="color:var(--lms-accent);"></i>
-                                    <?php echo $exam['total_questions']; ?> Questions
-                                </div>
-                                <div class="exam-meta-item"><i class="fas fa-clock" style="color:var(--lms-warning);"></i>
-                                    <?php echo $exam['duration_minutes']; ?> min
-                                </div>
-                                <div class="exam-meta-item"><i class="fas fa-trophy" style="color:var(--lms-success);"></i> Pass:
-                                    <?php echo $exam['pass_percentage']; ?>%
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <?php if ($attempt): ?>
-                                        <span class="score-badge <?php echo $passed ? 'score-pass' : 'score-fail'; ?>">
-                                            <i class="fas fa-<?php echo $passed ? 'check-circle' : 'times-circle'; ?>"></i>
-                                            Best:
-                                            <?php echo number_format($attempt['best_score'], 0); ?>%
-                                            (
-                                            <?php echo $attempt['attempt_count']; ?> attempt
-                                            <?php echo $attempt['attempt_count'] > 1 ? 's' : ''; ?>)
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <?php if ($attempt): ?>
-                                        <a href="take_exam.php?exam_id=<?php echo $exam['id']; ?>" class="btn-take-exam btn-retake">
-                                            <i class="fas fa-redo"></i> Retake
+                            <h5 class="text-white fw-bold"><?php echo htmlspecialchars($ch['title']); ?></h5>
+                            <p class="exam-desc flex-grow-1">Learn about the key concepts of chapter <?php echo $ch['chapter_number']; ?> for <?php echo htmlspecialchars($subject); ?>.</p>
+                            
+                            <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top border-secondary border-opacity-25">
+                                <a href="?grade=<?php echo $grade; ?>&subject=<?php echo urlencode($subject); ?>&view=chapter&chapter_id=<?php echo $ch['id']; ?>" class="btn-take-exam btn-retake">
+                                    <i class="fas fa-book-open me-2"></i> Read Content
+                                </a>
+                                <?php if ($this_exam): ?>
+                                    <?php if ($passed): ?>
+                                        <span class="score-badge score-pass"><i class="fas fa-check me-1"></i><?php echo $attempt['best_score']; ?>%</span>
+                                    <?php else: ?>
+                                        <a href="take_exam.php?id=<?php echo $this_exam['id']; ?>" class="btn-take-exam py-2">
+                                            <i class="fas fa-pencil-alt me-2"></i> Take Exam
                                         </a>
                                     <?php endif; ?>
-                                    <a href="take_exam.php?exam_id=<?php echo $exam['id']; ?>" class="btn-take-exam">
-                                        <i class="fas fa-play"></i>
-                                        <?php echo $attempt ? 'Take Again' : 'Start Exam'; ?>
-                                    </a>
-                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
+                <?php endforeach; 
+                else: // Fallback to old exam-only view if no chapters
+                    foreach ($exams as $exam):
+                        $attempt = $user_attempts[$exam['id']] ?? null;
+                        $passed = $attempt && $attempt['best_score'] >= $exam['pass_percentage'];
+                ?>
+                    <div class="col-lg-6">
+                        <div class="exam-card">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="exam-chapter"><i class="fas fa-bookmark"></i> Chapter <?php echo $exam['chapter']; ?></span>
+                                <span class="difficulty-badge diff-<?php echo $exam['difficulty']; ?>"><?php echo $exam['difficulty']; ?></span>
+                            </div>
+                            <h5><?php echo htmlspecialchars($exam['chapter_title']); ?></h5>
+                            <p class="exam-desc"><?php echo htmlspecialchars($exam['description'] ?? 'Test your knowledge on this chapter'); ?></p>
+                            <div class="exam-meta">
+                                <div class="exam-meta-item"><i class="fas fa-question-circle"></i> <?php echo $exam['total_questions']; ?> Qs</div>
+                                <div class="exam-meta-item"><i class="fas fa-clock"></i> <?php echo $exam['duration_minutes']; ?> Min</div>
+                                <div class="exam-meta-item"><i class="fas fa-trophy"></i> Pass: <?php echo $exam['pass_percentage']; ?>%</div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between border-top border-secondary border-opacity-10 pt-3 mt-3">
+                                <?php if ($passed): ?>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="score-badge score-pass"><i class="fas fa-check-circle"></i> Passed (<?php echo $attempt['best_score']; ?>%)</span>
+                                        <a href="take_exam.php?id=<?php echo $exam['id']; ?>" class="btn-take-exam btn-retake">Retake</a>
+                                    </div>
+                                <?php elseif ($attempt): ?>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="score-badge score-fail"><i class="fas fa-times-circle"></i> Failed (<?php echo $attempt['best_score']; ?>%)</span>
+                                        <a href="take_exam.php?id=<?php echo $exam['id']; ?>" class="btn-take-exam">Retake</a>
+                                    </div>
+                                <?php else: ?>
+                                    <a href="take_exam.php?id=<?php echo $exam['id']; ?>" class="btn-take-exam">Take Exam <i class="fas fa-arrow-right ms-2"></i></a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; endif; ?>
             </div>
         <?php endif; ?>
     <?php endif; ?>

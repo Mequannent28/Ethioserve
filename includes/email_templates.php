@@ -385,4 +385,50 @@ function sendEmail($to_email, $to_name, $subject, $html_body)
         'message' => $success ? 'Email sent successfully' : 'Failed to send email'
     ];
 }
+/**
+ * EMAIL #3: Generic Notification (Messages, Applications, etc.)
+ */
+function getGenericNotificationTemplate($title, $message, $cta_text = 'View Now', $cta_url = BASE_URL)
+{
+    $base_url = 'http://' . $_SERVER['HTTP_HOST'] . BASE_URL;
+    if (!str_starts_with($cta_url, 'http')) {
+        $cta_url = $base_url . '/' . ltrim($cta_url, '/');
+    }
+
+    $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; }
+        .container { max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { background: #1B5E20; color: white; padding: 30px; text-align: center; }
+        .content { padding: 40px 30px; text-align: center; color: #333; line-height: 1.6; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #888; font-size: 12px; border-top: 1px solid #eee; }
+        .btn { display: inline-block; background: #FFB300; color: #000; padding: 14px 35px; text-decoration: none; border-radius: 30px; font-weight: bold; margin-top: 25px; transition: all 0.3s; }
+        .icon { font-size: 48px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="margin: 0; letter-spacing: 1px;">EthioServe Notification</h2>
+        </div>
+        <div class="content">
+            <div class="icon">🔔</div>
+            <h2 style="color: #1B5E20; margin-top: 0;">{$title}</h2>
+            <p style="font-size: 16px;">{$message}</p>
+            <a href="{$cta_url}" class="btn">{$cta_text}</a>
+        </div>
+        <div class="footer">
+            <p>© 2026 EthioServe Support Team. All rights reserved.</p>
+            <p>If you didn't expect this email, please ignore it.</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    return $html;
+}
 ?>

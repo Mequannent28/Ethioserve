@@ -111,11 +111,7 @@ $monthly_stats = $stmt->fetchAll();
             color: #5a5c69;
         }
 
-        .main-content {
-            margin-left: 260px;
-            padding: 2.5rem;
-            min-height: 100vh;
-        }
+        
 
         .page-header {
             margin-bottom: 2.5rem;
@@ -161,7 +157,7 @@ $monthly_stats = $stmt->fetchAll();
         .metric-value {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #4e73df;
+            color: var(--admin-primary);
             margin-bottom: 0;
         }
 
@@ -205,7 +201,7 @@ $monthly_stats = $stmt->fetchAll();
 
         .badge-soft-success {
             background: #e8f5e9;
-            color: #2e7d32;
+            color: var(--admin-primary);
         }
 
         .badge-soft-warning {
@@ -306,13 +302,13 @@ $monthly_stats = $stmt->fetchAll();
             <div class="row g-4 mb-5">
                 <!-- Platform Revenue -->
                 <div class="col-xl-3 col-md-6">
-                    <div class="card stat-card bg-white border-start border-primary border-4">
+                    <div class="card stat-card bg-white border-start border-success border-4">
                         <div class="card-body">
-                            <div class="metric-label text-primary">Total Gross Revenue</div>
+                            <div class="metric-label text-success">Total Gross Revenue</div>
                             <div class="d-flex align-items-center justify-content-between">
                                 <h4 class="metric-value mb-0 text-dark"><?php echo number_format($total_revenue); ?>
                                     <small class="fs-6 fw-normal">ETB</small></h4>
-                                <div class="stat-icon bg-soft-info text-primary"><i class="fas fa-coins"></i></div>
+                                <div class="stat-icon bg-soft-success text-success"><i class="fas fa-coins"></i></div>
                             </div>
                             <div class="metric-trend text-success"><i class="fas fa-arrow-up"></i> +12% this month</div>
                         </div>

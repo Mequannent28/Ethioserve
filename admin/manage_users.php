@@ -3,7 +3,7 @@ require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
 // Auth Check
-requireRole('admin');
+requireRole(['admin', 'school_admin']);
 
 // Handle user deletion
 if (isset($_GET['delete'])) {
@@ -25,7 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
         $user_id = (int) $_POST['user_id'];
         $role = sanitize($_POST['role']);
 
-        $valid_roles = ['admin', 'hotel', 'broker', 'customer'];
+        if ($user_role === 'admin') {
+            $valid_roles = ['admin', 'hotel', 'broker', 'customer', 'teacher', 'student', 'parent', 'school_admin'];
+        } else {
+            $valid_roles = ['teacher', 'student', 'parent'];
+        }
+
         if (in_array($role, $valid_roles)) {
             $stmt = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
             $stmt->execute([$role, $user_id]);
@@ -34,14 +39,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_role'])) {
     }
 }
 
-// Filter by role
-$role_filter = sanitize($_GET['role'] ?? '');
-$where = "";
-$params = [];
-
-if (!empty($role_filter) && in_array($role_filter, ['admin', 'hotel', 'broker', 'customer'])) {
-    $where = "WHERE role = ?";
-    $params[] = $role_filter;
+// Role specific filtering for school_admin
+if ($user_role === 'school_admin') {
+    if (empty($role_filter) || !in_array($role_filter, ['teacher', 'student', 'parent'])) {
+        $where = "WHERE role IN ('teacher', 'student', 'parent')";
+        $params = [];
+    } else {
+        $where = "WHERE role = ?";
+        $params = [$role_filter];
+    }
+} else {
+    if (!empty($role_filter)) {
+        $where = "WHERE role = ?";
+        $params = [$role_filter];
+    }
 }
 
 // Fetch all users
@@ -50,8 +61,12 @@ $stmt->execute($params);
 $users = $stmt->fetchAll();
 
 // Count by role
-$counts = ['admin' => 0, 'hotel' => 0, 'broker' => 0, 'customer' => 0];
-$stmt = $pdo->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
+$counts = ['admin' => 0, 'hotel' => 0, 'broker' => 0, 'customer' => 0, 'teacher' => 0, 'student' => 0, 'parent' => 0, 'school_admin' => 0];
+if ($user_role === 'school_admin') {
+    $stmt = $pdo->query("SELECT role, COUNT(*) as count FROM users WHERE role IN ('teacher', 'student', 'parent') GROUP BY role");
+} else {
+    $stmt = $pdo->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
+}
 while ($row = $stmt->fetch()) {
     $counts[$row['role']] = $row['count'];
 }
@@ -76,14 +91,6 @@ while ($row = $stmt->fetch()) {
         .dashboard-wrapper {
             width: 100%;
         }
-
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
     </style>
 </head>
 
@@ -97,34 +104,39 @@ while ($row = $stmt->fetch()) {
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-0">Manage Users</h2>
-                    <p class="text-muted">View and manage all platform users</p>
+                    <p class="text-muted"><?php echo $user_role === 'school_admin' ? 'Manage school faculty and students' : 'View and manage all platform users'; ?></p>
                 </div>
                 <div class="d-flex gap-3 align-items-center">
                     <a href="add_user.php" class="btn btn-primary-green rounded-pill px-4">
                         <i class="fas fa-plus me-2"></i>Add User
                     </a>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <?php if ($user_role === 'admin'): ?>
                         <a href="?role=admin"
                             class="btn btn-outline-danger rounded-pill <?php echo $role_filter === 'admin' ? 'active' : ''; ?>">Admins
-                            (
-                            <?php echo $counts['admin']; ?>)
-                        </a>
+                            (<?php echo $counts['admin']; ?>)</a>
                         <a href="?role=hotel"
                             class="btn btn-outline-warning rounded-pill <?php echo $role_filter === 'hotel' ? 'active' : ''; ?>">Hotels
-                            (
-                            <?php echo $counts['hotel']; ?>)
-                        </a>
+                            (<?php echo $counts['hotel']; ?>)</a>
                         <a href="?role=broker"
                             class="btn btn-outline-info rounded-pill <?php echo $role_filter === 'broker' ? 'active' : ''; ?>">Brokers
-                            (
-                            <?php echo $counts['broker']; ?>)
-                        </a>
+                            (<?php echo $counts['broker']; ?>)</a>
                         <a href="?role=customer"
                             class="btn btn-outline-success rounded-pill <?php echo $role_filter === 'customer' ? 'active' : ''; ?>">Customers
-                            (
-                            <?php echo $counts['customer']; ?>)
-                        </a>
-                        <a href="manage_users.php" class="btn btn-outline-secondary rounded-pill">All</a>
+                            (<?php echo $counts['customer']; ?>)</a>
+                        <?php endif; ?>
+
+                        <a href="?role=teacher"
+                            class="btn btn-outline-primary rounded-pill <?php echo $role_filter === 'teacher' ? 'active' : ''; ?>">Teachers
+                            (<?php echo $counts['teacher']; ?>)</a>
+                        <a href="?role=student"
+                            class="btn btn-outline-secondary rounded-pill <?php echo $role_filter === 'student' ? 'active' : ''; ?>">Students
+                            (<?php echo $counts['student']; ?>)</a>
+                        <a href="?role=parent"
+                            class="btn btn-outline-info rounded-pill <?php echo $role_filter === 'parent' ? 'active' : ''; ?>">Parents
+                            (<?php echo $counts['parent']; ?>)</a>
+                        
+                        <a href="manage_users.php" class="btn btn-outline-dark rounded-pill">All</a>
                     </div>
                 </div>
             </div>
@@ -180,7 +192,10 @@ while ($row = $stmt->fetch()) {
                                                 <span class="badge bg-<?php
                                                 echo $user['role'] === 'admin' ? 'danger' :
                                                     ($user['role'] === 'hotel' ? 'warning text-dark' :
-                                                        ($user['role'] === 'broker' ? 'info' : 'success'));
+                                                        ($user['role'] === 'broker' ? 'info' : 
+                                                            ($user['role'] === 'teacher' ? 'primary' :
+                                                                ($user['role'] === 'student' ? 'secondary' :
+                                                                    ($user['role'] === 'parent' ? 'info' : 'success')))));
                                                 ?>">
                                                     <?php echo ucfirst($user['role']); ?>
                                                 </span>
@@ -209,7 +224,7 @@ while ($row = $stmt->fetch()) {
                                         </tr>
 
                                         <!-- Role Change Modal -->
-                                        <div class="modal fade" id="roleModal<?php echo $user['id']; ?>" tabindex="-1">
+                                        <div class="modal" id="roleModal<?php echo $user['id']; ?>" tabindex="-1">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content border-0 rounded-4">
                                                     <div class="modal-header border-0">
@@ -226,10 +241,16 @@ while ($row = $stmt->fetch()) {
                                                                     <?php echo htmlspecialchars($user['full_name']); ?>
                                                                 </strong></p>
                                                             <select name="role" class="form-select rounded-pill">
+                                                                <?php if ($user_role === 'admin'): ?>
                                                                 <option value="customer" <?php echo $user['role'] === 'customer' ? 'selected' : ''; ?>>Customer</option>
                                                                 <option value="hotel" <?php echo $user['role'] === 'hotel' ? 'selected' : ''; ?>>Hotel Owner</option>
                                                                 <option value="broker" <?php echo $user['role'] === 'broker' ? 'selected' : ''; ?>>Broker</option>
                                                                 <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Admin</option>
+                                                                <option value="school_admin" <?php echo $user['role'] === 'school_admin' ? 'selected' : ''; ?>>School Admin</option>
+                                                                <?php endif; ?>
+                                                                <option value="teacher" <?php echo $user['role'] === 'teacher' ? 'selected' : ''; ?>>Teacher</option>
+                                                                <option value="student" <?php echo $user['role'] === 'student' ? 'selected' : ''; ?>>Student</option>
+                                                                <option value="parent" <?php echo $user['role'] === 'parent' ? 'selected' : ''; ?>>Parent</option>
                                                             </select>
                                                         </div>
                                                         <div class="modal-footer border-0">

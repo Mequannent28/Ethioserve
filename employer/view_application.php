@@ -14,7 +14,7 @@ if (!$application_id) {
 
 // Fetch application details
 $stmt = $pdo->prepare("
-    SELECT ja.*, jl.title as job_title, jl.location as job_location, jl.job_type,
+    SELECT ja.*, jl.title as job_title, jl.location as job_location, jl.job_type, jl.exam_id,
            u.full_name as applicant_name, u.email as applicant_email, u.phone as applicant_phone,
            jp.profile_pic, jp.headline, jp.bio, jp.skills, jp.experience_years, jp.education, jp.availability, jp.cv_url as profile_cv,
            jp.location
@@ -30,6 +30,14 @@ $app = $stmt->fetch();
 
 if (!$app) {
     redirectWithMessage('dashboard.php', 'danger', 'Application not found or access denied.');
+}
+
+// Fetch Exam Results if any
+$exam_result = null;
+if (!empty($app['exam_id'])) {
+    $stmt = $pdo->prepare("SELECT score, total_score, status FROM job_exam_attempts WHERE exam_id = ? AND candidate_id = ?");
+    $stmt->execute([$app['exam_id'], $app['applicant_id']]);
+    $exam_result = $stmt->fetch();
 }
 
 // Handle Status Updates
@@ -263,6 +271,47 @@ $page_title = "Application Review - " . $app['applicant_name'];
                                         <?php echo nl2br(htmlspecialchars($app['cover_letter'] ?: 'No message attached to this application.')); ?>
                                     </div>
                                 </div>
+
+                                <?php if ($exam_result): ?>
+                                <div class="col-12">
+                                    <h6 class="section-title">Online Assessment Results</h6>
+                                    <div class="card border-primary border-opacity-25 bg-light rounded-4">
+                                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
+                                                    <i class="fas fa-file-invoice"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold text-primary">Assessment Completed</div>
+                                                    <div class="small text-muted">Mandatory skills evaluation</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div class="display-6 fw-bold text-primary mb-0">
+                                                    <?php echo $exam_result['score']; ?> <span class="fs-6 text-muted fw-normal">/ <?php echo $exam_result['total_score']; ?></span>
+                                                </div>
+                                                <?php 
+                                                    $percent = $exam_result['total_score'] > 0 ? round(($exam_result['score'] / $exam_result['total_score']) * 100) : 0;
+                                                    $color = $percent >= 70 ? 'success' : ($percent >= 40 ? 'warning' : 'danger');
+                                                ?>
+                                                <span class="badge bg-<?php echo $color; ?>-subtle text-<?php echo $color; ?> rounded-pill px-3">
+                                                    <?php echo $percent; ?>% Success Rate
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php elseif (!empty($app['exam_id'])): ?>
+                                <div class="col-12">
+                                    <div class="alert alert-warning border-dashed rounded-4 d-flex align-items-center gap-3">
+                                        <i class="fas fa-exclamation-triangle fs-4"></i>
+                                        <div>
+                                            <h6 class="fw-bold mb-0">Assessment Pending</h6>
+                                            <p class="small mb-0">Candidate has not yet completed the required online exam.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 

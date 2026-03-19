@@ -93,13 +93,7 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .stat-card {
             transition: transform 0.3s;
@@ -284,7 +278,7 @@ $rejected = count(array_filter($items, fn($i) => $i['status'] === 'rejected'));
     </div>
 
     <!-- Import Modal -->
-    <div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal" id="importModal" tabindex="-1">
         <div class="modal-dialog">
             <form method="POST" enctype="multipart/form-data" class="modal-content border-0 rounded-4">
                 <?php echo csrfField(); ?>

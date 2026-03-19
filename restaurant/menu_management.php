@@ -39,9 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verifyCSRFToken($_POST['csrf_token'
 
     if (isset($_POST['delete_item'])) {
         $item_id = (int) $_POST['item_id'];
+        $reason = sanitize($_POST['delete_reason'] ?? 'No reason provided');
+        require_once '../includes/recycle_bin_helper.php';
+        moveToRecycleBin($pdo, 'restaurant_menu', $item_id, 'restaurant', $user_id, $reason);
+
         $stmt = $pdo->prepare("DELETE FROM restaurant_menu WHERE id = ? AND restaurant_id = ?");
         $stmt->execute([$item_id, $restaurant_id]);
-        redirectWithMessage('menu_management.php', 'success', 'Menu item deleted!');
+        redirectWithMessage('menu_management.php', 'success', 'Menu item moved to recycle bin!');
     }
 
     if (isset($_POST['toggle_item'])) {
@@ -275,14 +279,16 @@ foreach ($menu_items as $item) {
                                                         <?php echo $item['is_available'] ? 'Disable' : 'Enable'; ?>
                                                     </button>
                                                 </form>
-                                                <form method="POST" class="d-inline"
-                                                    onsubmit="return confirm('Delete this item?');">
+                                                <!-- Delete with reason dialog -->
+                                                <form method="POST" class="d-inline delete-form">
                                                     <?php echo csrfField(); ?>
                                                     <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
-                                                    <button type="submit" name="delete_item" value="1"
-                                                        class="btn btn-sm btn-outline-danger rounded-pill">
+                                                    <input type="hidden" name="delete_reason" class="reason-field" value="">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill delete-btn"
+                                                        data-name="<?php echo htmlspecialchars($item['name'], ENT_QUOTES); ?>">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
+                                                    <button type="submit" name="delete_item" value="1" class="d-none actual-submit"></button>
                                                 </form>
                                             </div>
                                         </div>
@@ -297,7 +303,7 @@ foreach ($menu_items as $item) {
     </div>
 
     <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal" id="addItemModal" tabindex="-1">
         <div class="modal-dialog">
             <form method="POST" enctype="multipart/form-data" class="modal-content">
                 <?php echo csrfField(); ?>
@@ -354,7 +360,7 @@ foreach ($menu_items as $item) {
     </div>
 
     <!-- Import Excel Modal -->
-    <div class="modal fade" id="importExcelModal" tabindex="-1">
+    <div class="modal" id="importExcelModal" tabindex="-1">
         <div class="modal-dialog">
             <form method="POST" enctype="multipart/form-data" class="modal-content">
                 <?php echo csrfField(); ?>
@@ -383,6 +389,41 @@ foreach ($menu_items as $item) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const form = btn.closest('.delete-form');
+                const itemName = btn.getAttribute('data-name');
+                Swal.fire({
+                    title: '<span style="color:#c62828;"><i class="fas fa-trash-alt me-2"></i>Move to Recycle Bin?</span>',
+                    html: `
+                        <p class="text-muted mb-3">You are about to remove <strong>${itemName}</strong> from the menu. Please select a reason:</p>
+                        <select id="swalReason" class="form-select rounded-3">
+                            <option value="No longer needed">No longer needed</option>
+                            <option value="Out of season">Out of season</option>
+                            <option value="Ingredients unavailable">Ingredients unavailable</option>
+                            <option value="Price revision needed">Price revision needed</option>
+                            <option value="Duplicate entry">Duplicate entry</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-trash-restore me-1"></i> Move to Bin',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#c62828',
+                    cancelButtonColor: '#6c757d',
+                    focusConfirm: false,
+                    preConfirm: () => document.getElementById('swalReason').value
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.querySelector('.reason-field').value = result.value;
+                        form.querySelector('.actual-submit').click();
+                    }
+                });
+            });
+        });
+    </script>
 </body>
-
 </html>

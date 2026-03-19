@@ -105,12 +105,15 @@ include('../includes/header.php');
         <div class="col-lg-9">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3 class="fw-bold mb-0">Menu</h3>
-                <div class="input-group w-50">
-                    <span class="input-group-text bg-white border-end-0 rounded-pill-start">
+                <div class="input-group w-50 shadow-sm rounded-pill overflow-hidden">
+                    <span class="input-group-text bg-white border-0 ps-3">
                         <i class="fas fa-search text-muted"></i>
                     </span>
-                    <input type="text" class="form-control border-start-0 rounded-pill-end" id="menuSearch"
-                        placeholder="Search in menu...">
+                    <input type="text" class="form-control border-0 px-2" id="menuSearch"
+                        placeholder="Search for food...">
+                    <button class="btn btn-primary-green px-4 fw-bold" id="searchBtn">
+                        Search
+                    </button>
                 </div>
             </div>
 
@@ -122,41 +125,38 @@ include('../includes/header.php');
                 </div>
             <?php else: ?>
                 <?php foreach ($grouped_items as $category => $items): ?>
-                    <div class="mb-5" id="cat-<?php echo strtolower(str_replace(' ', '-', $category)); ?>">
-                        <h4 class="fw-bold mb-4 text-primary-green">
+                    <div class="category-section mb-5" id="cat-<?php echo strtolower(str_replace(' ', '-', $category)); ?>">
+                        <h4 class="fw-bold mb-4 text-primary-green d-flex align-items-center">
                             <i class="fas fa-utensils me-2"></i><?php echo htmlspecialchars($category); ?>
+                            <span class="badge bg-light text-muted ms-3 fs-6 fw-normal"><?php echo count($items); ?> items</span>
                         </h4>
-                        <div class="row g-4">
+                        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
                             <?php foreach ($items as $item): ?>
-                                <div class="col-md-6 menu-item" data-name="<?php echo strtolower($item['name']); ?>">
-                                    <div class="card border-0 shadow-sm h-100 p-2 hover-lift">
-                                        <div class="row g-0 h-100">
-                                            <div class="col-4">
-                                                <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=300&q=80'); ?>"
-                                                    class="img-fluid rounded-4 h-100" style="object-fit: cover;"
-                                                    alt="<?php echo htmlspecialchars($item['name']); ?>">
+                                <div class="col menu-item" 
+                                     data-name="<?php echo strtolower($item['name']); ?>"
+                                     data-desc="<?php echo strtolower($item['description'] ?? ''); ?>">
+                                    <div class="card border-0 shadow-sm h-100 hover-lift overflow-hidden rounded-4">
+                                        <div class="position-relative">
+                                            <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?auto=format&fit=crop&w=400&q=80'); ?>"
+                                                class="card-img-top" style="height: 160px; object-fit: cover;"
+                                                alt="<?php echo htmlspecialchars($item['name']); ?>">
+                                            <div class="position-absolute top-0 end-0 p-2">
+                                                <span class="badge bg-white text-primary-green shadow-sm rounded-pill">
+                                                    <?php echo number_format($item['price']); ?> ETB
+                                                </span>
                                             </div>
-                                            <div class="col-8">
-                                                <div class="card-body py-2 px-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <h6 class="fw-bold mb-1"><?php echo htmlspecialchars($item['name']); ?></h6>
-                                                        <span
-                                                            class="text-primary-green fw-bold"><?php echo number_format($item['price']); ?>
-                                                            ETB</span>
-                                                    </div>
-                                                    <p class="text-muted small mb-3">
-                                                        <?php echo htmlspecialchars($item['description'] ?? 'Delicious dish'); ?>
-                                                    </p>
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        <button class="btn btn-primary-green btn-sm rounded-pill px-3"
-                                                            onclick="addToCart(<?php echo $item['id']; ?>, '<?php echo htmlspecialchars(addslashes($item['name'])); ?>', <?php echo $item['price']; ?>, '<?php echo htmlspecialchars($hotel_id); ?>', '<?php echo htmlspecialchars(addslashes($hotel['name'])); ?>', '<?php echo htmlspecialchars($item['image_url'] ?? ''); ?>')">
-                                                            <i class="fas fa-plus me-1"></i> Add to Cart
-                                                        </button>
-                                                        <span class="badge bg-light text-dark"
-                                                            id="qty-<?php echo $item['id']; ?>"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        </div>
+                                        <div class="card-body p-3 d-flex flex-column">
+                                            <h6 class="fw-bold mb-1 text-truncate" title="<?php echo htmlspecialchars($item['name']); ?>">
+                                                <?php echo htmlspecialchars($item['name']); ?>
+                                            </h6>
+                                            <p class="text-muted smaller mb-3 flex-grow-1" style="font-size: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.2rem;">
+                                                <?php echo htmlspecialchars($item['description'] ?? 'Delicious authentic dish freshly prepared.'); ?>
+                                            </p>
+                                            <button class="btn btn-primary-green btn-sm rounded-pill w-100 fw-bold"
+                                                onclick="addToCart(<?php echo $item['id']; ?>, '<?php echo htmlspecialchars(addslashes($item['name'])); ?>', <?php echo $item['price']; ?>, '<?php echo htmlspecialchars($hotel_id); ?>', '<?php echo htmlspecialchars(addslashes($hotel['name'])); ?>', '<?php echo htmlspecialchars($item['image_url'] ?? ''); ?>')">
+                                                <i class="fas fa-plus me-1"></i> Add to Cart
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -264,13 +264,57 @@ include('../includes/header.php');
     }
 
     // Menu search
-    document.getElementById('menuSearch').addEventListener('input', function (e) {
-        const search = e.target.value.toLowerCase();
-        document.querySelectorAll('.menu-item').forEach(item => {
-            const name = item.dataset.name;
-            item.style.display = name.includes(search) ? 'block' : 'none';
+    const searchInput = document.getElementById('menuSearch');
+    const searchBtn = document.getElementById('searchBtn');
+
+    function performSearch() {
+        const search = searchInput.value.toLowerCase().trim();
+        let foundAny = false;
+
+        document.querySelectorAll('.category-section').forEach(section => {
+            let sectionHasMatch = false;
+            section.querySelectorAll('.menu-item').forEach(item => {
+                const name = item.dataset.name;
+                const desc = item.dataset.desc || '';
+                const match = name.includes(search) || desc.includes(search);
+                
+                if (match) {
+                    item.style.display = 'block';
+                    sectionHasMatch = true;
+                    foundAny = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            section.style.display = sectionHasMatch ? 'block' : 'none';
         });
-    });
+
+        // Toggle no results message (add it if it doesn't exist)
+        let noResults = document.getElementById('noMenuResults');
+        if (!foundAny) {
+            if (!noResults) {
+                noResults = document.createElement('div');
+                noResults.id = 'noMenuResults';
+                noResults.className = 'text-center py-5';
+                noResults.innerHTML = `
+                    <i class="fas fa-search text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted">No items match your search "${search}"</h5>
+                    <button class="btn btn-link text-primary-green" onclick="resetSearch()">View all items</button>
+                `;
+                document.querySelector('.col-lg-9').appendChild(noResults);
+            }
+        } else if (noResults) {
+            noResults.remove();
+        }
+    }
+
+    function resetSearch() {
+        searchInput.value = '';
+        performSearch();
+    }
+
+    searchInput.addEventListener('input', performSearch);
+    searchBtn.addEventListener('click', performSearch);
 </script>
 
 <?php include('../includes/footer.php'); ?>

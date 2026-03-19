@@ -75,19 +75,9 @@ $user = $stmt->fetch();
             width: 100%;
         }
 
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            min-height: 100vh;
-        }
+        
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
-        }
+        
     </style>
 </head>
 

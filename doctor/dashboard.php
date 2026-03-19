@@ -87,7 +87,7 @@ include '../includes/header.php';
 ?>
 
 <div class="doctor-dashboard-hero py-4 mb-4 text-white"
-    style="background: linear-gradient(135deg, #0d47a1 0%, #1565C0 100%);">
+    style="background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-md-8">
@@ -122,9 +122,9 @@ include '../includes/header.php';
     <div class="row g-4 mb-5">
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
-                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
                     style="width: 60px; height: 60px;">
-                    <i class="fas fa-users text-primary fs-4"></i>
+                    <i class="fas fa-users text-success fs-4"></i>
                 </div>
                 <h3 class="fw-bold mb-0">
                     <?php echo $stats['total']; ?>
@@ -294,7 +294,7 @@ include '../includes/header.php';
                                 <a href="chat.php?customer_id=<?php echo $chat['customer_id']; ?>"
                                     class="list-group-item list-group-item-action p-3 border-0 border-bottom">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center text-primary fw-bold"
+                                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center text-success fw-bold"
                                             style="width: 45px; height: 45px;">
                                             <?php echo strtoupper(substr($chat['patient_name'], 0, 1)); ?>
                                         </div>
@@ -333,7 +333,7 @@ include '../includes/header.php';
             </div>
 
             <!-- Health Insights Card -->
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-primary text-white position-relative overflow-hidden">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-success text-white position-relative overflow-hidden">
                 <div style="position: absolute; top: -20px; right: -20px; font-size: 8rem; opacity: 0.1;">
                     <i class="fas fa-chart-line"></i>
                 </div>

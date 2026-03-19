@@ -12,7 +12,6 @@ if (isset($_GET['appt_id']) && isset($_GET['status'])) {
     $stmt->execute([$status, $id]);
     redirectWithMessage('manage_health.php', 'success', 'Appointment status updated');
 }
-
 // Handle status updates for Orders
 if (isset($_GET['order_id']) && isset($_GET['status'])) {
     $id = intval($_GET['order_id']);
@@ -21,7 +20,6 @@ if (isset($_GET['order_id']) && isset($_GET['status'])) {
     $stmt->execute([$status, $id]);
     redirectWithMessage('manage_health.php', 'success', 'Order status updated');
 }
-
 // Fetch Data
 $appointments = $pdo->query("SELECT a.*, p.name as provider_name, u.full_name as user_name FROM health_appointments a JOIN health_providers p ON a.provider_id = p.id JOIN users u ON a.user_id = u.id ORDER BY a.created_at DESC LIMIT 50")->fetchAll();
 $orders = $pdo->query("SELECT o.*, p.name as pharmacy_name, u.full_name as user_name FROM health_pharmacy_orders o JOIN health_providers p ON o.pharmacy_id = p.id JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 50")->fetchAll();
@@ -45,10 +43,7 @@ $ambulances = $pdo->query("SELECT a.*, u.full_name as user_name FROM health_ambu
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            padding: 30px;
-        }
+        
 
         .tab-card {
             border: none;
@@ -137,7 +132,8 @@ $ambulances = $pdo->query("SELECT a.*, u.full_name as user_name FROM health_ambu
                                                 </div>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php
+endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -195,7 +191,8 @@ $ambulances = $pdo->query("SELECT a.*, u.full_name as user_name FROM health_ambu
                                                 </div>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php
+endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -240,7 +237,8 @@ $ambulances = $pdo->query("SELECT a.*, u.full_name as user_name FROM health_ambu
                                                 <?php echo date('h:i A', strtotime($amb['created_at'])); ?>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
+                                    <?php
+endforeach; ?>
                                 </tbody>
                             </table>
                         </div>

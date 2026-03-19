@@ -109,9 +109,31 @@ try {
     $rental_requests = $stmt->fetchAll();
 } catch (Exception $e) {}
 
+// Handle report resolution
+if (isset($_GET['resolve_report'])) {
+    $report_id = (int)$_GET['resolve_report'];
+    try {
+        $stmt = $pdo->prepare("UPDATE rental_reports SET status = 'resolved' WHERE id = ?");
+        $stmt->execute([$report_id]);
+        redirectWithMessage('manage_rent.php?type=reports', 'success', 'Report marked as resolved');
+    } catch (Exception $e) {}
+}
+
+// Fetch reports
+$reports = [];
+try {
+    $stmt = $pdo->query("SELECT rr.*, l.title as listing_title, l.status as listing_status, u.full_name as reporter_name 
+                         FROM rental_reports rr 
+                         LEFT JOIN listings l ON rr.listing_id = l.id 
+                         LEFT JOIN users u ON rr.reporter_id = u.id
+                         ORDER BY rr.created_at DESC");
+    $reports = $stmt->fetchAll();
+} catch (Exception $e) {}
+
 $houses = count(array_filter($items, fn($i) => $i['type'] === 'house_rent'));
 $cars = count(array_filter($items, fn($i) => $i['type'] === 'car_rent'));
 $available = count(array_filter($items, fn($i) => $i['status'] === 'available'));
+$pending_reports = count(array_filter($reports, fn($r) => $r['status'] === 'pending'));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,7 +148,7 @@ $available = count(array_filter($items, fn($i) => $i['status'] === 'available'))
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         body { overflow-x: hidden; font-family: 'Poppins', sans-serif; }
-        .main-content { margin-left: 260px; width: calc(100% - 260px); padding: 30px; background-color: #f4f6f9; min-height: 100vh; }
+        
         .stat-card { transition: transform 0.3s; border-radius: 15px; }
         .stat-card:hover { transform: translateY(-5px); }
         .filter-pill { padding: 8px 20px; border-radius: 50px; border: 2px solid #dee2e6; background: white; color: #666; font-weight: 600; text-decoration: none; transition: 0.3s; font-size: 0.85rem; }
@@ -192,67 +214,132 @@ $available = count(array_filter($items, fn($i) => $i['status'] === 'available'))
                 <a href="?type=all" class="filter-pill <?php echo $filter === 'all' ? 'active' : ''; ?>">All</a>
                 <a href="?type=house_rent" class="filter-pill <?php echo $filter === 'house_rent' ? 'active' : ''; ?>"><i class="fas fa-home me-1"></i> Houses</a>
                 <a href="?type=car_rent" class="filter-pill <?php echo $filter === 'car_rent' ? 'active' : ''; ?>"><i class="fas fa-car me-1"></i> Cars</a>
+                <a href="?type=reports" class="filter-pill <?php echo $filter === 'reports' ? 'active' : ''; ?>">
+                    <i class="fas fa-flag me-1"></i> Reports
+                    <?php if ($pending_reports > 0): ?>
+                        <span class="badge bg-danger ms-1"><?php echo $pending_reports; ?></span>
+                    <?php endif; ?>
+                </a>
             </div>
 
-            <!-- Listings Table -->
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <div class="card-header bg-white p-3 border-0">
-                    <h5 class="fw-bold mb-0"><i class="fas fa-list me-2 text-primary-green"></i>Rental Listings</h5>
+            <?php if ($filter === 'reports'): ?>
+                <!-- Reports Table -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white p-3 border-0">
+                        <h5 class="fw-bold mb-0 text-danger"><i class="fas fa-flag me-2"></i>Reported Listings</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4">Listing</th>
+                                    <th>Reporter</th>
+                                    <th>Reason</th>
+                                    <th>Details</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th class="text-end px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($reports)): ?>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-flag fs-1 mb-3 d-block"></i>No reports submitted yet</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($reports as $r): ?>
+                                        <tr>
+                                            <td class="px-4">
+                                                <div class="fw-bold"><?php echo htmlspecialchars($r['listing_title'] ?? 'Deleted Listing'); ?></div>
+                                                <small class="text-muted">Status: <?php echo ucfirst($r['listing_status'] ?? 'N/A'); ?></small>
+                                            </td>
+                                            <td><small class="fw-bold"><?php echo htmlspecialchars($r['reporter_name'] ?? 'User #'.$r['reporter_id']); ?></small></td>
+                                            <td>
+                                                <span class="badge bg-danger bg-opacity-10 text-danger text-uppercase" style="font-size: 0.65rem;">
+                                                    <?php echo str_replace('_', ' ', $r['reason_type']); ?>
+                                                </span>
+                                            </td>
+                                            <td class="small"><?php echo nl2br(htmlspecialchars($r['description'])); ?></td>
+                                            <td class="small text-muted"><?php echo date('M d, Y', strtotime($r['created_at'])); ?></td>
+                                            <td>
+                                                <?php if ($r['status'] === 'pending'): ?>
+                                                    <span class="badge bg-warning text-dark rounded-pill">Pending</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success text-white rounded-pill">Resolved</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-end px-4">
+                                                <?php if ($r['status'] === 'pending'): ?>
+                                                    <a href="?resolve_report=<?php echo $r['id']; ?>" class="btn btn-sm btn-outline-success rounded-pill" title="Mark Resolved"><i class="fas fa-check"></i></a>
+                                                <?php endif; ?>
+                                                <a href="?delete=<?php echo $r['listing_id']; ?>" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Delete Listing? This will remove the listing and all reports for it.')" title="Delete Listing"><i class="fas fa-trash"></i></a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="px-4">Listing</th>
-                                <th>Type</th>
-                                <th>Location</th>
-                                <th>Price</th>
-                                <th>Requests</th>
-                                <th>Status</th>
-                                <th class="text-end px-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($items)): ?>
-                                <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-home fs-1 mb-3 d-block"></i>No rent listings yet</td></tr>
-                            <?php else: ?>
-                                <?php foreach ($items as $item): ?>
-                                    <tr>
-                                        <td class="px-4">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=100'); ?>"
-                                                    class="rounded-3" width="55" height="45" style="object-fit:cover;">
-                                                <div>
-                                                    <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($item['title']); ?></h6>
-                                                    <span class="text-muted small"><?php echo htmlspecialchars($item['owner_name'] ?? 'Admin'); ?></span>
+            <?php else: ?>
+                <!-- Listings Table -->
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white p-3 border-0">
+                        <h5 class="fw-bold mb-0"><i class="fas fa-list me-2 text-primary-green"></i>Rental Listings</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4">Listing</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Price</th>
+                                    <th>Requests</th>
+                                    <th>Status</th>
+                                    <th class="text-end px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($items)): ?>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-home fs-1 mb-3 d-block"></i>No rent listings yet</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($items as $item): ?>
+                                        <tr>
+                                            <td class="px-4">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=100'); ?>"
+                                                        class="rounded-3" width="55" height="45" style="object-fit:cover;">
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold"><?php echo htmlspecialchars($item['title']); ?></h6>
+                                                        <span class="text-muted small"><?php echo htmlspecialchars($item['owner_name'] ?? 'Admin'); ?></span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-<?php echo $item['type'] === 'house_rent' ? 'info' : 'warning'; ?> text-<?php echo $item['type'] === 'house_rent' ? 'white' : 'dark'; ?>">
-                                                <i class="fas fa-<?php echo $item['type'] === 'house_rent' ? 'home' : 'car'; ?> me-1"></i>
-                                                <?php echo $item['type'] === 'house_rent' ? 'House' : 'Car'; ?>
-                                            </span>
-                                        </td>
-                                        <td class="small"><i class="fas fa-map-marker-alt text-danger me-1"></i><?php echo htmlspecialchars($item['location'] ?? 'N/A'); ?></td>
-                                        <td class="fw-bold"><?php echo number_format($item['price']); ?> ETB<span class="text-muted small">/<?php echo $item['type'] === 'car_rent' ? 'day' : 'mo'; ?></span></td>
-                                        <td>
-                                            <span class="badge bg-<?php echo ($request_counts[$item['id']] ?? 0) > 0 ? 'success' : 'light text-dark'; ?>">
-                                                <?php echo $request_counts[$item['id']] ?? 0; ?> requests
-                                            </span>
-                                        </td>
-                                        <td><?php echo getStatusBadge($item['status']); ?></td>
-                                        <td class="text-end px-4">
-                                            <a href="?toggle_status=<?php echo $item['id']; ?>&type=<?php echo $filter; ?>" class="btn btn-sm btn-outline-warning rounded-pill" title="Toggle status"><i class="fas fa-sync-alt"></i></a>
-                                            <a href="?delete=<?php echo $item['id']; ?>&type=<?php echo $filter; ?>" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-<?php echo $item['type'] === 'house_rent' ? 'info' : 'warning'; ?> text-<?php echo $item['type'] === 'house_rent' ? 'white' : 'dark'; ?>">
+                                                    <i class="fas fa-<?php echo $item['type'] === 'house_rent' ? 'home' : 'car'; ?> me-1"></i>
+                                                    <?php echo $item['type'] === 'house_rent' ? 'House' : 'Car'; ?>
+                                                </span>
+                                            </td>
+                                            <td class="small"><i class="fas fa-map-marker-alt text-danger me-1"></i><?php echo htmlspecialchars($item['location'] ?? 'N/A'); ?></td>
+                                            <td class="fw-bold"><?php echo number_format($item['price']); ?> ETB<span class="text-muted small">/<?php echo $item['type'] === 'car_rent' ? 'day' : 'mo'; ?></span></td>
+                                            <td>
+                                                <span class="badge bg-<?php echo ($request_counts[$item['id']] ?? 0) > 0 ? 'success' : 'light text-dark'; ?>">
+                                                    <?php echo $request_counts[$item['id']] ?? 0; ?> requests
+                                                </span>
+                                            </td>
+                                            <td><?php echo getStatusBadge($item['status']); ?></td>
+                                            <td class="text-end px-4">
+                                                <a href="?toggle_status=<?php echo $item['id']; ?>&type=<?php echo $filter; ?>" class="btn btn-sm btn-outline-warning rounded-pill" title="Toggle status"><i class="fas fa-sync-alt"></i></a>
+                                                <a href="?delete=<?php echo $item['id']; ?>&type=<?php echo $filter; ?>" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
 
             <!-- Rental Requests -->
             <?php if (!empty($rental_requests)): ?>

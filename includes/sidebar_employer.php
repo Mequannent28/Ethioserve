@@ -28,6 +28,13 @@
                 <a class="nav-link-employer <?php echo basename($_SERVER['PHP_SELF']) == 'applications.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/employer/applications.php">
                     <i class="fas fa-user-tie"></i> <span>Applications</span>
+                    <span class="badge bg-danger rounded-pill ms-auto" id="emp-app-count" style="display: none;">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-employer <?php echo basename($_SERVER['PHP_SELF']) == 'lms.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/employer/lms.php">
+                    <i class="fas fa-graduation-cap"></i> <span>LMS & Exams</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -40,6 +47,12 @@
                 <a class="nav-link-employer <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/employer/reports.php">
                     <i class="fas fa-chart-pie"></i> <span>Hiring Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-employer <?php echo basename($_SERVER['PHP_SELF']) == 'recycle_bin.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/employer/recycle_bin.php">
+                    <i class="fas fa-trash-alt"></i> <span>Recycle Bin</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -199,3 +212,98 @@
         }
     }
 </style>
+
+<!-- Notification System -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const employerApiUrl = '<?php echo BASE_URL; ?>/api.php';
+    let lastSeenAppId = 0;
+    let lastUnreadCount = -1;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Find existing max application IDs
+        const appRows = document.querySelectorAll('tr[onclick*="view_application.php?id="], a[href*="view_application.php?id="]');
+        appRows.forEach(row => {
+            const attr = row.getAttribute('onclick') || row.getAttribute('href');
+            const match = attr.match(/id=(\d+)/);
+            if (match) {
+                const id = parseInt(match[1]);
+                if (id > lastSeenAppId) lastSeenAppId = id;
+            }
+        });
+
+        // Start polling
+        setInterval(checkApplications, 10000);
+    });
+
+    async function checkApplications() {
+        try {
+            const response = await fetch(`${employerApiUrl}?action=get_employer_notifications&last_app_id=${lastSeenAppId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                // New App Notifications
+                if (data.new_applications && data.new_applications.length > 0) {
+                    data.new_applications.forEach(app => {
+                        showEmployerToast('New Job Application!', `${app.applicant_name} applied for "${app.job_title}"`, 'info', `<?php echo BASE_URL; ?>/employer/applications.php`);
+                    });
+                    
+                    const maxId = Math.max(...data.new_applications.map(a => parseInt(a.id)));
+                    if (maxId > lastSeenAppId) lastSeenAppId = maxId;
+                }
+
+                // Unread Message Notifications
+                if (data.unread_messages > 0 && data.unread_messages > lastUnreadCount) {
+                    if (lastUnreadCount !== -1) {
+                        showEmployerToast('New Candidate Message!', `You have ${data.unread_messages} unread message(s).`, 'question', `<?php echo BASE_URL; ?>/employer/applications.php`);
+                    }
+                    lastUnreadCount = data.unread_messages;
+                }
+
+                // Update badges
+                if (data.total_pending_apps !== undefined) updateEmployerBadge('emp-app-count', data.total_pending_apps);
+            }
+        } catch (error) { console.error('Notification Error:', error); }
+    }
+
+    function updateEmployerBadge(id, count) {
+        const badge = document.getElementById(id);
+        if (badge) {
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function showEmployerToast(title, message, icon, url) {
+        // High-quality notification sound for employers
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'View',
+            confirmButtonColor: '#1B5E20',
+            showCancelButton: true,
+            timer: 15000,
+            timerProgressBar: true,
+            background: '#fff',
+            color: '#1B5E20',
+            didOpen: (toast) => {
+                toast.style.cursor = 'pointer';
+                toast.onclick = () => window.location.href = url;
+            }
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+

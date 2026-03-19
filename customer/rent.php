@@ -29,12 +29,56 @@ try {
         message TEXT,
         status ENUM('pending','approved','rejected') DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        broker_id INT,
+        referral_code_used VARCHAR(50),
         FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
         FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE
+    )");
+    
+    // Add columns if they don't exist for existing tables
+    $pdo->exec("ALTER TABLE rental_requests ADD COLUMN IF NOT EXISTS broker_id INT AFTER message");
+    $pdo->exec("ALTER TABLE rental_requests ADD COLUMN IF NOT EXISTS referral_code_used VARCHAR(50) AFTER broker_id");
+} catch (Exception $e) {
+}
+// Create rental favorites table
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS rental_favorites (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        listing_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY(user_id, listing_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
     )");
 } catch (Exception $e) {
 }
 
+// Handle Favorite Toggle (AJAX)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_favorite') {
+    if (!$is_logged_in) {
+        echo json_encode(['status' => 'error', 'message' => 'Please login to add to favorites.']);
+        exit;
+    }
+    $listing_id = (int)$_POST['listing_id'];
+    $user_id = getCurrentUserId();
+    
+    // Check if exists
+    $check = $pdo->prepare("SELECT id FROM rental_favorites WHERE user_id = ? AND listing_id = ?");
+    $check->execute([$user_id, $listing_id]);
+    $fav = $check->fetch();
+    
+    if ($fav) {
+        $stmt = $pdo->prepare("DELETE FROM rental_favorites WHERE id = ?");
+        $stmt->execute([$fav['id']]);
+        echo json_encode(['status' => 'removed']);
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO rental_favorites (user_id, listing_id) VALUES (?, ?)");
+        $stmt->execute([$user_id, $listing_id]);
+        echo json_encode(['status' => 'added']);
+    }
+    exit;
+}
 // Handle rental request POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request'])) {
     if (!$is_logged_in) {
@@ -46,32 +90,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_request'])) {
         $customer_phone = sanitize($_POST['customer_phone']);
         $customer_email = sanitize($_POST['customer_email']);
         $message = sanitize($_POST['message']);
+        $referral_code = sanitize($_POST['referral_code'] ?? '');
         $customer_id = getCurrentUserId();
 
+        $broker_id = null;
+        if (!empty($referral_code)) {
+            $stmt = $pdo->prepare("SELECT id FROM brokers WHERE referral_code = ?");
+            $stmt->execute([$referral_code]);
+            $broker = $stmt->fetch();
+            if ($broker) {
+                $broker_id = $broker['id'];
+            }
+        }
+
         try {
-            $stmt = $pdo->prepare("INSERT INTO rental_requests (listing_id, customer_id, customer_name, customer_phone, customer_email, message) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$listing_id, $customer_id, $customer_name, $customer_phone, $customer_email, $message]);
+            $duration = (int)($_POST['duration_months'] ?? 1);
+            $stmt = $pdo->prepare("INSERT INTO rental_requests (listing_id, customer_id, customer_name, customer_phone, customer_email, message, duration_months, broker_id, referral_code_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$listing_id, $customer_id, $customer_name, $customer_phone, $customer_email, $message, $duration, $broker_id, $referral_code]);
             redirectWithMessage('rent.php?category=' . ($_POST['category'] ?? 'house_rent'), 'success', 'Your rental request has been sent! The owner will contact you soon.');
         } catch (Exception $e) {
-            redirectWithMessage('rent.php', 'error', 'Failed to send request. Please try again.');
+            redirectWithMessage('rent.php', 'error', 'Failed to send request. Error: ' . $e->getMessage());
         }
     }
 }
 
-// Active tab
-$category = sanitize($_GET['category'] ?? 'house_rent');
+// Handle Rental Report
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_report'])) {
+    if (!$is_logged_in) {
+        redirectWithMessage('rent.php?view=' . $_POST['listing_id'], 'error', 'Please login to report this listing.');
+    }
+    if (verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+        $listing_id = (int)$_POST['listing_id'];
+        $reason = sanitize($_POST['reason_type']);
+        $description = sanitize($_POST['description']);
+        $reporter_id = getCurrentUserId();
 
-// Fetch listings
-$stmt = $pdo->prepare("SELECT * FROM listings WHERE type = ? AND status = 'available' ORDER BY created_at DESC");
-$stmt->execute([$category]);
+        try {
+            $stmt = $pdo->prepare("INSERT INTO rental_reports (listing_id, reporter_id, reason_type, description) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$listing_id, $reporter_id, $reason, $description]);
+            redirectWithMessage('rent.php?view=' . $listing_id, 'success', 'Thank you. Your report has been submitted and will be reviewed.');
+        } catch (Exception $e) {
+            redirectWithMessage('rent.php?view=' . $listing_id, 'error', 'Failed to submit report. Please try again.');
+        }
+    }
+}
+
+// Fetch listings with search & category
+$active_category = sanitize($_GET['category'] ?? 'house_rent');
+$category = $active_category;
+$q = sanitize($_GET['q'] ?? '');
+$loc = sanitize($_GET['loc'] ?? '');
+
+$sql = "SELECT * FROM listings WHERE type = ? AND status = 'available'";
+$params = [$active_category];
+
+if (!empty($q)) {
+    $sql .= " AND (title LIKE ? OR description LIKE ? OR features LIKE ?)";
+    $params[] = "%$q%";
+    $params[] = "%$q%";
+    $params[] = "%$q%";
+}
+
+if (!empty($loc)) {
+    $sql .= " AND location LIKE ?";
+    $params[] = "%$loc%";
+}
+
+$sql .= " ORDER BY created_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $listings = $stmt->fetchAll();
+
+// Get favorites for logged-in user
+$user_favorites = [];
+if ($is_logged_in) {
+    $favStmt = $pdo->prepare("SELECT listing_id FROM rental_favorites WHERE user_id = ?");
+    $favStmt->execute([getCurrentUserId()]);
+    $user_favorites = $favStmt->fetchAll(PDO::FETCH_COLUMN);
+}
 
 // View single listing detail
 $detail = null;
 if (isset($_GET['view'])) {
-    $stmt = $pdo->prepare("SELECT * FROM listings WHERE id = ? AND status = 'available'");
+    $stmt = $pdo->prepare("SELECT * FROM listings WHERE id = ?"); // Allow fetching even if not available
     $stmt->execute([(int) $_GET['view']]);
     $detail = $stmt->fetch();
+    
+    // If it exists but is not available, we will show it with a 'Rented' overlay in the UI
 }
 
 include('../includes/header.php');
@@ -282,6 +387,12 @@ include('../includes/header.php');
     .fav-btn:hover {
         transform: scale(1.1);
         color: red;
+    }
+
+    .btn-report-listing:hover {
+        background: #dc3545 !important;
+        color: white !important;
+        transform: scale(1.1);
     }
 
     .listing-body {
@@ -505,6 +616,11 @@ include('../includes/header.php');
         }
     }
 
+    .fw-800 { font-weight: 800; }
+    .fw-700 { font-weight: 700; }
+    .fw-500 { font-weight: 500; }
+    .ls-1 { letter-spacing: 1px; }
+
     @media (max-width: 768px) {
         .rent-hero h1 {
             font-size: 2rem;
@@ -546,100 +662,157 @@ include('../includes/header.php');
             <!-- Left: Media -->
             <div class="col-lg-7">
                 <!-- Main Image -->
-                <img src="<?php echo htmlspecialchars($detail['image_url'] ?: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800'); ?>"
-                    class="detail-hero-img mb-4" alt="<?php echo htmlspecialchars($detail['title']); ?>">
+                <img src="<?php 
+                    if (empty($detail['image_url'])) {
+                        echo 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800';
+                    } elseif (strpos($detail['image_url'], 'http') === 0) {
+                        echo htmlspecialchars($detail['image_url']);
+                    } else {
+                        echo BASE_URL . '/' . htmlspecialchars($detail['image_url']);
+                    }
+                ?>" class="detail-hero-img mb-4" alt="<?php echo htmlspecialchars($detail['title']); ?>">
 
                 <!-- Video if available -->
                 <?php if (!empty($detail['video_url'])): ?>
                     <div class="detail-video-wrap mb-4">
-                        <iframe src="<?php echo htmlspecialchars($detail['video_url']); ?>" allowfullscreen></iframe>
+                        <?php if (strpos($detail['video_url'], 'youtube.com') !== false || strpos($detail['video_url'], 'vimeo.com') !== false): ?>
+                            <iframe src="<?php echo htmlspecialchars($detail['video_url']); ?>" allowfullscreen></iframe>
+                        <?php else: ?>
+                            <video src="<?php echo BASE_URL . '/' . htmlspecialchars($detail['video_url']); ?>" controls class="w-100 h-100"></video>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
 
                 <!-- Info Card -->
-                <div class="detail-info-card">
-                    <h2 class="fw-bold mb-2"><?php echo htmlspecialchars($detail['title']); ?></h2>
-                    <p class="text-muted mb-3">
-                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                        <?php echo htmlspecialchars($detail['location']); ?>
-                    </p>
-
-                    <div class="d-flex gap-3 mb-4">
-                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">
-                            <?php echo number_format($detail['price']); ?> ETB
-                            <small>/<?php echo $detail['type'] === 'car_rent' ? 'day' : 'month'; ?></small>
-                        </span>
-                        <span class="badge bg-light text-dark rounded-pill px-3 py-2">
-                            <i class="fas fa-<?php echo $detail['type'] === 'house_rent' ? 'home' : 'car'; ?> me-1"></i>
-                            <?php echo $detail['type'] === 'house_rent' ? 'House' : 'Car'; ?> Rental
+                <div class="detail-info-card shadow-lg border-0">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <h2 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;"><?php echo htmlspecialchars($detail['title']); ?></h2>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                <?php echo htmlspecialchars($detail['location']); ?>
+                            </p>
+                        </div>
+                        <?php 
+                            $statusBadgeDetail = 'bg-success';
+                            if ($detail['status'] === 'on_process') $statusBadgeDetail = 'bg-warning text-dark';
+                            if ($detail['status'] === 'rented') $statusBadgeDetail = 'bg-danger';
+                        ?>
+                        <span class="badge <?php echo $statusBadgeDetail; ?> rounded-pill px-4 py-2 text-uppercase fw-bold shadow-sm" style="font-size:0.75rem; letter-spacing: 0.5px;">
+                            <?php echo str_replace('_', ' ', $detail['status']); ?>
                         </span>
                     </div>
 
-                    <h5 class="fw-bold mb-3">Description</h5>
-                    <p class="text-muted lh-lg"><?php echo nl2br(htmlspecialchars($detail['description'])); ?></p>
-
-                    <?php if ($detail['type'] === 'house_rent' && ($detail['bedrooms'] || $detail['bathrooms'] || $detail['area_sqm'])): ?>
-                        <hr>
-                        <h5 class="fw-bold mb-3">Property Details</h5>
-                        <div class="row g-3 mb-3">
-                            <?php if ($detail['bedrooms']): ?>
-                                <div class="col-4">
-                                    <div class="detail-feature">
-                                        <i class="fas fa-bed"></i>
-                                        <?php echo $detail['bedrooms']; ?> Bedrooms
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($detail['bathrooms']): ?>
-                                <div class="col-4">
-                                    <div class="detail-feature">
-                                        <i class="fas fa-bath"></i>
-                                        <?php echo $detail['bathrooms']; ?> Bathrooms
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($detail['area_sqm']): ?>
-                                <div class="col-4">
-                                    <div class="detail-feature">
-                                        <i class="fas fa-ruler-combined"></i>
-                                        <?php echo $detail['area_sqm']; ?> m²
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                    <div class="d-flex flex-wrap gap-3 mb-4">
+                        <div class="bg-success bg-opacity-10 text-success rounded-4 px-4 py-2 fw-800 fs-5 d-flex align-items-center gap-2 border border-success border-opacity-10">
+                            <span><?php echo number_format($detail['price']); ?></span>
+                            <span class="fs-6 opacity-75">ETB</span>
+                            <span class="fs-6 fw-normal opacity-50">/<?php echo $detail['type'] === 'car_rent' ? 'day' : 'month'; ?></span>
                         </div>
+                        <div class="bg-light text-dark rounded-4 px-4 py-2 fw-700 d-flex align-items-center gap-2 border border-secondary border-opacity-10">
+                            <i class="fas fa-<?php echo $detail['type'] === 'house_rent' ? 'home' : 'car'; ?> text-primary-green"></i>
+                            <?php echo $detail['type'] === 'house_rent' ? 'House' : 'Car'; ?> Rental
+                        </div>
+                    </div>
+
+                    <!-- Key Stats Bar -->
+                    <?php if ($detail['type'] === 'house_rent' && ($detail['bedrooms'] || $detail['bathrooms'] || $detail['area_sqm'])): ?>
+                    <div class="row g-3 mb-4 text-center">
+                        <?php if ($detail['bedrooms']): ?>
+                        <div class="col-4">
+                            <div class="p-3 bg-white border rounded-4 shadow-sm h-100">
+                                <i class="fas fa-bed text-primary-green fs-4 mb-2 d-block"></i>
+                                <div class="fw-bold fs-5"><?php echo $detail['bedrooms']; ?></div>
+                                <div class="text-muted small text-uppercase fw-700 ls-1">Bedrooms</div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($detail['bathrooms']): ?>
+                        <div class="col-4">
+                            <div class="p-3 bg-white border rounded-4 shadow-sm h-100">
+                                <i class="fas fa-bath text-primary-green fs-4 mb-2 d-block"></i>
+                                <div class="fw-bold fs-5"><?php echo $detail['bathrooms']; ?></div>
+                                <div class="text-muted small text-uppercase fw-700 ls-1">Bathrooms</div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if ($detail['area_sqm']): ?>
+                        <div class="col-4">
+                            <div class="p-3 bg-white border rounded-4 shadow-sm h-100">
+                                <i class="fas fa-ruler-combined text-primary-green fs-4 mb-2 d-block"></i>
+                                <div class="fw-bold fs-5"><?php echo $detail['area_sqm']; ?></div>
+                                <div class="text-muted small text-uppercase fw-700 ls-1">Area (m²)</div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
                     <?php endif; ?>
 
+                    <div class="mb-5">
+                        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                             <span style="width: 4px; height: 20px; background: var(--rent-primary); border-radius: 4px;"></span>
+                             Description
+                        </h5>
+                        <p class="text-muted lh-lg fs-6" style="text-align: justify;"><?php echo nl2br(htmlspecialchars($detail['description'])); ?></p>
+                    </div>
+
                     <?php if (!empty($detail['features'])): ?>
-                        <h5 class="fw-bold mb-3">Features & Amenities</h5>
-                        <div class="detail-feature-grid">
+                    <div class="mb-5">
+                        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                             <span style="width: 4px; height: 20px; background: var(--rent-primary); border-radius: 4px;"></span>
+                             Features & Amenities
+                        </h5>
+                        <div class="row g-2">
                             <?php foreach (explode(',', $detail['features']) as $feat): ?>
-                                <div class="detail-feature">
-                                    <i class="fas fa-check-circle"></i>
-                                    <?php echo htmlspecialchars(trim($feat)); ?>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-2 px-3 border rounded-3 d-flex align-items-center gap-2 bg-light bg-opacity-50">
+                                        <i class="fas fa-check-circle text-success small"></i>
+                                        <span class="small fw-500"><?php echo htmlspecialchars(trim($feat)); ?></span>
+                                    </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                    </div>
                     <?php endif; ?>
 
-                    <?php if (!empty($detail['contact_name']) || !empty($detail['contact_phone'])): ?>
-                        <hr>
-                        <h5 class="fw-bold mb-3"><i class="fas fa-user me-2"></i>Contact Owner</h5>
-                        <p class="mb-1"><strong><?php echo htmlspecialchars($detail['contact_name'] ?? 'Owner'); ?></strong></p>
-                        <?php if (!empty($detail['contact_phone'])): ?>
-                            <p class="text-muted"><i
-                                    class="fas fa-phone me-2"></i><?php echo htmlspecialchars($detail['contact_phone']); ?></p>
-                        <?php endif; ?>
-                    <?php endif; ?>
+                    <div class="p-4 bg-light rounded-4 border-start border-4 border-success">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary-green text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:50px; height:50px; font-size:1.4rem;">
+                                <?php echo strtoupper(substr($detail['contact_name'] ?? 'P', 0, 1)); ?>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0"><?php echo htmlspecialchars($detail['contact_name'] ?? 'Property Owner'); ?></h6>
+                                <p class="text-muted small mb-0">Listed Property Owner</p>
+                            </div>
+                            <div class="ms-auto">
+                                <?php if (!empty($detail['contact_phone'])): ?>
+                                    <a href="tel:<?php echo $detail['contact_phone']; ?>" class="btn btn-outline-success rounded-pill px-4 fw-bold btn-sm">
+                                        <i class="fas fa-phone-alt me-2"></i> <?php echo htmlspecialchars($detail['contact_phone']); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Right: Request Form -->
             <div class="col-lg-5">
                 <div class="request-card">
-                    <h4 class="fw-bold mb-1"><i class="fas fa-paper-plane me-2"></i>Send Rental Request</h4>
-                    <p class="opacity-75 small mb-4">The owner will be notified and may contact you.</p>
+                    <?php if ($detail['status'] !== 'available'): ?>
+                        <div class="text-center py-5">
+                            <div class="bg-white bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:80px; height:80px;">
+                                <i class="fas fa-handshake-slash fs-1"></i>
+                            </div>
+                            <h4 class="fw-bold">Listing Not Available</h4>
+                            <p class="small opacity-75">This property is currently <?php echo str_replace('_', ' ', $detail['status']); ?>. You cannot send a request at this time.</p>
+                            <a href="rent.php" class="btn btn-light rounded-pill px-4 mt-2">Find other listings</a>
+                        </div>
+                    <?php else: ?>
+                        <h4 class="fw-bold mb-1"><i class="fas fa-paper-plane me-2"></i>Send Rental Request</h4>
+                        <p class="opacity-75 small mb-4">The owner will be notified and may contact you.</p>
 
-                    <?php if ($is_logged_in): ?>
+                        <?php if ($is_logged_in): ?>
                         <form method="POST">
                             <?php echo csrfField(); ?>
                             <input type="hidden" name="listing_id" value="<?php echo $detail['id']; ?>">
@@ -656,9 +829,27 @@ include('../includes/header.php');
                                 <input type="email" name="customer_email" class="form-control" placeholder="Email Address"
                                     required>
                             </div>
-                            <div class="mb-4">
-                                <textarea name="message" class="form-control" rows="4"
+                            <div class="mb-3">
+                                <textarea name="message" class="form-control" rows="3"
                                     placeholder="I'm interested in this property. When can I visit?" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="small opacity-75 mb-1 d-block">Rental Duration</label>
+                                <select name="duration_months" class="form-control">
+                                    <option value="1">1 Month</option>
+                                    <option value="2">2 Months</option>
+                                    <option value="3">3 Months</option>
+                                    <option value="6">6 Months</option>
+                                    <option value="12">1 Year</option>
+                                    <option value="24">2 Years</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0" style="opacity: 0.6;"><i class="fas fa-ticket-alt"></i></span>
+                                    <input type="text" name="referral_code" class="form-control border-start-0" placeholder="Broker Referral Code (Optional)">
+                                </div>
+                                <small class="text-white-50">Have a broker code? Enter it to link your agent.</small>
                             </div>
                             <button type="submit" name="submit_request" class="btn-send-req">
                                 <i class="fas fa-paper-plane me-2"></i>Send Request
@@ -674,41 +865,66 @@ include('../includes/header.php');
                             </a>
                         </div>
                     <?php endif; ?>
-
-                    <div class="text-center mt-4 pt-3" style="border-top:1px solid rgba(255,255,255,0.15);">
+                    <div class="text-center mt-4 pt-4" style="border-top:1px solid rgba(255,255,255,0.15);">
                         <p class="small opacity-75 mb-2">Or contact directly:</p>
+                        <div class="d-flex flex-column gap-2">
                         <?php if (!empty($detail['contact_phone'])): ?>
                             <a href="tel:<?php echo $detail['contact_phone']; ?>"
                                 class="btn btn-outline-light rounded-pill px-4">
                                 <i class="fas fa-phone me-2"></i>Call Owner
                             </a>
                         <?php endif; ?>
+                            <button type="button" class="btn btn-link text-white text-decoration-none small opacity-50" onclick="openReportModal(<?php echo $detail['id']; ?>)">
+                                <i class="fas fa-flag me-1"></i> Report this listing
+                            </button>
+                        </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
-
-<?php else: ?>
+<?php else: ?>>
     <!-- LIST VIEW -->
     <div class="rent-hero">
         <div class="position-relative" style="z-index:2;">
             <span class="badge bg-warning text-dark px-3 py-2 rounded-pill mb-3 fw-bold">🏠 Premium Listings</span>
             <h1>Find Your Perfect <span>Rental</span></h1>
-            <p class="lead opacity-80 mb-0">Houses, apartments & cars for rent across Addis Ababa</p>
+            <p class="lead opacity-80 mb-5">Houses, apartments & cars for rent across Addis Ababa</p>
+            
+            <div class="container" style="max-width: 800px;">
+                <form class="row g-2 bg-white p-2 rounded-4 shadow-lg text-start" method="GET">
+                    <input type="hidden" name="category" value="<?php echo $active_category; ?>">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text border-0 bg-transparent text-muted"><i class="fas fa-search"></i></span>
+                            <input type="text" name="q" class="form-control border-0 bg-transparent" placeholder="Keyword (e.g. WiFi, Pool)" value="<?php echo htmlspecialchars($q); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group border-start">
+                            <span class="input-group-text border-0 bg-transparent text-muted"><i class="fas fa-map-marker-alt"></i></span>
+                            <input type="text" name="loc" class="form-control border-0 bg-transparent" placeholder="Location, Area" value="<?php echo htmlspecialchars($loc); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary-green w-100 rounded-3 py-2 fw-bold">Search</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
     <div class="container category-container text-center">
         <div class="category-pills">
-            <a href="?category=house_rent" class="pill-btn <?php echo $category === 'house_rent' ? 'active' : ''; ?>">
+            <a href="?category=house_rent" class="pill-btn <?php echo $active_category === 'house_rent' ? 'active' : ''; ?>">
                 <i class="fas fa-home"></i> Houses
                 <span class="count-badge"><?php
                 $hc = $pdo->query("SELECT COUNT(*) FROM listings WHERE type='house_rent' AND status='available'")->fetchColumn();
                 echo $hc;
                 ?></span>
             </a>
-            <a href="?category=car_rent" class="pill-btn <?php echo $category === 'car_rent' ? 'active' : ''; ?>">
+            <a href="?category=car_rent" class="pill-btn <?php echo $active_category === 'car_rent' ? 'active' : ''; ?>">
                 <i class="fas fa-car"></i> Cars
                 <span class="count-badge"><?php
                 $cc = $pdo->query("SELECT COUNT(*) FROM listings WHERE type='car_rent' AND status='available'")->fetchColumn();
@@ -731,8 +947,15 @@ include('../includes/header.php');
                     <div class="col-lg-4 col-md-6">
                         <div class="listing-card" onclick="window.location='rent.php?view=<?php echo $item['id']; ?>'">
                             <div class="listing-media">
-                                <img src="<?php echo htmlspecialchars($item['image_url'] ?: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=800&q=80'); ?>"
-                                    alt="<?php echo htmlspecialchars($item['title']); ?>">
+                                <img src="<?php 
+                                    if (empty($item['image_url'])) {
+                                        echo 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=800&q=80';
+                                    } elseif (strpos($item['image_url'], 'http') === 0) {
+                                        echo htmlspecialchars($item['image_url']);
+                                    } else {
+                                        echo BASE_URL . '/' . htmlspecialchars($item['image_url']);
+                                    }
+                                ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
 
                                 <div class="media-badges">
                                     <span class="media-badge badge-type">
@@ -746,9 +969,17 @@ include('../includes/header.php');
                                     <?php endif; ?>
                                 </div>
 
-                                <button class="fav-btn"
-                                    onclick="event.stopPropagation(); this.querySelector('i').classList.toggle('fas'); this.querySelector('i').classList.toggle('far'); this.querySelector('i').style.color = this.querySelector('i').classList.contains('fas') ? 'red' : '';">
-                                    <i class="far fa-heart"></i>
+                                <button class="fav-btn toggle-fav <?php echo in_array($item['id'], $user_favorites) ? 'active text-danger' : ''; ?>"
+                                    data-id="<?php echo $item['id']; ?>"
+                                    onclick="event.stopPropagation(); toggleFavorite(this);">
+                                    <i class="<?php echo in_array($item['id'], $user_favorites) ? 'fas' : 'far'; ?> fa-heart"></i>
+                                </button>
+
+                                <button class="fav-btn btn-report-listing" 
+                                    style="right: 55px; background: rgba(0,0,0,0.4); color: white;"
+                                    data-id="<?php echo $item['id']; ?>"
+                                    onclick="event.stopPropagation(); openReportModal(<?php echo $item['id']; ?>)">
+                                    <i class="far fa-flag"></i>
                                 </button>
 
                                 <div class="price-tag">
@@ -809,7 +1040,49 @@ include('../includes/header.php');
     </div>
 <?php endif; ?>
 
+    <!-- Report Modal (Global) -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Report Listing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form method="POST">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="listing_id" id="report_listing_id" value="">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Reason for Report</label>
+                            <select name="reason_type" class="form-select rounded-3 border-light bg-light py-2" required>
+                                <option value="" disabled selected>Select a reason</option>
+                                <option value="fraud">Fraud / Scam</option>
+                                <option value="incorrect_price">Incorrect Price</option>
+                                <option value="unavailable">Already Rented / Unavailable</option>
+                                <option value="duplicate">Duplicate Listing</option>
+                                <option value="wrong_location">Wrong Location</option>
+                                <option value="other">Other Issue</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted">Details (Optional)</label>
+                            <textarea name="description" class="form-control rounded-3 border-light bg-light" rows="4" placeholder="Briefly explain the issue..."></textarea>
+                        </div>
+                        <button type="submit" name="submit_report" class="btn btn-danger w-100 py-3 rounded-pill fw-bold shadow-sm">
+                            <i class="fas fa-paper-plane me-1"></i> Submit Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
+    function openReportModal(id) {
+        document.getElementById('report_listing_id').value = id;
+        new bootstrap.Modal(document.getElementById('reportModal')).show();
+    }
+
     // Auto-dismiss flash message
     setTimeout(() => {
         const toast = document.querySelector('.success-toast');
@@ -821,4 +1094,32 @@ include('../includes/header.php');
     }, 5000);
 </script>
 
-<?php include('../includes/footer.php'); ?>
+<script>
+function toggleFavorite(btn) {
+    const id = btn.getAttribute('data-id');
+    const icon = btn.querySelector('i');
+    
+    fetch('rent.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=toggle_favorite&listing_id=' + id
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'added') {
+            btn.classList.add('active', 'text-danger');
+            icon.classList.replace('far', 'fas');
+        } else if (data.status === 'removed') {
+            btn.classList.remove('active', 'text-danger');
+            icon.classList.replace('fas', 'far');
+        } else if (data.status === 'error') {
+            alert(data.message);
+        }
+    })
+    .catch(err => console.error('Error toggling favorite:', err));
+}
+</script>
+
+<?php include '../includes/footer.php'; ?>

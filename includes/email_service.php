@@ -231,3 +231,41 @@ function getEmailTemplate($booking)
 
     return $html;
 }
+
+/**
+ * Send a direct notification email (e.g. for messages, applications)
+ */
+function sendDirectNotification($to_email, $title, $message, $cta_text = 'View Now', $cta_url = BASE_URL)
+{
+    require_once __DIR__ . '/email_templates.php';
+    $html_body = getGenericNotificationTemplate($title, $message, $cta_text, $cta_url);
+    return sendEmailDirect($to_email, $title, $html_body);
+}
+
+/**
+ * Low-level direct email sender via SMTP or mail()
+ */
+function sendEmailDirect($to_email, $subject, $html_body)
+{
+    // Try SimpleSMTP first
+    if (defined('SMTP_HOST') && defined('SMTP_USER') && SMTP_USER !== 'your-email@gmail.com') {
+        try {
+            $mail = new SimpleSMTP(SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS);
+            $fromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : 'EthioServe';
+            $fromEmail = defined('SMTP_FROM_EMAIL') ? SMTP_FROM_EMAIL : 'noreply@ethioserve.com';
+            
+            if ($mail->send($to_email, $subject, $html_body, $fromName, $fromEmail)) {
+                return true;
+            }
+        } catch (Exception $e) {
+            error_log("Direct SMTP Failed: " . $e->getMessage());
+        }
+    }
+
+    // Fallback to mail()
+    $headers = "From: EthioServe <noreply@ethioserve.com>\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    
+    return @mail($to_email, $subject, $html_body, $headers);
+}

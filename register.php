@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Role validation
-        $valid_roles = ['customer', 'hotel', 'broker', 'transport', 'restaurant', 'taxi', 'student', 'dating', 'employer'];
+        $valid_roles = ['customer', 'hotel', 'broker', 'property_owner', 'transport', 'restaurant', 'taxi', 'student', 'dating', 'employer'];
         if (!in_array($role, $valid_roles)) {
             $errors[] = "Please select a valid role";
         }
@@ -115,6 +115,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $referral_code = generateReferralCode();
                     $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
                     $stmt->execute([$user_id, $referral_code]);
+                }
+
+                // If property_owner role, create a broker-like record (for referrals earned, QR payment setup)
+                if ($role === 'property_owner') {
+                    $ref_code = 'OWN' . strtoupper(substr(uniqid(), -6));
+                    $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
+                    $stmt->execute([$user_id, $ref_code]);
                 }
 
                 // If transport role, create pending transport company entry
@@ -364,7 +371,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <label class="btn btn-outline-primary-green w-100 py-3 rounded-3"
                                             for="roleBroker">
                                             <i class="fas fa-user-tie d-block mb-1 fs-4"></i>
-                                            <small>Broker</small>
+                                            <small>Broker / Agent</small>
+                                        </label>
+                                    </div>
+                                    <div class="col-6 col-md-4 col-lg">
+                                        <input type="radio" class="btn-check" name="role" id="rolePropertyOwner" value="property_owner"
+                                            <?php echo ($_POST['role'] ?? '') === 'property_owner' ? 'checked' : ''; ?>>
+                                        <label class="btn btn-outline-primary-green w-100 py-3 rounded-3"
+                                            for="rolePropertyOwner">
+                                            <i class="fas fa-home d-block mb-1 fs-4"></i>
+                                            <small>Property Owner</small>
                                         </label>
                                     </div>
                                     <div class="col-6 col-md-4 col-lg">

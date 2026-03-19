@@ -49,11 +49,13 @@ $filter_jobs = $stmt->fetchAll();
 
 // Build query
 $query = "
-    SELECT ja.*, jl.title as job_title, u.full_name as applicant_name, u.email as applicant_email, u.phone as applicant_phone, jp.cv_url, jp.profile_pic, jp.headline
+    SELECT ja.*, jl.title as job_title, jl.exam_id, u.full_name as applicant_name, u.email as applicant_email, u.phone as applicant_phone, jp.cv_url, jp.profile_pic, jp.headline,
+           jea.score as exam_score, jea.total_score as exam_total
     FROM job_applications ja
     JOIN job_listings jl ON ja.job_id = jl.id
     JOIN users u ON ja.applicant_id = u.id
     LEFT JOIN job_profiles jp ON u.id = jp.user_id
+    LEFT JOIN job_exam_attempts jea ON (jea.exam_id = jl.exam_id AND jea.candidate_id = ja.applicant_id)
     WHERE jl.company_id = ?
 ";
 $params = [$company_id];
@@ -174,6 +176,7 @@ $applications = $stmt->fetchAll();
                                     <th class="border-0 px-4">Applicant</th>
                                     <th class="border-0">Position</th>
                                     <th class="border-0">Applied On</th>
+                                    <th class="border-0">Assessment</th>
                                     <th class="border-0">Interview Date</th>
                                     <th class="border-0">Status</th>
                                     <th class="border-0 text-end px-4">Action</th>
@@ -204,6 +207,19 @@ $applications = $stmt->fetchAll();
                                             </td>
                                             <td><?php echo htmlspecialchars($app['job_title']); ?></td>
                                             <td><small><?php echo date('M d, Y', strtotime($app['applied_at'])); ?></small></td>
+                                            <td>
+                                                <?php if ($app['exam_id'] && isset($app['exam_score'])): ?>
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary border rounded-pill px-3">
+                                                        <i class="fas fa-file-invoice me-1"></i><?php echo $app['exam_score']; ?>/<?php echo $app['exam_total']; ?>
+                                                    </span>
+                                                <?php elseif ($app['exam_id']): ?>
+                                                    <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border rounded-pill px-3">
+                                                        <i class="fas fa-clock me-1"></i>Pending
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">N/A</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td>
                                                 <?php if ($app['interview_date']): ?>
                                                     <span class="badge bg-light text-primary border rounded-pill">
@@ -264,7 +280,7 @@ $applications = $stmt->fetchAll();
                                         </tr>
 
                                         <!-- Reject Modal -->
-                                        <div class="modal fade" id="rejectModal<?php echo $app['id']; ?>" tabindex="-1"
+                                        <div class="modal" id="rejectModal<?php echo $app['id']; ?>" tabindex="-1"
                                             onclick="event.stopPropagation();">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content border-0 shadow-lg rounded-4">
@@ -312,7 +328,7 @@ $applications = $stmt->fetchAll();
                                         </div>
 
                                         <!-- Review Modal -->
-                                        <div class="modal fade" id="reviewModal<?php echo $app['id']; ?>" tabindex="-1">
+                                        <div class="modal" id="reviewModal<?php echo $app['id']; ?>" tabindex="-1">
                                             <div class="modal-dialog modal-lg">
                                                 <div class="modal-content border-0 shadow-lg rounded-4">
                                                     <div class="modal-header border-0 bg-light rounded-top-4">

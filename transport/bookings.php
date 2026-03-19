@@ -242,8 +242,9 @@ $stats_stmt = $pdo->prepare("
 $stats_stmt->execute([$company['id']]);
 $stats = $stats_stmt->fetch();
 
-$flash = getFlashMessage();
-include('../includes/header.php');
+$page_title = 'Booking Management';
+$top_title = 'Bookings';
+include('../includes/transport_header.php');
 ?>
 
 <style>
@@ -379,10 +380,7 @@ include('../includes/header.php');
     }
 </style>
 
-<div class="container-fluid py-4 px-lg-5">
-    <?php include('../includes/sidebar_transport.php'); ?>
-
-    <div class="ms-lg-auto" style="margin-left: 260px !important;">
+    <?php echo displayFlashMessage(); ?>
         <!-- Page Header -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
@@ -395,15 +393,6 @@ include('../includes/header.php');
             </a>
         </div>
 
-        <?php if ($flash): ?>
-            <div
-                class="alert alert-<?php echo $flash['type'] === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show rounded-4">
-                <i
-                    class="fas fa-<?php echo $flash['type'] === 'success' ? 'check-circle' : 'exclamation-circle'; ?> me-2"></i>
-                <?php echo htmlspecialchars($flash['message']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
 
         <!-- Stats Cards -->
         <div class="row g-3 mb-4">
@@ -697,7 +686,7 @@ include('../includes/header.php');
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-</div>
+<?php // content ends ?>
 
 <script>
     function toggleEditSeats(id) {
@@ -706,4 +695,4 @@ include('../includes/header.php');
     }
 </script>
 
-<?php include('../includes/footer.php'); ?>
+<?php include('../includes/transport_footer.php'); ?>

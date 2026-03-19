@@ -93,13 +93,7 @@ try {
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .movie-poster {
             width: 60px;

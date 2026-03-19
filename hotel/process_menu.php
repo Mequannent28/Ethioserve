@@ -150,9 +150,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($action === 'delete') {
     $id = $_GET['id'];
+    $reason = sanitize($_GET['reason'] ?? 'No reason provided');
+    require_once '../includes/recycle_bin_helper.php';
+    moveToRecycleBin($pdo, 'menu_items', $id, 'hotel', $user_id, $reason);
+    
     $stmt = $pdo->prepare("DELETE FROM menu_items WHERE id = ? AND hotel_id = ?");
     $stmt->execute([$id, $hotel_id]);
 
-    redirectWithMessage('menu_management.php', 'success', 'Menu item deleted successfully!');
+    redirectWithMessage('menu_management.php', 'success', 'Menu item moved to recycle bin.');
 }
 ?>

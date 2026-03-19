@@ -2,279 +2,210 @@
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
-if (!isLoggedIn()) {
-    header("Location: ../login.php");
+requireLogin();
+$user_id = getCurrentUserId();
+$request_id = intval($_GET['request_id'] ?? 0);
+
+if (!$request_id) {
+    header("Location: rental_requests.php");
     exit();
 }
 
-$type = sanitize($_GET['type'] ?? 'order');
-$id = (int) ($_GET['order_id'] ?? $_GET['booking_id'] ?? 0);
-$method = sanitize($_GET['method'] ?? 'telebirr');
+// Fetch request and verify ownership + check if approved
+$stmt = $pdo->prepare("
+    SELECT rr.*, l.title as listing_title, l.user_id as owner_id, l.price,
+           o.full_name as owner_name
+    FROM rental_requests rr
+    JOIN listings l ON rr.listing_id = l.id
+    LEFT JOIN users o ON l.user_id = o.id
+    WHERE rr.id = ? AND rr.customer_id = ?
+");
+$stmt->execute([$request_id, $user_id]);
+$request = $stmt->fetch();
 
-$item = null;
-$amount = 0;
-$title = "";
-$hotel_phone = "";
+if (!$request || $request['status'] !== 'approved') {
+    redirectWithMessage('rental_requests.php', 'warning', 'Invalid request or payment not yet authorized.');
+}
 
-if ($type === 'flight') {
-    $stmt = $pdo->prepare("
-        SELECT fb.*, f.price, f.destination, f.airline 
-        FROM flight_bookings fb 
-        JOIN flights f ON fb.flight_id = f.id 
-        WHERE fb.id = ? AND fb.customer_id = ?
-    ");
-    $stmt->execute([$id, getCurrentUserId()]);
-    $item = $stmt->fetch();
-    if ($item) {
-        $amount = $item['price'] * 1.05; // Including service fee
-        $title = "Flight to " . htmlspecialchars($item['destination']);
-    }
-} else {
-    $stmt = $pdo->prepare("
-        SELECT o.*, h.name as hotel_name, h.phone as hotel_phone, h.email as hotel_email 
-        FROM orders o 
-        JOIN hotels h ON o.hotel_id = h.id 
-        WHERE o.id = ? AND o.customer_id = ?
-    ");
-    $stmt->execute([$id, getCurrentUserId()]);
-    $item = $stmt->fetch();
-    if ($item) {
-        $amount = $item['total_amount'];
-        $title = "Order #" . str_pad($id, 5, '0', STR_PAD_LEFT);
-        $hotel_phone = $item['hotel_phone'] ?? '';
+// Fetch owner payment methods
+$stmt = $pdo->prepare("SELECT * FROM owner_payment_methods WHERE user_id = ? AND is_active = 1");
+$stmt->execute([$request['owner_id']]);
+$payment_methods = $stmt->fetchAll();
+
+// Handle proof submission
+$success = '';
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_proof'])) {
+    if (verifyCSRFToken($_POST['csrf_token'])) {
+        $method_id = intval($_POST['payment_method_id']);
+        $ref_number = sanitize($_POST['reference_number']);
+        $amount = floatval($_POST['amount']);
+        $note = sanitize($_POST['note']);
+        $proof_path = null;
+
+        if (isset($_FILES['proof_image']) && $_FILES['proof_image']['error'] === UPLOAD_ERR_OK) {
+            $proof_path = uploadFile('proof_image', 'payments/proofs/');
+        }
+
+        try {
+            // Check if reference number already exists
+            $stmt_check = $pdo->prepare("SELECT id FROM rental_payment_proofs WHERE reference_number = ? AND status != 'rejected'");
+            $stmt_check->execute([$ref_number]);
+            if ($stmt_check->fetch()) {
+                $error = "This reference number has already been used for another payment. Please check your transaction details.";
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO rental_payment_proofs (request_id, customer_id, payment_method_id, reference_number, proof_image_path, amount, note) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$request_id, $user_id, $method_id, $ref_number, $proof_path, $amount, $note]);
+                $success = "Payment proof submitted successfully! The owner will review it shortly.";
+            }
+        } catch (Exception $e) {
+            $error = "Error: " . $e->getMessage();
+        }
     }
 }
 
-if (!$item) {
-    die("Item not found");
-}
+// Check for existing submissions
+$stmt = $pdo->prepare("SELECT * FROM rental_payment_proofs WHERE request_id = ? ORDER BY submitted_at DESC");
+$stmt->execute([$request_id]);
+$proofs = $stmt->fetchAll();
 
-if ($item['payment_status'] === 'paid') {
-    if ($type === 'flight') {
-        header("Location: track_order.php?flight_booking=$id");
-    } else {
-        header("Location: track_order.php?id=$id");
-    }
-    exit();
-}
-
-include('../includes/header.php');
+include '../includes/header.php';
 ?>
+<div class="container py-5" style="max-width: 900px; font-family: 'Poppins', sans-serif;">
+    <div class="mb-5 text-center">
+        <h2 class="fw-bold mb-1">Secure Rental Payment</h2>
+        <p class="text-muted">Pay for "<?php echo htmlspecialchars($request['listing_title']); ?>" using the owner's preferred methods.</p>
+    </div>
 
-<main class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 text-center p-5">
-                <div class="mb-4">
-                    <?php if ($method === 'chapa'): ?>
-                        <div
-                            style="background:linear-gradient(135deg,#7B61FF,#00D4AA);width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;">
-                            <span style="color:#fff;font-size:24px;font-weight:bold;">C</span>
-                        </div>
-                        <h3 class="fw-bold mt-3">Chapa Payment</h3>
-                        <p class="text-muted small">Secure online payment</p>
-                    <?php elseif ($method === 'telebirr'): ?>
-                        <img src="https://img.icons8.com/color/96/000000/smartphone.png" width="80">
-                        <h3 class="fw-bold mt-3">Telebirr Payment</h3>
-                    <?php else: ?>
-                        <img src="https://img.icons8.com/color/96/000000/bank.png" width="80">
-                        <h3 class="fw-bold mt-3">CBE Birr Payment</h3>
-                    <?php endif; ?>
-                </div>
+    <?php if ($success): ?>
+        <div class="alert alert-success rounded-4 border-0 shadow-sm mb-4"><i class="fas fa-check-circle me-2"></i><?php echo $success; ?></div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+        <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-4"><i class="fas fa-exclamation-circle me-2"></i><?php echo $error; ?></div>
+    <?php endif; ?>
 
-                <div class="bg-light rounded-4 p-4 mb-4 text-start">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Item</span>
-                        <span class="fw-bold"><?php echo $title; ?></span>
+    <div class="row g-4">
+        <!-- Payment Methods -->
+        <div class="col-md-6">
+            <h5 class="fw-bold mb-3"><i class="fas fa-wallet text-primary-green me-2"></i>1. Choose Method & Pay</h5>
+            <?php if (empty($payment_methods)): ?>
+                <div class="alert alert-warning rounded-4">
+                    <i class="fas fa-info-circle me-2"></i> The owner hasn't set up online payment methods yet. Please contact them via chat for payment details.
+                    <div class="mt-3">
+                        <a href="rental_chat.php?request_id=<?php echo $request_id; ?>" class="btn btn-warning btn-sm rounded-pill fw-bold">Open Chat</a>
                     </div>
-                    <?php if ($type === 'flight'): ?>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">PNR Code</span>
-                            <span class="fw-bold text-primary"><?php echo htmlspecialchars($item['pnr_code']); ?></span>
-                        </div>
-                    <?php endif; ?>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Amount</span>
-                        <span class="fw-bold text-primary-green">
-                            <?php echo number_format($amount); ?> ETB
-                        </span>
-                    </div>
-                    <?php if (!empty($hotel_phone)): ?>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Restaurant Phone</span>
-                            <span class="fw-bold">
-                                <a href="tel:<?php echo htmlspecialchars($hotel_phone); ?>" class="text-decoration-none">
-                                    <i class="fas fa-phone-alt text-success me-1"></i>
-                                    <?php echo htmlspecialchars($hotel_phone); ?>
-                                </a>
-                            </span>
-                        </div>
-                    <?php endif; ?>
                 </div>
-
-                <?php if ($method === 'chapa'): ?>
-                    <!-- Chapa Payment Flow -->
-                    <div id="chapaPayment">
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-                                <i class="fas fa-shield-alt text-success"></i>
-                                <small class="text-muted">Secured by Chapa Payment Gateway</small>
+            <?php else: ?>
+                <div class="accordion shadow-sm rounded-4 overflow-hidden border-0" id="paymentMethods">
+                    <?php foreach ($payment_methods as $i => $m): ?>
+                        <div class="accordion-item border-0 border-bottom">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button <?php echo $i !== 0 ? 'collapsed' : ''; ?> fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#method<?php echo $m['id']; ?>">
+                                    <span class="text-uppercase me-2"><?php echo $m['method_type']; ?></span>
+                                    <small class="text-muted fw-normal"><?php echo htmlspecialchars($m['account_number']); ?></small>
+                                </button>
+                            </h2>
+                            <div id="method<?php echo $m['id']; ?>" class="accordion-collapse collapse <?php echo $i === 0 ? 'show' : ''; ?>" data-bs-parent="#paymentMethods">
+                                <div class="accordion-body bg-light">
+                                    <div class="text-center mb-3">
+                                        <?php if ($m['qr_image_path']): ?>
+                                            <p class="small fw-bold text-uppercase mb-2">Scan QR to Pay</p>
+                                            <img src="<?php echo BASE_URL . '/' . $m['qr_image_path']; ?>" class="img-fluid rounded shadow-sm mb-3" style="max-width: 180px;">
+                                        <?php endif; ?>
+                                        <div class="bg-white p-3 rounded-3 shadow-sm text-start">
+                                            <p class="mb-1 small"><strong>Account Name:</strong> <?php echo htmlspecialchars($m['account_name']); ?></p>
+                                            <p class="mb-1 small"><strong>Account Number:</strong> <?php echo htmlspecialchars($m['account_number']); ?></p>
+                                            <?php if ($m['instructions']): ?>
+                                                <hr class="my-2">
+                                                <p class="mb-0 small text-muted"><em><?php echo nl2br(htmlspecialchars($m['instructions'])); ?></em></p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted text-center mb-0">Total Due: <strong class="text-dark"><?php echo number_format($request['price']); ?> ETB</strong></p>
+                                </div>
                             </div>
                         </div>
-                        <button class="btn rounded-pill btn-lg w-100 py-3 mb-3 text-white"
-                            style="background:linear-gradient(135deg,#7B61FF,#00D4AA);border:none;"
-                            onclick="initiateChapaPayment()">
-                            <i class="fas fa-credit-card me-2"></i> Pay with Chapa
-                        </button>
-                        <p class="text-muted small mb-3">
-                            <i class="fas fa-info-circle me-1"></i>
-                            You will be redirected to Chapa's secure checkout page
-                        </p>
-                        <div class="d-flex justify-content-center gap-3 mb-3">
-                            <img src="https://img.icons8.com/color/32/mastercard.png" title="Mastercard">
-                            <img src="https://img.icons8.com/color/32/visa.png" title="VISA">
-                            <img src="https://img.icons8.com/color/32/amex.png" title="Amex">
-                        </div>
-                        <button class="btn btn-outline-secondary rounded-pill w-100" onclick="window.history.back()">
-                            Cancel
-                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Submission Form -->
+        <div class="col-md-6">
+            <h5 class="fw-bold mb-3"><i class="fas fa-file-invoice-dollar text-primary-green me-2"></i>2. Submit Proof</h5>
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <?php echo csrfField(); ?>
+                    <input type="hidden" name="submit_proof" value="1">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Method Used</label>
+                        <select name="payment_method_id" class="form-select" required>
+                            <?php foreach ($payment_methods as $m): ?>
+                                <option value="<?php echo $m['id']; ?>"><?php echo strtoupper($m['method_type']) . ' - ' . $m['account_number']; ?></option>
+                            <?php endforeach; ?>
+                            <option value="0">Other / Offline</option>
+                        </select>
                     </div>
-                <?php else: ?>
-                    <!-- Telebirr / CBE Birr Flow -->
-                    <div id="paymentProcess">
-                        <div class="mb-4">
-                            <p class="text-muted">Please confirm payment on your mobile device...</p>
-                            <div class="spinner-border text-primary-green" role="status">
-                                <span class="visually-hidden">Loading...</span>
+
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Reference Number</label>
+                                <input type="text" name="reference_number" class="form-control" placeholder="Transaction ID" required>
                             </div>
                         </div>
-
-                        <button class="btn btn-primary-green rounded-pill btn-lg w-100 py-3 mb-3"
-                            onclick="simulatePayment()">
-                            Confirm Payment
-                        </button>
-                        <button class="btn btn-outline-secondary rounded-pill w-100" onclick="window.history.back()">
-                            Cancel
-                        </button>
+                        <div class="col-4">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Amount Payed</label>
+                                <input type="number" name="amount" class="form-control" value="<?php echo (float)$request['price']; ?>" step="0.01" required>
+                            </div>
+                        </div>
                     </div>
-                <?php endif; ?>
 
-                <div id="paymentSuccess" style="display: none;">
-                    <div class="text-success mb-4">
-                        <i class="fas fa-check-circle" style="font-size: 4rem;"></i>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Upload Screenshot / Receipt</label>
+                        <input type="file" name="proof_image" class="form-control" accept="image/*" required>
                     </div>
-                    <h4 class="fw-bold">Payment Successful!</h4>
-                    <p class="text-muted mb-2">Your <?php echo $type === 'flight' ? 'ticket' : 'order'; ?> has been
-                        confirmed.</p>
-                    <?php if (!empty($hotel_phone)): ?>
-                        <p class="mb-4">
-                            <a href="tel:<?php echo htmlspecialchars($hotel_phone); ?>"
-                                class="text-decoration-none text-success">
-                                <i class="fas fa-phone-alt me-1"></i> Call Restaurant:
-                                <?php echo htmlspecialchars($hotel_phone); ?>
-                            </a>
-                        </p>
-                    <?php endif; ?>
-                    <a href="track_order.php?<?php echo $type === 'flight' ? "flight_booking=$id" : "id=$id"; ?>"
-                        class="btn btn-primary-green rounded-pill w-100 py-3">
-                        Track Status
-                    </a>
-                </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Additional Note</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Any details for the owner..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-green w-100 py-3 rounded-pill fw-bold shadow">
+                        Submit Payment Proof
+                    </button>
+                </form>
             </div>
+
+            <?php if (!empty($proofs)): ?>
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">Recent Submissions</h6>
+                    <?php foreach ($proofs as $p): ?>
+                        <div class="bg-white p-3 rounded-4 shadow-sm mb-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block"><?php echo date('M d, Y', strtotime($p['submitted_at'])); ?></small>
+                                <span class="fw-bold">Ref: <?php echo htmlspecialchars($p['reference_number']); ?></span>
+                            </div>
+                            <?php 
+                                $pBadge = 'bg-warning-subtle text-warning';
+                                if ($p['status'] === 'confirmed') $pBadge = 'bg-success-subtle text-success';
+                                if ($p['status'] === 'rejected') $pBadge = 'bg-danger-subtle text-danger';
+                            ?>
+                            <span class="badge <?php echo $pBadge; ?> rounded-pill px-3"><?php echo ucfirst($p['status']); ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
-</main>
+</div>
 
-<script>
-    const apiUrl = '<?php echo BASE_URL; ?>/api.php';
-
-    function simulatePayment() {
-        const processDiv = document.getElementById('paymentProcess');
-        const successDiv = document.getElementById('paymentSuccess');
-
-        processDiv.style.opacity = '0.5';
-        processDiv.querySelector('button').disabled = true;
-
-        const action = '<?php echo $type === 'flight' ? 'update_flight_payment' : 'update_payment_status'; ?>';
-        const idParam = '<?php echo $type === 'flight' ? 'booking_id' : 'order_id'; ?>';
-
-        fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=${action}&${idParam}=<?php echo $id; ?>&status=paid&csrf_token=<?php echo generateCSRFToken(); ?>`
-        })
-            .then(res => {
-                if (!res.ok) throw new Error('Server error: ' + res.status);
-                return res.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    processDiv.style.display = 'none';
-                    successDiv.style.display = 'block';
-                } else {
-                    alert(data.message);
-                    processDiv.style.opacity = '1';
-                    processDiv.querySelector('button').disabled = false;
-                }
-            })
-            .catch(err => {
-                console.error('Payment error:', err);
-                alert('Payment failed. Please try again.');
-                processDiv.style.opacity = '1';
-                processDiv.querySelector('button').disabled = false;
-            });
-    }
-
-    function initiateChapaPayment() {
-        const btn = event.target.closest('button');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Connecting to Chapa...';
-
-        fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=initiate_chapa_payment&order_id=<?php echo $id; ?>&payment_type=<?php echo $type; ?>&csrf_token=<?php echo generateCSRFToken(); ?>`
-        })
-            .then(res => {
-                if (!res.ok) throw new Error('Server error: ' + res.status);
-                return res.json();
-            })
-            .then(data => {
-                if (data.success && data.checkout_url) {
-                    // Redirect to Chapa checkout
-                    window.location.href = data.checkout_url;
-                } else {
-                    // Fallback: simulate payment for demo purposes
-                    alert('Chapa integration requires an API key. For now, simulating payment success.');
-                    simulateChapaSuccess();
-                }
-            })
-            .catch(err => {
-                // Fallback: simulate payment for demo
-                simulateChapaSuccess();
-            });
-    }
-
-    function simulateChapaSuccess() {
-        // Update payment status first
-        fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=update_payment_status&order_id=<?php echo $id; ?>&status=paid&csrf_token=<?php echo generateCSRFToken(); ?>`
-        })
-            .then(res => {
-                if (!res.ok) throw new Error('Server error: ' + res.status);
-                return res.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    const chapaDiv = document.getElementById('chapaPayment');
-                    const successDiv = document.getElementById('paymentSuccess');
-                    if (chapaDiv) chapaDiv.style.display = 'none';
-                    successDiv.style.display = 'block';
-                }
-            });
-    }
-</script>
-
-<?php include('../includes/footer.php'); ?>
+<style>
+    .btn-primary-green { background: #1B5E20; color: #fff; border: none; }
+    .btn-primary-green:hover { background: #2E7D32; color: #fff; }
+    .accordion-button:not(.collapsed) { background-color: rgba(27, 94, 32, 0.05); color: #1B5E20; }
+    .accordion-button:focus { box-shadow: none; }
+</style>
+<?php include '../includes/footer.php'; ?>

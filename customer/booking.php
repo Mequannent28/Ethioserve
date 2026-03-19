@@ -446,11 +446,25 @@ function updateRooms() {
                 if (data.success && data.rooms.length > 0) {
                     let html = '';
                     data.rooms.forEach(room => {
+                        let imgHtml = '';
+                        if (room.image_url) {
+                            // Convert image path strictly if it doesn't already have the proper relative prefix
+                            let src = room.image_url.startsWith('../') ? room.image_url : `../uploads/rooms/${room.image_url}`;
+                            imgHtml = `
+                            <div class="mb-3 rounded-3 overflow-hidden" style="height: 150px;">
+                                <img src="${src}" alt="Room ${room.room_number}" class="w-100 h-100" style="object-fit: cover;">
+                            </div>`;
+                        }
+                        
                         html += `
                             <div class="col-md-6">
-                                <div class="room-option card border rounded-4 p-3 h-100 cursor-pointer transition-all" 
+                                <div class="room-option card rounded-4 p-3 h-100 cursor-pointer transition-all position-relative" 
                                      onclick="selectRoom(this, ${room.id})" 
-                                     style="border: 2px solid #eee !important;">
+                                     style="border: 2px solid #eee !important; background-color: #fff !important; overflow: hidden;">
+                                    <div class="selection-indicator position-absolute top-0 end-0 mt-3 me-3 bg-success text-white rounded-circle d-none align-items-center justify-content-center shadow-sm" style="width: 24px; height: 24px; z-index: 10;">
+                                        <i class="fas fa-check small"></i>
+                                    </div>
+                                    ${imgHtml}
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h6 class="fw-bold mb-0">Room ${room.room_number}</h6>
                                         <span class="fw-bold text-primary-green">${Number(room.price_per_night).toLocaleString()} ETB</span>
@@ -479,12 +493,22 @@ function updateRooms() {
 function selectRoom(el, id) {
     // Deselect all
     document.querySelectorAll('.room-option').forEach(card => {
-        card.style.borderColor = '#eee';
-        card.classList.remove('bg-light');
+        card.style.setProperty('border', '2px solid #eee', 'important');
+        card.style.setProperty('background-color', '#fff', 'important');
+        let indicator = card.querySelector('.selection-indicator');
+        if(indicator) {
+            indicator.classList.remove('d-flex');
+            indicator.classList.add('d-none');
+        }
     });
     // Select current
-    el.style.borderColor = '#1B5E20';
-    el.classList.add('bg-light');
+    el.style.setProperty('border', '2px solid #1B5E20', 'important');
+    el.style.setProperty('background-color', '#f0fdf4', 'important');
+    let indicator = el.querySelector('.selection-indicator');
+    if(indicator) {
+        indicator.classList.remove('d-none');
+        indicator.classList.add('d-flex');
+    }
     roomInput.value = id;
 }
 

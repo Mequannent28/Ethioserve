@@ -230,7 +230,7 @@ foreach ($room_stats_raw as $rs) {
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-info text-white">
+                    <div class="card admin-stat-card border-0 shadow-sm p-4 text-white" style="background-color: #00796B;">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Active Bookings</p>
                         <h2 class="fw-bold mb-0"><?php echo number_format($active_bookings_count); ?></h2>
                         <p class="small mb-0 mt-2"><i class="fas fa-calendar-check me-1"></i> Confirmed slots</p>

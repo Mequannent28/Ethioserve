@@ -28,6 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
         $is_featured = isset($_POST['is_featured']) ? 1 : 0;
 
         try {
+            // Handle Image Upload
+            $image_url = sanitize($_POST['image_url']);
+            $uploaded_img = uploadFile('property_image', '../uploads/properties');
+            if ($uploaded_img) {
+                $image_url = $uploaded_img;
+            }
+
             $stmt = $pdo->prepare("INSERT INTO real_estate_properties 
                 (agent_id, title, description, price, type, category, location, city, bedrooms, bathrooms, area_sqm, image_url, is_featured, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')");
@@ -59,11 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 240px;
-            padding: 30px;
-            min-height: 100vh;
-        }
+        
 
         .form-card {
             background: white;
@@ -79,11 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
             font-weight: 700;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-            }
-        }
+        
     </style>
 </head>
 
@@ -110,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
                 <?php endif; ?>
 
                 <div class="form-card">
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <?php echo csrfField(); ?>
                         <input type="hidden" name="add_property" value="1">
 
@@ -205,10 +204,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
 
                                 <div class="bg-light p-4 rounded-4">
                                     <h5 class="fw-bold mb-3 small text-uppercase text-muted">Media</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Upload Property Photo</label>
+                                        <div class="border border-dashed rounded-3 p-4 text-center position-relative" id="photoDropArea" style="border-style: dashed !important; border-color: #aaa !important; cursor: pointer;">
+                                            <input type="file" name="property_image" id="property_image" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" accept="image/*" style="cursor: pointer;">
+                                            <i class="fas fa-cloud-upload-alt fs-2 text-success opacity-50 mb-2"></i>
+                                            <p class="mb-0 text-muted small" id="photo-file-name">Click or drag to upload</p>
+                                            <div id="photo-preview" class="d-none mt-3">
+                                                <img src="" class="img-fluid rounded-2" style="max-height: 120px;">
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="mb-0">
-                                        <label class="form-label fw-bold">Main Image URL</label>
+                                        <label class="form-label fw-bold text-muted small">— OR — Image URL</label>
                                         <input type="url" name="image_url" class="form-control rounded-3"
                                             placeholder="https://...">
+                                        <div class="form-text">URL is used only if no photo is uploaded.</div>
                                     </div>
                                 </div>
 
@@ -226,6 +237,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_property'])) {
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Image preview
+        const propertyImageInput = document.getElementById('property_image');
+        if (propertyImageInput) {
+            propertyImageInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('photo-file-name').textContent = file.name;
+                    const preview = document.getElementById('photo-preview');
+                    preview.querySelector('img').src = URL.createObjectURL(file);
+                    preview.classList.remove('d-none');
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>

@@ -22,6 +22,12 @@ if (isset($_SESSION['user_id']) && !isset($_SESSION['id'])) {
     $_SESSION['user_id'] = $_SESSION['id'];
 }
 
+if (isset($_SESSION['role']) && !isset($_SESSION['user_role'])) {
+    $_SESSION['user_role'] = $_SESSION['role'];
+} elseif (isset($_SESSION['user_role']) && !isset($_SESSION['role'])) {
+    $_SESSION['role'] = $_SESSION['user_role'];
+}
+
 
 /**
  * Generate CSRF Token
@@ -91,13 +97,22 @@ function requireLogin()
 
 /**
  * Require specific role - redirect if not authorized
+ * Supports single role string or array of roles
  */
 function requireRole($role)
 {
     requireLogin();
-    if (!hasRole($role)) {
-        header("Location: ../index.php");
-        exit();
+    $currentRole = getCurrentUserRole();
+    if (is_array($role)) {
+        if (!in_array($currentRole, $role)) {
+            header("Location: ../index.php");
+            exit();
+        }
+    } else {
+        if (!hasRole($role)) {
+            header("Location: ../index.php");
+            exit();
+        }
     }
 }
 
@@ -339,6 +354,72 @@ function redirectWithMessage($url, $type, $message)
 }
 
 /**
+ * Set flash message
+ */
+function setFlashMessage($message, $type = 'info')
+{
+    $_SESSION['flash_message'] = [
+        'type' => $type,
+        'message' => $message
+    ];
+}
+
+/**
+ * Handle File Upload
+ * @param string $input_name The name of the file input field
+ * @param string $target_dir The directory to save the file in
+ * @param array $allowed_types Array of allowed file extensions
+ * @return string|bool Returns the relative path to the uploaded file or false on failure
+ */
+function uploadFile($input_name, $target_dir, $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'])
+{
+    // Handle case where direct $_FILES['key'] array is passed
+    if (is_array($input_name)) {
+        $file = $input_name;
+    } elseif (isset($_FILES[$input_name])) {
+        $file = $_FILES[$input_name];
+    } else {
+        return false;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return false;
+    }
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if (!in_array($ext, $allowed_types)) {
+        return false;
+    }
+
+    // Ensure target directory exists
+    if (!is_dir($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
+    // Generate unique filename
+    $filename = uniqid('file_', true) . '.' . $ext;
+    
+    // Fix: Ensure path is correctly constructed for Windows/XAMPP
+    $base_dir = rtrim(dirname(__DIR__), DIRECTORY_SEPARATOR);
+    $target_dir = trim($target_dir, '/\\');
+    
+    $absolute_path = $base_dir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $target_dir) . DIRECTORY_SEPARATOR . $filename;
+    $relative_path = $target_dir . '/' . $filename;
+
+    // Double check directory exists with the absolute path
+    $target_folder = dirname($absolute_path);
+    if (!is_dir($target_folder)) {
+        mkdir($target_folder, 0777, true);
+    }
+
+    if (move_uploaded_file($file['tmp_name'], $absolute_path)) {
+        return $relative_path;
+    }
+
+    return false;
+}
+
+/**
  * Get and clear flash message
  */
 function getFlashMessage()
@@ -549,6 +630,7 @@ function sendOrderEmail($pdo, $order_id)
 function sendJobApplicationEmail($pdo, $application_id)
 {
     try {
+        require_once __DIR__ . '/email_service.php';
         $stmt = $pdo->prepare("
             SELECT ja.*, jl.title as job_title, jc.company_name, u.full_name, u.email
             FROM job_applications ja
@@ -563,46 +645,23 @@ function sendJobApplicationEmail($pdo, $application_id)
         if (!$app || empty($app['email']))
             return false;
 
-        $status = ucfirst($app['status']);
-        $company = $app['company_name'];
-        $job = $app['job_title'];
-        $name = $app['full_name'];
-
-        $subject = "Application Update: {$job} at {$company}";
-
-        $message_content = "";
+        $msg = "";
+        $title = "Application Update: " . $app['job_title'];
+        
         if ($app['status'] === 'shortlisted') {
-            $message_content = "Great news! You have been <strong>shortlisted</strong> for the position. The team will review your profile further.";
+            $msg = "Great news! You have been <strong>shortlisted</strong> for the position of <strong>{$app['job_title']}</strong> at {$app['company_name']}. The recruitment team will review your profile further.";
         } elseif ($app['status'] === 'interviewed') {
             $date = $app['interview_date'] ? date('M d, Y \a\t h:i A', strtotime($app['interview_date'])) : 'to be decided';
-            $message_content = "We would like to invite you for an <strong>interview</strong> for the {$job} position.<br><br><strong>Scheduled Time:</strong> {$date}";
+            $msg = "We would like to invite you for an <strong>interview</strong> for the {$app['job_title']} position at {$app['company_name']}.<br><br><strong>Scheduled Time:</strong> {$date}";
         } elseif ($app['status'] === 'hired') {
-            $message_content = "Congratulations! You have been <strong>hired</strong> for the position of {$job}. Our HR team will contact you soon with the next steps.";
+            $msg = "Congratulations! You have been <strong>hired</strong> for the position of <strong>{$app['job_title']}</strong> at {$app['company_name']}. Our HR team will contact you soon with the next steps.";
         } elseif ($app['status'] === 'rejected') {
-            $message_content = "Thank you for your interest in the {$job} position. After careful consideration, we will not be moving forward with your application at this time.";
+            $msg = "Thank you for your interest in the {$app['job_title']} position at {$app['company_name']}. After careful consideration, we will not be moving forward with your application at this time.";
         } else {
-            $message_content = "The status of your application for {$job} has been updated to <strong>{$status}</strong>.";
+            $msg = "The status of your application for {$app['job_title']} at {$app['company_name']} has been updated to <strong>" . ucfirst($app['status']) . "</strong>.";
         }
 
-        $html_body = "
-        <div style='max-width:600px;margin:20px auto;font-family:Arial,sans-serif;color:#333;line-height:1.6;'>
-            <div style='background:#1B5E20;padding:30px;text-align:center;border-radius:10px 10px 0 0;'>
-                <h1 style='color:#FFB300;margin:0;'>EthioServe Jobs</h1>
-            </div>
-            <div style='background:#fff;padding:40px;border:1px solid #eee;border-top:none;'>
-                <h2>Hello {$name},</h2>
-                <p>{$message_content}</p>
-                <p style='margin-top:30px;'>Best regards,<br>The Recruitment Team at <strong>{$company}</strong></p>
-                <hr style='border:none;border-top:1px solid #eee;margin:30px 0;'>
-                <p style='font-size:12px;color:#888;'>This is an automated message from EthioServe Platform.</p>
-            </div>
-        </div>";
-
-        $headers = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: EthioServe Jobs <noreply@ethioserve.com>\r\n";
-
-        return @mail($app['email'], $subject, $html_body, $headers);
+        return sendDirectNotification($app['email'], $title, $msg, 'View Application', '/customer/jobs.php?tab=my_apps');
     } catch (Exception $e) {
         return false;
     }
@@ -883,6 +942,14 @@ function getUnreadMessageCount()
     // 3. Dating Messages
     try {
         $s = $pdo->prepare("SELECT COUNT(*) FROM dating_messages WHERE receiver_id = ? AND is_read = 0");
+        $s->execute([$user_id]);
+        $total += (int) $s->fetchColumn();
+    } catch (Exception $e) {
+    }
+
+    // 4. Rental Chat Messages
+    try {
+        $s = $pdo->prepare("SELECT COUNT(*) FROM rental_chat_messages WHERE receiver_id = ? AND is_read = 0");
         $s->execute([$user_id]);
         $total += (int) $s->fetchColumn();
     } catch (Exception $e) {

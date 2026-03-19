@@ -275,7 +275,7 @@ $maintenance = count(array_filter($vehicles, fn($v) => $v['status'] === 'mainten
     </div>
 
     <!-- Add Vehicle Modal -->
-    <div class="modal fade" id="addVehicleModal" tabindex="-1">
+    <div class="modal" id="addVehicleModal" tabindex="-1">
         <div class="modal-dialog">
             <form method="POST" class="modal-content">
                 <?php echo csrfField(); ?>

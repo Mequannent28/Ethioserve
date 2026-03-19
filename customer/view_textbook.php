@@ -68,8 +68,8 @@ if (!function_exists('hexToRgb')) {
 }
 
 // Handle Download Request
-if (isset($_GET['download']) && $_GET['download'] === 'true' && (isset($res_data['file_path']) || isset($res_data['file_url']))) {
-    $raw_path = $res_data['file_url'] ?? $res_data['file_path'];
+if (isset($_GET['download']) && $_GET['download'] === 'true' && (isset($res_data['file_path']) || isset($res_data['file_url']) || isset($res_data['local_file_path']))) {
+    $raw_path = $res_data['local_file_path'] ?? $res_data['file_url'] ?? $res_data['file_path'] ?? '';
 
     if (strpos($raw_path, 'http') === 0) {
         // Redir to external URL for download if it's a full URL
@@ -165,7 +165,7 @@ if (isset($subject_colors[$res_data['subject']])) {
     $color = $subject_colors[$res_data['subject']];
 }
 
-$raw_url = $res_data['file_url'] ?? $res_data['file_path'] ?? '';
+$raw_url = $res_data['local_file_path'] ?? $res_data['file_url'] ?? $res_data['file_path'] ?? '';
 $pdf_url = (strpos($raw_url, 'http') === 0) ? $raw_url : '../uploads/education/' . $raw_url;
 
 $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
@@ -496,6 +496,11 @@ $lms_url = 'lms.php?grade=' . $grade . '&subject=' . urlencode($subject);
                         <iframe src="https://www.youtube.com/embed/<?php echo $video_id; ?>?autoplay=1" class="video-player"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowfullscreen></iframe>
+                    <?php elseif (!empty($res_data['local_video_path'])): ?>
+                        <video class="video-player w-100 h-100" controls autoplay>
+                            <source src="../uploads/education/videos/<?php echo $res_data['local_video_path']; ?>" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
                     <?php else: ?>
                         <div class="fallback-message">
                             <i class="fas fa-play-circle mb-3" style="font-size: 3rem; opacity: 0.5;"></i>

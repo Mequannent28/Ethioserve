@@ -134,7 +134,7 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Details Modal -->
-                <div class="modal fade" id="modal<?php echo $b['id']; ?>" tabindex="-1">
+                <div class="modal" id="modal<?php echo $b['id']; ?>" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content border-0 rounded-4">
                             <div class="modal-header border-0 p-4">

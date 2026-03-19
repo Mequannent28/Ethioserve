@@ -2,68 +2,90 @@
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
 
-// Check if user is logged in and is a broker
-requireRole('broker');
+requireRole(['broker', 'property_owner']);
 
 $user_id = getCurrentUserId();
+$user_name = getCurrentUserName();
 
-// Get broker details
+// Get broker record (create if missing)
 $stmt = $pdo->prepare("SELECT * FROM brokers WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $broker = $stmt->fetch();
 
 if (!$broker) {
-    // Auto-create broker record if it doesn't exist but user has the role
-    $referral_code = generateReferralCode();
-    $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code, created_at) VALUES (?, ?, NOW())");
-    $stmt->execute([$user_id, $referral_code]);
-
+    $ref_code = 'REF' . strtoupper(substr(uniqid(), -6));
+    $stmt = $pdo->prepare("INSERT INTO brokers (user_id, referral_code) VALUES (?, ?)");
+    $stmt->execute([$user_id, $ref_code]);
     $stmt = $pdo->prepare("SELECT * FROM brokers WHERE user_id = ?");
     $stmt->execute([$user_id]);
     $broker = $stmt->fetch();
 }
-$broker_id = $broker['id'];
-// Fetch stats
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM referrals WHERE broker_id = ?");
-$stmt->execute([$broker_id]);
-$referred_count = $stmt->fetchColumn();
 
-$stmt = $pdo->prepare("SELECT SUM(commission_amount) FROM referrals WHERE broker_id = ? AND status = 'paid'");
-$stmt->execute([$broker_id]);
-$total_earnings = $stmt->fetchColumn() ?: 0;
+// Stats: Listings
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM listings WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$listings_count = (int)$stmt->fetchColumn();
 
-$stmt = $pdo->prepare("SELECT SUM(commission_amount) FROM referrals WHERE broker_id = ? AND status = 'pending'");
-$stmt->execute([$broker_id]);
-$pending_commissions = $stmt->fetchColumn() ?: 0;
+// Stats: Active (available) listings
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM listings WHERE user_id = ? AND status = 'available'");
+$stmt->execute([$user_id]);
+$active_listings = (int)$stmt->fetchColumn();
 
-// Get recent referrals with order details
+// Stats: Total requests
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM rental_requests rr JOIN listings l ON rr.listing_id = l.id WHERE l.user_id = ?");
+$stmt->execute([$user_id]);
+$requests_count = (int)$stmt->fetchColumn();
+
+// Stats: Pending requests
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM rental_requests rr JOIN listings l ON rr.listing_id = l.id WHERE l.user_id = ? AND rr.status = 'pending'");
+$stmt->execute([$user_id]);
+$pending_requests = (int)$stmt->fetchColumn();
+
+// Stats: Pending commissions from referrals
+$pending_commissions = 0;
+if ($broker) {
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(commission_amount), 0) FROM referrals WHERE broker_id = ? AND status = 'pending'");
+    $stmt->execute([$broker['id']]);
+    $pending_commissions = (float)$stmt->fetchColumn();
+}
+
+// Stats: Total earned commissions
+$total_earned = 0;
+if ($broker) {
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(commission_amount), 0) FROM referrals WHERE broker_id = ? AND status = 'paid'");
+    $stmt->execute([$broker['id']]);
+    $total_earned = (float)$stmt->fetchColumn();
+}
+
+// Stats: Total payments needing verification
 $stmt = $pdo->prepare("
-    SELECT r.*, o.total_amount as order_amount, o.status as order_status,
-           u.full_name as customer_name, h.name as hotel_name
-    FROM referrals r
-    JOIN orders o ON r.order_id = o.id
-    JOIN users u ON o.customer_id = u.id
-    JOIN hotels h ON o.hotel_id = h.id
-    WHERE r.broker_id = ?
-    ORDER BY r.created_at DESC
-    LIMIT 10
+    SELECT COUNT(*) 
+    FROM rental_payment_proofs p
+    JOIN rental_requests rr ON p.request_id = rr.id
+    JOIN listings l ON rr.listing_id = l.id
+    WHERE l.user_id = ? AND p.status = 'pending'
 ");
-$stmt->execute([$broker_id]);
-$recent_referrals = $stmt->fetchAll();
+$stmt->execute([$user_id]);
+$pending_payments = (int)$stmt->fetchColumn();
 
-// Get monthly earnings for chart
+// Recent requests (last 8)
 $stmt = $pdo->prepare("
-    SELECT 
-        DATE_FORMAT(r.created_at, '%Y-%m') as month,
-        SUM(r.commission_amount) as earnings
-    FROM referrals r
-    WHERE r.broker_id = ? AND r.status = 'paid'
-    GROUP BY DATE_FORMAT(r.created_at, '%Y-%m')
-    ORDER BY month DESC
-    LIMIT 6
+    SELECT rr.*, l.title as listing_title, l.type as listing_type, l.image_url as listing_img
+    FROM rental_requests rr
+    JOIN listings l ON rr.listing_id = l.id
+    WHERE l.user_id = ?
+    ORDER BY rr.created_at DESC
+    LIMIT 8
 ");
-$stmt->execute([$broker_id]);
-$monthly_earnings = $stmt->fetchAll();
+$stmt->execute([$user_id]);
+$recent_requests = $stmt->fetchAll();
+
+// Recent Listings (last 5)
+$stmt = $pdo->prepare("SELECT * FROM listings WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+$stmt->execute([$user_id]);
+$recent_listings = $stmt->fetchAll();
+
+$flash = getFlashMessage();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -71,28 +93,200 @@ $monthly_earnings = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Broker Dashboard - EthioServe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <title>Owner Dashboard - EthioServe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="/ethioserve/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
         body {
             overflow-x: hidden;
+            background-color: #f0f2f5;
         }
 
         .dashboard-wrapper {
             display: flex;
             width: 100%;
-            align-items: stretch;
         }
 
         .main-content {
-            flex: 1;
-            padding: 30px;
-            background-color: #f8f9fa;
+            padding: 30px 32px;
+            background-color: #f0f2f5;
             min-height: 100vh;
+            flex: 1;
+        }
+
+        /* ---- Stat Cards ---- */
+        .stat-card {
+            border-radius: 18px;
+            border: none;
+            padding: 24px 22px;
+            color: #fff;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.13);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            right: -20px;
+            top: -20px;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-card .label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .sub {
+            font-size: 0.78rem;
+            opacity: 0.7;
+        }
+
+        .stat-card .icon-bg {
+            position: absolute;
+            right: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2.4rem;
+            opacity: 0.2;
+        }
+
+        .bg-green-grad { background: linear-gradient(135deg, #1B5E20, #43A047); }
+        .bg-blue-grad  { background: linear-gradient(135deg, #1565C0, #42A5F5); }
+        .bg-amber-grad { background: linear-gradient(135deg, #E65100, #FFA726); }
+        .bg-teal-grad  { background: linear-gradient(135deg, #00695C, #26A69A); }
+
+        /* ---- Cards ---- */
+        .content-card {
+            background: #fff;
+            border-radius: 18px;
+            border: none;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
+        }
+
+        .content-card .card-header-custom {
+            padding: 20px 22px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .content-card .card-header-custom h5 {
+            font-weight: 700;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        /* ---- Status badges ---- */
+        .badge-pending  { background: #FFF3E0; color: #E65100; }
+        .badge-approved { background: #E8F5E9; color: #1B5E20; }
+        .badge-rejected { background: #FFEBEE; color: #C62828; }
+
+        /* ---- Listing type pill ---- */
+        .type-pill {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: #E8F5E9;
+            color: #1B5E20;
+        }
+
+        /* ---- Quick action ---- */
+        .quick-action {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #f8f9fa;
+            border: 1.5px solid #eee;
+            cursor: pointer;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.25s;
+        }
+
+        .quick-action:hover {
+            border-color: #1B5E20;
+            background: #E8F5E9;
+            transform: translateY(-2px);
+        }
+
+        .quick-action .qa-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        /* ---- Page header ---- */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-header h2 {
+            font-weight: 800;
+            margin: 0;
+            font-size: 1.65rem;
+            color: #1a1a1a;
+        }
+
+        .referral-code-box {
+            background: linear-gradient(135deg, #1B5E20, #2E7D32);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+        }
+
+        .referral-code-box .code {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            font-family: monospace;
+        }
+
+        @media (max-width: 991px) {
+            .main-content { padding: 20px 16px; }
+            .stat-card .value { font-size: 1.75rem; }
         }
     </style>
 </head>
@@ -102,274 +296,266 @@ $monthly_earnings = $stmt->fetchAll();
         <?php include('../includes/sidebar_broker.php'); ?>
 
         <div class="main-content">
-            <?php echo displayFlashMessage(); ?>
+            <?php if ($flash): ?>
+                <div class="alert alert-<?php echo $flash['type'] === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4">
+                    <?php echo htmlspecialchars($flash['message']); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
 
-            <!-- Top Nav -->
-            <div class="d-flex justify-content-between align-items-center mb-5">
+            <!-- Page Header -->
+            <div class="page-header">
                 <div>
-                    <h2 class="fw-bold mb-0">Broker Portal</h2>
-                    <p class="text-muted">
-                        Welcome, <?php echo htmlspecialchars(getCurrentUserName()); ?> |
-                        Your Code: <strong
-                            class="text-primary-green"><?php echo htmlspecialchars($broker['referral_code']); ?></strong>
-                    </p>
+                    <h2><i class="fas fa-th-large text-primary-green me-2 opacity-75"></i>Property Owner Dashboard</h2>
+                    <p class="text-muted mb-0">Welcome back, <strong><?php echo htmlspecialchars($user_name); ?></strong>! Here's what's happening.</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary-green rounded-pill px-4"
-                        onclick="copyReferral('<?php echo htmlspecialchars($broker['referral_code']); ?>')">
-                        <i class="fas fa-copy me-2"></i> Copy Code
-                    </button>
-                    <button class="btn btn-warning rounded-pill px-4" data-bs-toggle="modal"
-                        data-bs-target="#shareModal">
-                        <i class="fas fa-share-alt me-2"></i> Share Link
-                    </button>
-                    <a href="../logout.php" class="btn btn-white shadow-sm rounded-pill px-4 text-danger">
-                        <i class="fas fa-sign-out-alt"></i>
+                    <?php if ($pending_requests > 0): ?>
+                        <a href="requests.php" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="fas fa-bell me-2"></i>
+                            <?php echo $pending_requests; ?> Pending Request<?php echo $pending_requests > 1 ? 's' : ''; ?>
+                        </a>
+                    <?php endif; ?>
+                    <a href="post_listing.php" class="btn btn-primary-green rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fas fa-plus me-2"></i> Add Listing
                     </a>
                 </div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="row g-4 mb-5">
-                <div class="col-md-4">
-                    <div class="card p-4 border-0 shadow-sm bg-primary-green text-white">
-                        <p class="small mb-1 fw-bold text-uppercase opacity-75">Total Referrals</p>
-                        <h2 class="fw-bold mb-3"><?php echo number_format($referred_count); ?></h2>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-white text-success rounded-pill">Lifetime activity</span>
-                        </div>
+            <!-- ===== STAT CARDS ===== -->
+            <div class="row g-4 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div class="stat-card bg-green-grad shadow-sm">
+                        <p class="label">Total Listings</p>
+                        <div class="value"><?php echo $listings_count; ?></div>
+                        <p class="sub"><i class="fas fa-home me-1"></i> <?php echo $active_listings; ?> active</p>
+                        <i class="fas fa-home icon-bg"></i>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card p-4 border-0 shadow-sm">
-                        <p class="text-muted small mb-1 fw-bold text-uppercase">Total Earnings</p>
-                        <h2 class="fw-bold mb-3"><?php echo number_format($total_earnings, 2); ?> <span
-                                class="fs-6 fw-normal">ETB</span></h2>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-success small fw-bold"><i class="fas fa-check-circle me-1"></i> Paid
-                                out</span>
-                        </div>
+                <div class="col-6 col-xl-3">
+                    <div class="stat-card bg-amber-grad shadow-sm">
+                        <p class="label">Pending Requests</p>
+                        <div class="value"><?php echo $pending_requests; ?></div>
+                        <p class="sub"><i class="fas fa-envelope-open me-1"></i> <?php echo $requests_count; ?> total</p>
+                        <i class="fas fa-envelope-open-text icon-bg"></i>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card p-4 border-0 shadow-sm border-start border-warning border-4">
-                        <p class="text-muted small mb-1 fw-bold text-uppercase">Pending Commission</p>
-                        <h2 class="fw-bold mb-3"><?php echo number_format($pending_commissions, 2); ?> <span
-                                class="fs-6 fw-normal">ETB</span></h2>
-                        <?php if ($pending_commissions > 0): ?>
-                            <button class="btn btn-gold btn-sm rounded-pill px-3" data-bs-toggle="modal"
-                                data-bs-target="#withdrawModal">
-                                <i class="fas fa-wallet me-1"></i> Request Withdrawal
-                            </button>
+                
+                <?php if ($broker && $_SESSION['role'] === 'broker'): ?>
+                <div class="col-6 col-xl-3">
+                    <div class="stat-card bg-blue-grad shadow-sm">
+                        <p class="label">Commissions</p>
+                        <div class="value"><?php echo number_format($pending_commissions / 1000, 1); ?>k</div>
+                        <p class="sub"><i class="fas fa-coins me-1"></i> ETB pending</p>
+                        <i class="fas fa-coins icon-bg"></i>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="col-6 col-xl-3">
+                    <div class="stat-card bg-teal-grad shadow-sm">
+                        <p class="label">Verify Payments</p>
+                        <div class="value"><?php echo $pending_payments; ?></div>
+                        <p class="sub"><i class="fas fa-file-invoice-dollar me-1"></i> Awaiting review</p>
+                        <i class="fas fa-money-bill-wave icon-bg"></i>
+                    </div>
+                </div>
+
+                <?php if ($_SESSION['role'] === 'property_owner'): ?>
+                <div class="col-6 col-xl-3">
+                    <div class="stat-card bg-blue-grad shadow-sm">
+                        <p class="label">Total Earned</p>
+                        <div class="value"><?php echo number_format($total_earned / 1000, 1); ?>k</div>
+                        <p class="sub"><i class="fas fa-check-circle me-1"></i> ETB confirmed</p>
+                        <i class="fas fa-check-double icon-bg"></i>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- ===== MAIN BODY ===== -->
+            <div class="row g-4">
+
+                <!-- Recent Requests -->
+                <div class="col-lg-8">
+                    <div class="content-card h-100">
+                        <div class="card-header-custom">
+                            <h5><i class="fas fa-envelope-open-text text-primary-green me-2"></i>Recent Inquiries</h5>
+                            <a href="requests.php" class="btn btn-sm btn-light rounded-pill px-3">View All</a>
+                        </div>
+
+                        <?php if (empty($recent_requests)): ?>
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fs-1 opacity-25 mb-3 d-block"></i>
+                                <p class="fw-bold mb-1">No requests yet</p>
+                                <small>When customers contact you, they'll appear here.</small>
+                            </div>
                         <?php else: ?>
-                            <span class="text-muted small">No pending commissions</span>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="px-4 py-3">Listing</th>
+                                            <th>Customer</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th class="text-end px-4">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recent_requests as $req): ?>
+                                            <tr>
+                                                <td class="px-4">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <img src="<?php echo $req['listing_img'] ?: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=60'; ?>"
+                                                             width="42" height="42"
+                                                             style="border-radius:10px;object-fit:cover;" alt="">
+                                                        <div>
+                                                            <div class="fw-bold text-truncate" style="max-width:160px;">
+                                                                <?php echo htmlspecialchars($req['listing_title']); ?>
+                                                            </div>
+                                                            <span class="type-pill"><?php echo str_replace('_', ' ', $req['listing_type']); ?></span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="fw-bold"><?php echo htmlspecialchars($req['customer_name'] ?? 'N/A'); ?></div>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($req['customer_phone'] ?? ''); ?></small>
+                                                </td>
+                                                <td class="text-muted small"><?php echo date('M d, Y', strtotime($req['created_at'])); ?></td>
+                                                <td>
+                                                    <?php
+                                                    $s = $req['status'];
+                                                    $cls = $s === 'approved' ? 'badge-approved' : ($s === 'rejected' ? 'badge-rejected' : 'badge-pending');
+                                                    ?>
+                                                    <span class="badge rounded-pill px-3 py-2 fw-bold <?php echo $cls; ?>">
+                                                        <?php echo ucfirst($s); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="text-end px-4">
+                                                    <a href="requests.php" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
 
-            <!-- How Referrals Work -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary-green me-2"></i>How Your
-                        Referrals Work</h5>
-                    <div class="row g-4">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="fas fa-share-alt text-primary-green"></i>
-                                </div>
-                                <h6 class="fw-bold">1. Share Code</h6>
-                                <p class="small text-muted mb-0">Share your referral code with friends</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="fas fa-shopping-cart text-primary-green"></i>
-                                </div>
-                                <h6 class="fw-bold">2. They Order</h6>
-                                <p class="small text-muted mb-0">They use your code when ordering</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="fas fa-percentage text-primary-green"></i>
-                                </div>
-                                <h6 class="fw-bold">3. Earn 5%</h6>
-                                <p class="small text-muted mb-0">Get 5% commission on every order</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="fas fa-money-bill-wave text-primary-green"></i>
-                                </div>
-                                <h6 class="fw-bold">4. Get Paid</h6>
-                                <p class="small text-muted mb-0">Withdraw your earnings anytime</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <!-- Right Column -->
+                <div class="col-lg-4 d-flex flex-column gap-4">
 
-            <!-- Recent Referrals Table -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Recent Referral Activity</h5>
-                    <a href="referrals.php" class="btn btn-light btn-sm rounded-pill">View All</a>
-                </div>
-
-                <?php if (empty($recent_referrals)): ?>
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-users text-muted mb-3" style="font-size: 4rem;"></i>
-                        <h5 class="text-muted">No referrals yet</h5>
-                        <p class="text-muted">Share your referral code to start earning commissions!</p>
-                        <button class="btn btn-primary-green rounded-pill px-4"
-                            onclick="copyReferral('<?php echo htmlspecialchars($broker['referral_code']); ?>')">
-                            <i class="fas fa-copy me-2"></i> Copy Your Code
+                    <!-- Referral Code Card -->
+                    <?php if ($broker): ?>
+                    <div class="referral-code-box shadow-sm">
+                        <p class="small fw-bold opacity-75 text-uppercase mb-2"><i class="fas fa-share-alt me-2"></i>Your Referral Code</p>
+                        <div class="code mb-2"><?php echo htmlspecialchars($broker['referral_code'] ?? 'N/A'); ?></div>
+                        <p class="small opacity-70 mb-3">Share this code so customers can use it at checkout and you earn commissions.</p>
+                        <button class="btn btn-warning btn-sm rounded-pill fw-bold px-4"
+                            onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($broker['referral_code']); ?>').then(()=>this.innerHTML='<i class=\'fas fa-check me-1\'></i>Copied!')">
+                            <i class="fas fa-copy me-2"></i>Copy Code
                         </button>
                     </div>
-                <?php else: ?>
-                    <div class="table-responsive px-4 pb-4">
-                        <table class="table table-hover align-middle">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="border-0 px-3">Order ID</th>
-                                    <th class="border-0">Customer</th>
-                                    <th class="border-0">Restaurant</th>
-                                    <th class="border-0">Order Amount</th>
-                                    <th class="border-0">Commission (5%)</th>
-                                    <th class="border-0">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_referrals as $ref): ?>
-                                    <tr>
-                                        <td class="px-3 fw-bold text-primary-green">
-                                            #<?php echo str_pad($ref['order_id'], 5, '0', STR_PAD_LEFT); ?>
-                                        </td>
-                                        <td><?php echo htmlspecialchars($ref['customer_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($ref['hotel_name']); ?></td>
-                                        <td><?php echo number_format($ref['order_amount']); ?> ETB</td>
-                                        <td class="fw-bold text-success">
-                                            <?php echo number_format($ref['commission_amount'], 2); ?> ETB
-                                        </td>
-                                        <td>
-                                            <?php if ($ref['status'] === 'paid'): ?>
-                                                <span
-                                                    class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Paid</span>
-                                            <?php else: ?>
-                                                <span
-                                                    class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill">Pending</span>
+                    <?php endif; ?>
+
+                    <!-- Quick Actions -->
+                    <div class="content-card">
+                        <div class="card-header-custom">
+                            <h5><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body p-3 d-flex flex-column gap-3">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <a href="post_listing.php" class="quick-action h-100 flex-column text-center p-3">
+                                        <div class="qa-icon bg-success-subtle text-success mb-2 mx-auto"><i class="fas fa-plus"></i></div>
+                                        <span class="small fw-bold">Post New</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="my_listings.php" class="quick-action h-100 flex-column text-center p-3">
+                                        <div class="qa-icon bg-primary-subtle text-primary mb-2 mx-auto"><i class="fas fa-list"></i></div>
+                                        <span class="small fw-bold">Listings</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="requests.php" class="quick-action h-100 flex-column text-center p-3">
+                                        <div class="qa-icon bg-warning-subtle text-warning mb-2 mx-auto">
+                                            <i class="fas fa-envelope-open"></i>
+                                            <?php if ($pending_requests > 0): ?>
+                                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                                    <?php echo $pending_requests; ?>
+                                                </span>
                                             <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
+                                        </div>
+                                        <span class="small fw-bold">Requests</span>
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <a href="payment_settings.php" class="quick-action h-100 flex-column text-center p-3">
+                                        <div class="qa-icon bg-info-subtle text-info mb-2 mx-auto"><i class="fas fa-qrcode"></i></div>
+                                        <span class="small fw-bold">Payment</span>
+                                    </a>
+                                </div>
+                            </div>
 
-    <!-- Share Modal -->
-    <div class="modal fade" id="shareModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Share Your Referral Link</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Your Referral Code</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-light border-0"
-                                value="<?php echo htmlspecialchars($broker['referral_code']); ?>" readonly
-                                id="referralCode">
-                            <button class="btn btn-primary-green"
-                                onclick="copyReferral('<?php echo htmlspecialchars($broker['referral_code']); ?>')">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Share via</label>
-                        <div class="d-flex gap-2">
-                            <a href="https://wa.me/?text=Use%20my%20referral%20code%20<?php echo urlencode($broker['referral_code']); ?>%20on%20EthioServe%20and%20get%20discounts!"
-                                target="_blank" class="btn btn-success rounded-pill flex-grow-1">
-                                <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                            <a href="referrals.php" class="quick-action">
+                                <div class="qa-icon bg-success-subtle text-success"><i class="fas fa-hand-holding-usd"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Earnings & Referrals</div>
+                                    <div class="text-muted" style="font-size:0.7rem;">Track your commissions</div>
+                                </div>
                             </a>
-                            <a href="https://t.me/share/url?text=Use%20my%20referral%20code%20<?php echo urlencode($broker['referral_code']); ?>%20on%20EthioServe!"
-                                target="_blank" class="btn btn-info rounded-pill flex-grow-1 text-white">
-                                <i class="fab fa-telegram me-2"></i>Telegram
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Withdrawal Modal -->
-    <div class="modal fade" id="withdrawModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Request Withdrawal</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        You have <strong><?php echo number_format($pending_commissions, 2); ?> ETB</strong> pending
-                        commission.
+                            <?php if ($pending_payments > 0): ?>
+                            <a href="requests.php" class="quick-action border-warning bg-warning-subtle">
+                                <div class="qa-icon bg-warning text-dark"><i class="fas fa-file-invoice-dollar"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Verify <?php echo $pending_payments; ?> Payments</div>
+                                    <div class="text-muted" style="font-size:0.7rem;">New proofs submitted</div>
+                                </div>
+                            </a>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Payment Method</label>
-                            <select class="form-select rounded-pill bg-light border-0">
-                                <option>Telebirr</option>
-                                <option>CBE Birr</option>
-                                <option>Bank Transfer</option>
-                            </select>
+
+                    <!-- Recent Listings snapshot -->
+                    <?php if (!empty($recent_listings)): ?>
+                    <div class="content-card">
+                        <div class="card-header-custom">
+                            <h5><i class="fas fa-home text-primary-green me-2"></i>My Listings</h5>
+                            <a href="my_listings.php" class="btn btn-sm btn-light rounded-pill px-3">See All</a>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Account Number</label>
-                            <input type="text" class="form-control rounded-pill bg-light border-0"
-                                placeholder="Enter your account number">
+                        <div class="p-3 d-flex flex-column gap-2">
+                            <?php foreach ($recent_listings as $listing): ?>
+                                <div class="d-flex align-items-center gap-3 p-2 rounded-3 hover-bg"
+                                     style="transition:0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='transparent'">
+                                    <img src="<?php echo htmlspecialchars($listing['image_url'] ?: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=60'); ?>"
+                                         width="46" height="46" style="border-radius:10px;object-fit:cover;" alt="">
+                                    <div style="flex:1;min-width:0;">
+                                        <div class="fw-bold text-truncate" style="font-size:0.83rem;max-width:160px;">
+                                            <?php echo htmlspecialchars($listing['title']); ?>
+                                        </div>
+                                        <div class="text-muted" style="font-size:0.73rem;"><?php echo number_format($listing['price']); ?> ETB</div>
+                                    </div>
+                                    <span class="badge rounded-pill px-2 py-1 <?php echo $listing['status'] === 'available' ? 'badge-approved' : 'badge-pending'; ?>"
+                                          style="font-size:0.64rem;">
+                                        <?php echo ucfirst($listing['status']); ?>
+                                    </span>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-                        <button type="button" class="btn btn-primary-green w-100 rounded-pill py-3"
-                            onclick="alert('Withdrawal request submitted! Our team will process it within 24-48 hours.')">
-                            <i class="fas fa-paper-plane me-2"></i> Submit Request
-                        </button>
-                    </form>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
-        </div>
+        </div><!-- /main-content -->
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function copyReferral(code) {
-            navigator.clipboard.writeText(code).then(() => {
-                alert('Referral code copied: ' + code);
-            }).catch(() => {
-                // Fallback
-                const input = document.getElementById('referralCode');
-                input.select();
-                document.execCommand('copy');
-                alert('Referral code copied: ' + code);
-            });
-        }
-    </script>
 </body>
 
 </html>

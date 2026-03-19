@@ -84,6 +84,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
+                <?php if (!in_array($user_role, ['teacher', 'student', 'parent', 'school_admin'])): ?>
                 <div class="mx-auto w-50 d-none d-lg-block position-relative" id="search-wrapper">
                     <form class="input-group" action="<?php echo $base_url; ?>/customer/index.php" method="GET"
                         id="search-form" autocomplete="off">
@@ -99,6 +100,11 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                     <!-- Live Search Dropdown -->
                     <div id="live-search-results" class="live-search-dropdown"></div>
                 </div>
+                <?php else: ?>
+                <div class="mx-auto text-primary-green fw-bold d-none d-lg-flex align-items-center gap-2">
+                    <i class="fas fa-graduation-cap fs-4"></i> School Management System
+                </div>
+                <?php endif; ?>
 
                 <!-- Live Search Styles & Script -->
                 <style>
@@ -416,6 +422,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                 </script>
 
                 <ul class="navbar-nav ms-auto align-items-center">
+                    <?php if (!in_array($user_role, ['teacher', 'student', 'parent', 'school_admin'])): ?>
                     <li class="nav-item">
                         <a class="nav-link px-3" href="<?php echo $base_url; ?>/realestate/index.php">
                             <i class="fas fa-building fs-5 text-primary-green"></i>
@@ -428,8 +435,10 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                             <span class="d-none d-sm-inline ms-1">Book</span>
                         </a>
                     </li>
+                    <?php endif; ?>
 
                     <?php if ($is_logged_in): ?>
+                        <?php if (!in_array($user_role, ['teacher', 'student', 'parent', 'school_admin'])): ?>
                         <li class="nav-item">
                             <a class="nav-link px-3 position-relative" href="<?php echo $base_url; ?>/customer/cart.php">
                                 <i class="fas fa-shopping-cart fs-5 text-primary-green"></i>
@@ -447,6 +456,7 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                 <span class="d-none d-sm-inline ms-1">Orders</span>
                             </a>
                         </li>
+                        <?php endif; ?>
                         <li class="nav-item dropdown ms-lg-2">
                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown"
                                 role="button" data-bs-toggle="dropdown">
@@ -525,6 +535,10 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                             href="<?php echo $base_url; ?>/customer/medical_records.php">
                                             <i class="fas fa-file-medical me-2 text-primary-green"></i> Medical Records</a>
                                     </li>
+                                    <li><a class="dropdown-item py-2"
+                                            href="<?php echo $base_url; ?>/customer/rental_requests.php">
+                                            <i class="fas fa-home me-2 text-primary-green"></i> My Property Inquiries</a>
+                                    </li>
 
                                     <li>
                                         <hr class="dropdown-divider">
@@ -538,6 +552,9 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     </li>
                                     <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/rent.php">
                                             <i class="fas fa-home me-2 text-primary-green"></i> Rent & Real Estate</a>
+                                    </li>
+                                    <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/favorites.php">
+                                            <i class="fas fa-heart me-2 text-danger"></i> My Saved Listings</a>
                                     </li>
                                     <li><a class="dropdown-item py-2" href="<?php echo $base_url; ?>/customer/taxi.php">
                                             <i class="fas fa-taxi me-2 text-primary-green"></i> Taxi & Rides</a>
@@ -576,10 +593,18 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/hotel/dashboard.php">
                                             <i class="fas fa-hotel me-2 text-primary"></i> My Dashboard</a></li>
-                                <?php elseif ($user_role == 'broker'): ?>
-                                    <li><a class="dropdown-item py-2 fw-bold"
+                                <?php elseif ($user_role == 'broker' || $user_role == 'property_owner'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold text-success"
                                             href="<?php echo $base_url; ?>/broker/dashboard.php">
-                                            <i class="fas fa-handshake me-2 text-success"></i> My Dashboard</a></li>
+                                            <i class="fas fa-house-user me-2"></i> Owner Portal</a></li>
+                                    <li><a class="dropdown-item py-1 px-4" href="<?php echo $base_url; ?>/broker/my_listings.php">
+                                            <i class="fas fa-list me-2 text-muted" style="width:20px;"></i> My Listings</a></li>
+                                    <li><a class="dropdown-item py-1 px-4" href="<?php echo $base_url; ?>/broker/requests.php">
+                                            <i class="fas fa-envelope-open-text me-2 text-muted" style="width:20px;"></i> Rental Requests</a></li>
+                                    <li><a class="dropdown-item py-1 px-4" href="<?php echo $base_url; ?>/broker/post_listing.php">
+                                            <i class="fas fa-plus-circle me-2 text-muted" style="width:20px;"></i> Add New Listing</a></li>
+                                    <li><a class="dropdown-item py-1 px-4" href="<?php echo $base_url; ?>/broker/messages.php">
+                                            <i class="fas fa-comments me-2 text-muted" style="width:20px;"></i> Messages Center</a></li>
                                 <?php elseif ($user_role == 'admin'): ?>
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/admin/dashboard.php">
@@ -588,14 +613,6 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/doctor/dashboard.php">
                                             <i class="fas fa-stethoscope me-2 text-info"></i> My Dashboard</a></li>
-                                    <li><a class="dropdown-item py-1"
-                                            href="<?php echo $base_url; ?>/doctor/dashboard.php#appointments">
-                                            <i class="fas fa-calendar-check me-2 text-muted" style="width: 20px;"></i>
-                                            Appointments</a></li>
-                                    <li><a class="dropdown-item py-1"
-                                            href="<?php echo $base_url; ?>/doctor/dashboard.php#chats">
-                                            <i class="fas fa-comments me-2 text-muted" style="width: 20px;"></i> Patient
-                                            Chats</a></li>
                                 <?php elseif ($user_role == 'restaurant'): ?>
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/restaurant/dashboard.php">
@@ -612,6 +629,18 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                                     <li><a class="dropdown-item py-2 fw-bold"
                                             href="<?php echo $base_url; ?>/employer/dashboard.php">
                                             <i class="fas fa-briefcase me-2 text-primary-green"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'teacher'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/teacher/dashboard.php">
+                                            <i class="fas fa-chalkboard-teacher me-2 text-success"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'student' || $user_role == 'parent'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/student/dashboard.php">
+                                            <i class="fas fa-user-graduate me-2 text-primary"></i> My Dashboard</a></li>
+                                <?php elseif ($user_role == 'school_admin'): ?>
+                                    <li><a class="dropdown-item py-2 fw-bold"
+                                            href="<?php echo $base_url; ?>/admin/manage_school.php">
+                                            <i class="fas fa-school me-2 text-danger"></i> My Dashboard</a></li>
                                 <?php endif; ?>
 
                                 <li>
@@ -892,95 +921,139 @@ $unread_count = $is_logged_in ? getUnreadMessageCount() : 0;
                         });
                 };
 
-                // --- Real-time Dating Messages Notification ---
-                let lastNotifiedMsgId = null;
+                // --- Unified Real-time Message System (Dating, Jobs, Health) ---
+                let lastNotifiedMsgIds = { dating: null, job: null, health: null };
 
-                function checkNewMessages() {
-                    // Don't poll if we're already on the chat page for that specific user
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const chatUserId = urlParams.get('user_id');
-
-                    fetch('<?php echo $base_url; ?>/includes/dating_polling.php')
+                function checkUnifiedMessages() {
+                    fetch('<?php echo $base_url; ?>/includes/unified_polling.php')
                         .then(r => r.json())
                         .then(data => {
                             if (data.status === 'ok' && data.new_message) {
-                                let msg = data.message;
+                                data.messages.forEach(msg => {
+                                    // Prevent duplicates
+                                    if (lastNotifiedMsgIds[msg.type] === msg.id) return;
 
-                                // Prevent duplicate notifications for the same message
-                                if (lastNotifiedMsgId === msg.id) return;
+                                    // Skip if already in the active chat conversation
+                                    const path = window.location.pathname;
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    if (msg.type === 'dating' && path.includes('dating_chat.php') && urlParams.get('user_id') == msg.sender_id) return;
+                                    if (msg.type === 'job' && path.includes('job_chat.php') && urlParams.get('application_id') == msg.application_id) return;
+                                    if (msg.type === 'health' && path.includes('customer/doctor_chat.php') && urlParams.get('doctor_id') == msg.provider_id) return;
+                                    if (msg.type === 'health' && path.includes('doctor/chat.php') && urlParams.get('customer_id') == msg.sender_id) return;
+                                    if (msg.type === 'school' && path.includes('chat.php') && urlParams.get('user_id') == msg.sender_id) return;
 
-                                // If the current page is dating_chat.php and it's from the SAME sender, don't show a toast (they are already chatting)
-                                if (window.location.pathname.includes('dating_chat.php') && chatUserId == msg.sender_id) {
-                                    return;
-                                }
-
-                                lastNotifiedMsgId = msg.id;
-                                showMessageToast(msg);
-
-                                // Dynamically update the global unread badge in header
-                                const badges = document.querySelectorAll('.badge.bg-danger');
-                                badges.forEach(badge => {
-                                    if (badge.closest('a[href*="messages.php"]') || badge.classList.contains('cart-badge')) return;
-                                    // This is a bit generic, better to find specific message badges
-                                });
-                                // Simple way: increment any element with class 'unread-count-global'
-                                // For now, we'll just trigger a small refresh feel by making it pulse
-                                const msgIcons = document.querySelectorAll('.fa-envelope');
-                                msgIcons.forEach(icon => {
-                                    icon.classList.add('animate__animated', 'animate__heartBeat');
-                                    setTimeout(() => icon.classList.remove('animate__heartBeat'), 2000);
+                                    lastNotifiedMsgIds[msg.type] = msg.id;
+                                    showTelegramStyleNotification(msg);
                                 });
                             }
                         })
-                        .catch(err => console.error("Polling error:", err));
+                        .catch(err => console.warn("Polling error:", err));
                 }
 
-                function showMessageToast(msg) {
-                    const toastContainer = document.getElementById('toastNotificationContainer');
-                    if (!toastContainer) return;
+                function showTelegramStyleNotification(msg) {
+                    const typeLabel = {
+                        'dating': 'Dating Match',
+                        'job': 'Employer/Candidate',
+                        'health': 'Doctor Consultation',
+                        'school': 'School Message'
+                    };
+                    const typeIcon = {
+                        'dating': 'fa-heart',
+                        'job': 'fa-briefcase',
+                        'health': 'fa-stethoscope',
+                        'school': 'fa-graduation-cap'
+                    };
+                    const typeColor = {
+                        'dating': '#dc3545',
+                        'job': '#ffc107',
+                        'health': '#0d6efd',
+                        'school': '#1B5E20'
+                    };
 
-                    const toastId = 'toast-' + Date.now();
-                    const toastHtml = `
-                        <div id="${toastId}" class="toast animate__animated animate__fadeInRight" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="6000">
-                            <div class="toast-header bg-danger text-white border-0">
-                                <i class="fas fa-heart me-2"></i>
-                                <strong class="me-auto">New Dating Message</strong>
-                                <small>Just now</small>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                            </div>
-                            <div class="toast-body d-flex align-items-center gap-3 p-3 bg-white shadow-sm rounded-bottom">
-                                <img src="${msg.profile_pic || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.full_name)}" class="rounded-circle shadow-sm" width="45" height="45" style="object-fit:cover;">
-                                <div class="flex-grow-1 overflow-hidden">
-                                    <div class="fw-bold text-dark small mb-1">${msg.full_name}</div>
-                                    <div class="text-muted text-truncate" style="font-size: 0.8rem;">${msg.message_type === 'text' ? msg.message : 'Sent you an image 📷'}</div>
-                                    <a href="<?php echo $base_url; ?>/customer/dating_chat.php?user_id=${msg.sender_id}" class="btn btn-sm btn-danger rounded-pill px-3 mt-2 fw-bold" style="font-size:0.7rem;">Reply Now</a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-                    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-                    const toastElement = document.getElementById(toastId);
-                    const bsToast = new bootstrap.Toast(toastElement);
-                    bsToast.show();
-
-                    // Optional: play a subtle notification sound
+                    // Sound Effect
                     try {
-                        let audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-software-interface-back-button-2566.mp3');
+                        let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
                         audio.volume = 0.5;
                         audio.play();
                     } catch (e) { }
+
+                    // SWAL Toast - Premium Telegram Style
+                    Swal.fire({
+                        html: `
+                            <div class="d-flex align-items-center gap-3 msg-toast-container text-start">
+                                <div class="position-relative">
+                                    <img src="${msg.sender_photo || 'https://ui-avatars.com/api/?name='+encodeURIComponent(msg.sender_name)}" 
+                                         class="rounded-circle border border-2" style="width: 55px; height: 55px; object-fit: cover; border-color: ${typeColor[msg.type]}">
+                                    <div class="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 shadow-sm" style="width:20px; height:20px; display:flex; align-items:center; justify-content:center;">
+                                        <i class="fas ${typeIcon[msg.type]}" style="color: ${typeColor[msg.type]}; font-size: 0.65rem;"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <strong class="text-dark d-block text-truncate" style="max-width: 140px;">${msg.sender_name}</strong>
+                                        <span class="badge rounded-pill bg-light text-muted small" style="font-size: 0.6rem;">${typeLabel[msg.type]}</span>
+                                    </div>
+                                    <p class="text-muted mb-2 text-truncate small" style="max-height: 40px;">${msg.message}</p>
+                                    <div class="d-flex gap-2">
+                                        <a href="${msg.link}" class="btn btn-xs rounded-pill px-3 fw-bold" style="background: ${typeColor[msg.type]}20; color: ${typeColor[msg.type]}; font-size: 0.7rem;">
+                                            <i class="fas fa-reply me-1"></i> Reply
+                                        </a>
+                                        <button onclick="Swal.close()" class="btn btn-xs btn-light rounded-pill px-3 border" style="font-size: 0.7rem;">
+                                            Dismiss
+                                        </button>
+                                        <a href="${msg.link}" class="btn btn-xs btn-outline-secondary border-0 rounded-pill px-2" title="Details">
+                                            <i class="fas fa-external-link-alt" style="font-size: 0.7rem;"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        position: 'top-end',
+                        toast: true,
+                        showConfirmButton: false,
+                        timer: 10000,
+                        timerProgressBar: true,
+                        background: '#fff',
+                        showCloseButton: true,
+                        padding: '1rem',
+                        width: '380px',
+                        didOpen: (toast) => {
+                            toast.style.borderRadius = '20px';
+                            toast.style.boxShadow = '0 15px 35px rgba(0,0,0,0.15)';
+                        }
+                    });
+
+                    // Heartbeat animation for message icons in header
+                    const msgIcons = document.querySelectorAll('.fa-envelope');
+                    msgIcons.forEach(icon => {
+                        icon.classList.add('animate__animated', 'animate__heartBeat');
+                        setTimeout(() => icon.classList.remove('animate__heartBeat'), 2000);
+                    });
                 }
 
                 // Initial checks
                 setTimeout(checkIncomingCalls, 1000);
-                setTimeout(checkNewMessages, 2000);
+                setTimeout(checkUnifiedMessages, 2000);
 
                 // Regular polling
                 setInterval(checkIncomingCalls, 3000);
-                setInterval(checkNewMessages, 8000); // Check for messages every 8 seconds
+                setInterval(checkUnifiedMessages, 6000); // Check all messages every 6 seconds
             });
         </script>
+
+        <!-- Dynamic Style for Buttons -->
+        <style>
+            .btn-xs {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+                line-height: 1.5;
+            }
+            .msg-toast-container p {
+                line-height: 1.2;
+                margin-bottom: 0.5rem;
+            }
+        </style>
+
 
         <!-- Global Toast Container -->
         <div id="toastNotificationContainer" class="toast-container position-fixed bottom-0 end-0 p-3"

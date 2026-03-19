@@ -568,6 +568,27 @@ include('../includes/header.php');
                 </div>
                 <p class="service-label">Exchange</p>
             </a>
+
+            <!-- School Management -->
+            <?php
+                $count_school = 0;
+                try {
+                    $count_school = $pdo->query("SELECT COUNT(*) FROM sms_student_profiles")->fetchColumn();
+                } catch (Exception $e) {}
+            ?>
+            <a href="../school/login.php" class="service-card shadow-sm position-relative">
+                <span class="count-badge" style="background:#1B5E20;">
+                    <?php if ($count_school > 0): ?>
+                        <i class="fas fa-circle me-1" style="font-size:0.4rem;"></i> <?= $count_school ?> Students
+                    <?php else: ?>
+                        <i class="fas fa-school me-1" style="font-size:0.5rem;"></i> NEW
+                    <?php endif; ?>
+                </span>
+                <div class="service-icon" style="background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white;">
+                    <i class="fas fa-school"></i>
+                </div>
+                <p class="service-label">School</p>
+            </a>
         </div>
     </section>
     <!-- Category Section -->

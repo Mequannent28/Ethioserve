@@ -152,7 +152,7 @@ if ($api_action !== '') {
     }
     // GET_PINNED
     if ($api_action === 'get_pinned') {
-        $oid = (int) ($_GET['other_id'] ?? 0);
+        $oid = (int) ($_POST['other_id'] ?? $_GET['other_id'] ?? 0);
         if (!$oid)
             apiOut(['pinned' => null]);
         try {
@@ -164,18 +164,98 @@ if ($api_action !== '') {
         }
     }
 
+    // AJAX SEND MESSAGE (Handles Text, Image, Voice)
+    if ($api_action === 'send') {
+        $msg = trim($_POST['message'] ?? '');
+        $reply_to = intval($_POST['reply_to_id'] ?? 0) ?: null;
+        $other_id = (int) ($_POST['other_id'] ?? 0);
+        $type = 'text';
+        $attachment = null;
+
+        if (!$other_id)
+            apiOut(['success' => false, 'error' => 'No receiver specified']);
+
+        // Handle Image Upload
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/dating_chat/';
+            if (!is_dir($upload_dir))
+                mkdir($upload_dir, 0777, true);
+            $file_name = time() . '_' . basename($_FILES['image']['name']);
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $file_name)) {
+                $attachment = 'uploads/dating_chat/' . $file_name;
+                $type = 'image';
+            }
+        }
+
+        // Handle Voice Upload
+        if (isset($_FILES['voice']) && $_FILES['voice']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/dating_chat/';
+            if (!is_dir($upload_dir))
+                mkdir($upload_dir, 0777, true);
+            $file_name = 'voice_' . time() . '.webm';
+            if (move_uploaded_file($_FILES['voice']['tmp_name'], $upload_dir . $file_name)) {
+                $attachment = 'uploads/dating_chat/' . $file_name;
+                $type = 'voice';
+            }
+        }
+
+        if ($msg === '' && !$attachment)
+            apiOut(['success' => false, 'error' => 'Message is empty']);
+
+        try {
+            $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message, message_type, attachment_url, reply_to_id) VALUES (?,?,?,?,?,?)");
+            $stmt->execute([$api_uid, $other_id, $msg, $type, $attachment, $reply_to]);
+            $new_id = $pdo->lastInsertId();
+
+            // Return the new message data for immediate append
+            $s = $pdo->prepare("
+                SELECT m.*, u.full_name as sender_name,
+                       r.message as reply_text, r.message_type as reply_type, ru.full_name as reply_sender
+                FROM dating_messages m 
+                JOIN users u ON m.sender_id = u.id 
+                LEFT JOIN dating_messages r ON m.reply_to_id = r.id
+                LEFT JOIN users ru ON r.sender_id = ru.id
+                WHERE m.id = ?
+            ");
+            $s->execute([$new_id]);
+            $new_msg = $s->fetch(PDO::FETCH_ASSOC);
+
+            // Send notification
+            try {
+                require_once '../includes/email_service.php';
+                $sender_name = $_SESSION['full_name'] ?? 'Someone';
+                $title = "New Dating Message from {$sender_name}";
+                $message_brief = $attachment ? "Sent a " . $type : "\"" . substr($msg, 0, 100) . "...\"";
+                $other_email = $pdo->prepare("SELECT email FROM users WHERE id = ?");
+                $other_email->execute([$other_id]);
+                $email = $other_email->fetchColumn();
+                if ($email) {
+                    sendDirectNotification($email, $title, "Heads up! You have a new message on EthioServe Dating from <strong>{$sender_name}</strong>:\n\n{$message_brief}", 'Open Chat', '/customer/dating_chat.php?user_id=' . $api_uid);
+                }
+            } catch (Exception $e) {
+            }
+
+            apiOut(['success' => true, 'message' => $new_msg]);
+        } catch (Exception $e) {
+            apiOut(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
     // LOAD NEW MESSAGES (Polling)
     if ($api_action === 'load_messages') {
-        $last_id = (int) ($_GET['last_id'] ?? 0);
-        $other_id = (int) ($_GET['other_id'] ?? 0);
+        $last_id = (int) ($_POST['last_id'] ?? $_GET['last_id'] ?? 0);
+        $other_id = (int) ($_POST['other_id'] ?? $_GET['other_id'] ?? 0);
         if (!$other_id)
             apiOut(['success' => false, 'messages' => []]);
 
         try {
             $s = $pdo->prepare("
-                SELECT m.*, u.full_name as sender_name 
+                SELECT m.*, u.full_name as sender_name,
+                       r.message as reply_text, r.message_type as reply_type, ru.full_name as reply_sender
                 FROM dating_messages m 
                 JOIN users u ON m.sender_id = u.id
+                LEFT JOIN dating_messages r ON m.reply_to_id = r.id
+                LEFT JOIN users ru ON r.sender_id = ru.id
                 WHERE m.id > ? 
                 AND ((m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?))
                 ORDER BY m.id ASC
@@ -276,15 +356,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
         } catch (Exception $e) {
             // Column might not exist yet — fallback to basic insert
         }
-        if (!$inserted) {
+        if ($inserted || (isset($stmt) && $stmt->rowCount() > 0)) {
+            // Email Notification
             try {
-                $stmt = $pdo->prepare("INSERT INTO dating_messages (sender_id, receiver_id, message, message_type, attachment_url) VALUES (?,?,?,?,?)");
-                $stmt->execute([$user_id, $other_user_id, $msg, $type, $attachment]);
-            } catch (Exception $e) {
-            }
+                require_once '../includes/email_service.php';
+                $sender_name = $_SESSION['full_name'] ?? 'Someone';
+                $title = "New Dating Message from {$sender_name}";
+                $message_brief = !empty($msg) ? "\"".substr($msg, 0, 100)."...\"" : "Sent a " . $type;
+                $email_body = "Heads up! You have a new message on EthioServe Dating from <strong>{$sender_name}</strong>:\n\n{$message_brief}";
+                sendDirectNotification($other_user['email'], $title, $email_body, 'Open Chat', '/customer/dating_chat.php?user_id=' . $user_id);
+            } catch (Exception $e) { /* Silently fail */ }
+
+            header("Location: dating_chat.php?user_id=" . $other_user_id);
+            exit();
         }
-        header("Location: dating_chat.php?user_id=" . $other_user_id);
-        exit();
     }
 }
 
@@ -655,16 +740,24 @@ include '../includes/header.php';
 
     .msg-input {
         flex: 1;
-        border-radius: 25px;
+        border-radius: 22px;
         border: 1.5px solid #e0e0e0;
         padding: 10px 18px;
-        font-size: .93rem;
+        font-size: .95rem;
         outline: none;
-        transition: border .2s;
+        transition: all .2s;
+        resize: none;
+        max-height: 120px;
+        min-height: 42px;
+        line-height: 1.4;
+        background: #f9f9f9;
+        overflow-y: hidden;
     }
 
     .msg-input:focus {
         border-color: #2E7D32;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .send-btn {
@@ -945,8 +1038,8 @@ try {
                                 onclick="document.getElementById('imgInput').click()">
                                 <i class="fas fa-image text-primary"></i>
                             </button>
-                            <input type="text" name="message" id="msgInput" class="msg-input" placeholder="Message..."
-                                autocomplete="off" oninput="toggleInputButtons()">
+                            <textarea name="message" id="msgInput" class="msg-input" placeholder="Message..."
+                                autocomplete="off" rows="1"></textarea>
                             <button type="button" id="micBtn" class="send-btn" onclick="startVoiceRecording()"><i
                                     class="fas fa-microphone"></i></button>
                             <button type="submit" id="sendBtn" class="send-btn d-none"><i
@@ -1001,6 +1094,54 @@ try {
     </div>
 </div>
 
+<!-- ─── Incoming Call Modal ─── -->
+<div class="modal fade" id="incomingCallModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-4 border-0 shadow-lg" style="border-radius:25px; background: linear-gradient(135deg, #1a0a2e 0%, #050510 100%); color: white;">
+            <div class="mb-4">
+                <div class="position-relative d-inline-block">
+                    <img id="callerPic" src="" class="rounded-circle border border-4 border-white position-relative z-2" width="130" height="130" style="object-fit:cover;">
+                    <div class="call-pulse"></div>
+                </div>
+            </div>
+            <h4 id="callerName" class="fw-bold mb-1">Incoming Call...</h4>
+            <div id="callTypeLabel" class="badge rounded-pill bg-danger px-3 py-2 mb-4">📹 Video Call</div>
+            
+            <div class="d-flex justify-content-center gap-4">
+                <button type="button" class="btn btn-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg" onclick="respondCall('rejected')" style="width:75px;height:75px;">
+                    <i class="fas fa-phone-slash fs-2"></i>
+                </button>
+                <button type="button" class="btn btn-success rounded-circle p-0 d-flex align-items-center justify-content-center shadow-lg animate__animated animate__pulse animate__infinite" onclick="respondCall('accepted')" style="width:75px;height:75px;">
+                    <i class="fas fa-phone fs-2"></i>
+                </button>
+            </div>
+            
+            <audio id="callRingtone" loop>
+                <source src="https://assets.mixkit.co/sfx/preview/mixkit-phone-ringing-bell-592.mp3" type="audio/mpeg">
+            </audio>
+        </div>
+    </div>
+</div>
+
+<style>
+.call-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 130px;
+    height: 130px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    animation: callPulse 1.5s infinite;
+    z-index: 1;
+}
+@keyframes callPulse {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+</style>
+
 <!-- ─── Forward Modal ─── -->
 <div class="modal fade" id="forwardModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -1034,6 +1175,7 @@ try {
     // API = THIS same page — detects 'action' POST param and returns JSON directly
     // No separate file needed, completely avoids Apache 403 restrictions!
     const API = '<?php echo rtrim(BASE_URL, "/"); ?>/customer/dating_chat.php?user_id=<?php echo $other_user_id; ?>';
+    const BASE_URL = '<?php echo rtrim(BASE_URL, "/"); ?>';
     const OTHER_ID = <?php echo $other_user_id; ?>;
     const MY_ID = <?php echo $user_id; ?>;
     const OTHER_NAME = '<?php echo htmlspecialchars($other_user['full_name']); ?>';
@@ -1077,11 +1219,32 @@ try {
     const chatBody = document.getElementById('chatBody');
     chatBody.scrollTop = chatBody.scrollHeight;
 
-    /* ─── Submit image immediately on select ─── */
+    /* ─── Submit image immediately on select (AJAX) ─── */
     document.getElementById('imgInput').addEventListener('change', () => {
-        if (document.getElementById('imgInput').files.length > 0) {
-            document.getElementById('chatForm').submit();
-        }
+        const file = document.getElementById('imgInput').files[0];
+        if (!file) return;
+
+        const fd = new FormData();
+        fd.append('action', 'send');
+        fd.append('image', file);
+        fd.append('other_id', OTHER_ID);
+        fd.append('reply_to_id', document.getElementById('replyToId').value);
+        const csrf = document.querySelector('input[name="csrf_token"]');
+        if (csrf) fd.append('csrf_token', csrf.value);
+
+        showToast('Uploading image...', 'info');
+        fetch(API, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    appendMessages([d.message], true);
+                    cancelReply();
+                    document.getElementById('imgInput').value = '';
+                } else {
+                    showToast(d.error || 'Upload failed', 'danger');
+                }
+            })
+            .catch(err => showToast('Upload error: ' + err.message, 'danger'));
     });
 
     /* ─── Context Menu ─── */
@@ -1347,30 +1510,163 @@ try {
         document.getElementById('msgInput').value = '';
     }
 
-    /* ─── Form submit: handle edit mode ─── */
+    /* ─── Form submit: handle AJAX send and edit mode ─── */
     document.getElementById('chatForm').addEventListener('submit', function (e) {
-        if (!editMsgId) return; // normal send
-
         e.preventDefault();
-        const text = document.getElementById('msgInput').value.trim();
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
         if (!text) return;
 
-        apiFetch({ action: 'edit', msg_id: editMsgId, text })
-            .then(d => {
-                if (d.success) {
-                    const row = document.getElementById('msg-' + editMsgId);
-                    if (row) {
-                        const bubble = row.querySelector('.bubble > div:not(.reply-preview):not(.fwd-label):not(.meta)');
-                        if (bubble) bubble.textContent = text;
+        if (editMsgId) {
+            // EDIT MODE
+            apiFetch({ action: 'edit', msg_id: editMsgId, text })
+                .then(d => {
+                    if (d.success) {
+                        const row = document.getElementById('msg-' + editMsgId);
+                        if (row) {
+                            const bubble = row.querySelector('.bubble > div:not(.reply-preview):not(.fwd-label):not(.meta)');
+                            if (bubble) bubble.textContent = text;
+                            row.dataset.text = text;
+                        }
+                        cancelEdit();
+                        showToast('Message edited ✓', 'success');
+                    } else {
+                        showToast(d.error || 'Edit failed', 'warning');
                     }
-                    cancelEdit();
-                    showToast('Message edited ✓', 'success');
-                } else {
-                    showToast(d.error || 'Edit failed', 'warning');
-                }
-            })
-            .catch(err => showToast('Error: ' + err.message, 'danger'));
+                })
+                .catch(err => showToast('Error: ' + err.message, 'danger'));
+        } else {
+            // SEND MODE
+            const replyId = document.getElementById('replyToId').value;
+            const savedText = text;
+            
+            // 1. Clear input immediately (Optimistic UX)
+            input.value = '';
+            toggleInputButtons();
+            
+            // 2. Add loading state to send button
+            const sendBtn = document.getElementById('sendBtn');
+            const originalBtnHtml = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            sendBtn.disabled = true;
+
+            apiFetch({ action: 'send', message: savedText, other_id: OTHER_ID, reply_to_id: replyId })
+                .then(d => {
+                    if (d.success) {
+                        appendMessages([d.message], true);
+                        cancelReply();
+                        resetInputHeight(); // Reset textarea height
+                    } else {
+                        // Restore text if failed
+                        input.value = savedText;
+                        toggleInputButtons();
+                        showToast(d.error || 'Send failed', 'danger');
+                    }
+                })
+                .catch(err => {
+                    input.value = savedText;
+                    toggleInputButtons();
+                    showToast('Error: ' + err.message, 'danger');
+                })
+                .finally(() => {
+                    sendBtn.innerHTML = originalBtnHtml;
+                    sendBtn.disabled = false;
+                    toggleInputButtons();
+                });
+        }
     });
+
+    /* ─── Append Messages live ─── */
+    function appendMessages(messages, scroll = false) {
+        if (!messages || !messages.length) return;
+        const container = document.getElementById('messageContainer');
+        const emptyState = container.querySelector('.animate__animated.animate__fadeIn');
+        if (emptyState) emptyState.remove();
+
+        messages.forEach(m => {
+            if (document.getElementById('msg-' + m.id)) return; // Avoid dups
+            
+            const isMe = m.sender_id == MY_ID;
+            const row = document.createElement('div');
+            row.id = 'msg-' + m.id;
+            row.className = `msg-row ${isMe ? 'me' : 'them'} animate__animated animate__fadeInUp animate__faster`;
+            row.dataset.id = m.id;
+            row.dataset.me = isMe ? '1' : '0';
+            row.dataset.text = m.message || '';
+            row.dataset.type = m.message_type;
+            row.dataset.pinned = m.is_pinned == 1 ? '1' : '0';
+
+            let replyHtml = '';
+            if (m.reply_to_id) {
+                let rText = m.reply_text || '';
+                if (m.reply_type === 'image') rText = '<i class="fas fa-camera me-1"></i>Photo';
+                else if (m.reply_type === 'voice') rText = '<i class="fas fa-microphone me-1"></i>Voice Message';
+                else if (rText.length > 60) rText = rText.substring(0, 60) + '...';
+
+                replyHtml = `
+                    <div class="reply-preview" onclick="scrollToMessage(${m.reply_to_id}); event.stopPropagation();" style="cursor:pointer">
+                        <div class="fw-bold" style="font-size: .72rem; color:${isMe ? '#e8f5e9' : '#1b5e20'};">
+                            ${escHtml(m.reply_sender || 'User')}
+                        </div>
+                        <div class="text-truncate" style="font-size: .78rem; opacity: .85;">${rText}</div>
+                    </div>`;
+            }
+
+            let attachmentHtml = '';
+            if (m.message_type === 'image' && m.attachment_url) {
+                attachmentHtml = `
+                    <div class="mb-1 rounded-3 overflow-hidden" style="max-width:240px;">
+                        <img src="<?php echo $base_url; ?>/${m.attachment_url}" class="img-fluid w-100" 
+                             style="cursor:pointer;max-height:220px;object-fit:cover;" onclick="window.open(this.src)">
+                    </div>`;
+            } else if (m.message_type === 'voice' && m.attachment_url) {
+                attachmentHtml = `
+                    <div class="voice-msg py-1">
+                        <audio controls class="voice-player" style="height:30px; filter: ${isMe ? 'invert(1) grayscale(1) brightness(2)' : ''}">
+                            <source src="<?php echo $base_url; ?>/${m.attachment_url}" type="audio/webm">
+                            Your browser does not support audio.
+                        </audio>
+                    </div>`;
+            }
+
+            let contentHtml = '';
+            if (m.message_type === 'video_call') {
+                contentHtml = `<div class="d-flex align-items-center gap-2 py-1"><div class="bg-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="fas fa-video text-white" style="font-size:0.9rem;"></i></div><div class="fw-bold">${escHtml(m.message)}</div></div>`;
+            } else if (m.message_type === 'voice' && !m.attachment_url) {
+                contentHtml = `<div class="d-flex align-items-center gap-2 py-1"><div class="bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="fas fa-phone text-white" style="font-size:0.9rem;"></i></div><div class="fw-bold">${escHtml(m.message)}</div></div>`;
+            } else if (m.message) {
+                contentHtml = `<div>${escHtml(m.message).replace(/\n/g, '<br>')}</div>`;
+            }
+
+            let timeStr = '—';
+            if (m.created_at) {
+                try {
+                    const dt = m.created_at.includes(' ') ? m.created_at.replace(' ', 'T') : m.created_at;
+                    timeStr = new Date(dt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                } catch (e) { console.error("Date parse error", e); }
+            }
+
+            row.innerHTML = `
+                <div class="bubble ${m.is_pinned == 1 ? 'pinned-highlight' : ''}" oncontextmenu="showCtx(event,this.closest('.msg-row'))" onclick="handleTap(event,this.closest('.msg-row'))">
+                    ${m.forwarded_from ? '<div class="fwd-label"><i class="fas fa-forward me-1"></i>Forwarded</div>' : ''}
+                    ${replyHtml}
+                    ${attachmentHtml}
+                    ${contentHtml}
+                    <div class="meta">
+                        ${m.is_edited == '1' ? '<span style="font-size:.62rem;">edited</span>' : ''}
+                        ${timeStr}
+                        ${isMe ? ` <i class="fas fa-check-double" style="font-size:.63rem; color:${m.is_read == 1 ? '#a5d6a7' : 'rgba(255,255,255,.6)'};"></i>` : ''}
+                    </div>
+                </div>`;
+            
+            container.appendChild(row);
+            if (lastId < m.id) lastId = m.id;
+        });
+
+        if (scroll) {
+            chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
+        }
+    }
 
     /* ─── Scroll to original msg with highlight pulse ─── */
     function scrollToMessage(id) {
@@ -1412,6 +1708,35 @@ try {
             micBtn.classList.remove('d-none');
             sendBtn.classList.add('d-none');
         }
+    }
+
+    /* ─── Auto-expand Textarea Logic ─── */
+    const msgInput = document.getElementById('msgInput');
+    msgInput.addEventListener('input', function() {
+        this.style.height = '42px'; // Reset base
+        let newHeight = this.scrollHeight;
+        if (newHeight > 120) {
+            newHeight = 120;
+            this.style.overflowY = 'auto';
+        } else {
+            this.style.overflowY = 'hidden';
+        }
+        this.style.height = newHeight + 'px';
+        toggleInputButtons();
+    });
+
+    // Enter to send, Shift+Enter for new line
+    msgInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Reset height after send
+    function resetInputHeight() {
+        msgInput.style.height = '42px';
+        msgInput.style.overflowY = 'hidden';
     }
 
     async function startVoiceRecording() {
@@ -1483,7 +1808,9 @@ try {
 
     async function uploadVoiceMessage(blob) {
         const fd = new FormData();
+        fd.append('action', 'send');
         fd.append('voice', blob, 'voice.webm');
+        fd.append('other_id', OTHER_ID);
         fd.append('message', ''); // Empty text
         fd.append('reply_to_id', document.getElementById('replyToId').value);
 
@@ -1492,75 +1819,99 @@ try {
         if (csrf) fd.append('csrf_token', csrf.value);
 
         try {
-            const res = await fetch(window.location.href, {
+            const res = await fetch(API, {
                 method: 'POST',
                 body: fd
             });
-            if (res.ok) {
-                window.location.reload();
+            const d = await res.json();
+            if (d.success) {
+                appendMessages([d.message], true);
+                cancelReply();
             } else {
-                alert("Upload failed.");
+                showToast(d.error || 'Voice message failed', 'danger');
             }
         } catch (e) {
-            alert("Error sending voice: " + e.message);
+            showToast("Error sending voice: " + e.message, 'danger');
         }
     }
 
-    /* ─── Auto-poll for new messages every 5s ─── */
+    /* ─── Auto-poll for new messages every 3s ─── */
     setInterval(() => {
         apiFetch({ action: 'load_messages', last_id: lastId, other_id: OTHER_ID }).then(d => {
             if (d.success && d.messages && d.messages.length > 0) {
-                const atBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 120;
-
-                d.messages.forEach(m => {
-                    if (document.getElementById('msg-' + m.id)) return; // skip duplicates
-
-                    const isMe = m.sender_id == MY_ID;
-                    const row = document.createElement('div');
-                    row.id = 'msg-' + m.id;
-                    row.className = `msg-row ${isMe ? 'me' : 'them'} animate__animated animate__fadeInUp animate__faster`;
-                    row.dataset.id = m.id;
-                    row.dataset.me = isMe ? '1' : '0';
-                    row.dataset.text = m.message || '';
-                    row.dataset.type = m.message_type;
-
-                    const timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                    let msgHtml = '';
-                    if (m.message_type === 'video_call') {
-                        msgHtml = `<div class="d-flex align-items-center gap-2 py-1">
-                                    <div class="bg-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
-                                        <i class="fas fa-video text-white" style="font-size:0.8rem;"></i>
-                                    </div>
-                                    <div class="fw-bold">${escHtml(m.message)}</div>
-                                   </div>`;
-                    } else if (m.message_type === 'voice' && !m.attachment_url) {
-                        msgHtml = `<div class="d-flex align-items-center gap-2 py-1">
-                                    <div class="bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;">
-                                        <i class="fas fa-phone text-white" style="font-size:0.8rem;"></i>
-                                    </div>
-                                    <div class="fw-bold">${escHtml(m.message)}</div>
-                                   </div>`;
-                    } else if (m.message) {
-                        msgHtml = `<div>${escHtml(m.message).replace(/\n/g, '<br>')}</div>`;
-                    }
-
-                    row.innerHTML = `
-                        <div class="bubble" oncontextmenu="showCtx(event,this.closest('.msg-row'))" onclick="handleTap(event,this.closest('.msg-row'))">
-                            ${msgHtml}
-                            <div class="meta">
-                                ${timeStr}
-                                ${isMe ? ' <i class="fas fa-check-double" style="font-size:.63rem; color:rgba(255,255,255,.6);"></i>' : ''}
-                            </div>
-                        </div>
-                    `;
-                    document.getElementById('messageContainer').appendChild(row);
-                    lastId = m.id;
-                });
-
-                if (atBottom) chatBody.scrollTo({ top: chatBody.scrollHeight, behavior: 'smooth' });
+                const atBottom = chatBody.scrollHeight - chatBody.clientHeight <= chatBody.scrollTop + 150;
+                appendMessages(d.messages, atBottom);
             }
         });
-    }, 5000);
+    }, 3000);
+
+    /* ─── Real-time Call Signaling ─── */
+    let currentCall = null;
+    const signalingUrl = BASE_URL + '/signaling.php';
+
+    function checkIncomingCall() {
+        fetch(signalingUrl + '?action=check_incoming')
+            .then(r => r.json())
+            .then(data => {
+                if (data.call) {
+                    if (!currentCall || currentCall.call_id !== data.call.call_id) {
+                        currentCall = data.call;
+                        showIncomingCall(data.call);
+                    }
+                } else if (!data.call && currentCall) {
+                    hideIncomingCall();
+                    currentCall = null;
+                }
+            })
+            .catch(e => console.warn("Signaling poll failed", e));
+    }
+
+    function showIncomingCall(call) {
+        document.getElementById('callerName').textContent = call.caller_name;
+        document.getElementById('callerPic').src = call.profile_pic || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(call.caller_name) + '&background=fd1d1d&color=fff');
+        document.getElementById('callTypeLabel').innerHTML = call.is_video == 1 ? '<i class="fas fa-video me-1"></i> Video Call' : '<i class="fas fa-phone-alt me-1"></i> Voice Call';
+        
+        const modalEl = document.getElementById('incomingCallModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        
+        const ringtone = document.getElementById('callRingtone');
+        if (ringtone) {
+            ringtone.currentTime = 0;
+            ringtone.play().catch(e => console.warn("Sound blocked by browser. User must interact first."));
+        }
+    }
+
+    function hideIncomingCall() {
+        const modalEl = document.getElementById('incomingCallModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+        const ringtone = document.getElementById('callRingtone');
+        if (ringtone) {
+            ringtone.pause();
+        }
+    }
+
+    function respondCall(status) {
+        if (!currentCall) return;
+        const fd = new FormData();
+        fd.append('action', 'respond_call');
+        fd.append('call_id', currentCall.call_id);
+        fd.append('status', status);
+
+        fetch(signalingUrl, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (status === 'accepted') {
+                    window.location.href = `dating_video_call.php?user_id=${currentCall.caller_id}&room_id=${currentCall.room_id}&incoming=1&is_video=${currentCall.is_video}&call_id=${currentCall.call_id}`;
+                } else {
+                    hideIncomingCall();
+                    currentCall = null;
+                }
+            });
+    }
+
+    // Call check every 2 seconds
+    setInterval(checkIncomingCall, 2000);
 </script>
 <?php include '../includes/footer.php'; ?>

@@ -1,0 +1,48 @@
+STUDENT USERS:
+Array
+(
+    [0] => Array
+        (
+            [id] => 47
+            [username] => student1
+            [full_name] => Abebe Student
+            [role] => student
+        )
+
+    [1] => Array
+        (
+            [id] => 65
+            [username] => student_demo
+            [full_name] => Education Demo Student
+            [role] => student
+        )
+
+    [2] => Array
+        (
+            [id] => 92
+            [username] => student1_school
+            [full_name] => Dawit Kebede
+            [role] => student
+        )
+
+    [3] => Array
+        (
+            [id] => 93
+            [username] => student2_school
+            [full_name] => Selam Almaz
+            [role] => student
+        )
+
+)
+
+CLASSES:
+Array
+(
+    [0] => Array
+        (
+            [id] => 1
+            [class_name] => Grdae 10
+            [section] => 23
+        )
+
+)

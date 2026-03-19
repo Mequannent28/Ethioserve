@@ -185,3 +185,72 @@
         }
     }
 </style>
+
+<!-- Taxi Notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const taxiApiUrl = '<?php echo BASE_URL; ?>/api.php';
+    let lastSeenRideId = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial setup for existing rides
+        const findMaxIds = () => {
+            const rideRefs = document.querySelectorAll('.ride-ref, strong');
+            rideRefs.forEach(el => {
+                const match = el.innerText.match(/RIDE-(\w+)/);
+                if (match) {
+                    // For taxi we don't have the numeric ID easily in the reference string, 
+                    // but we can trust the API to return IDs greater than the numeric max we track.
+                }
+            });
+        };
+        findMaxIds();
+
+        // Start polling
+        setInterval(checkTaxiNotifications, 10000);
+    });
+
+    async function checkTaxiNotifications() {
+        try {
+            const response = await fetch(`${taxiApiUrl}?action=get_taxi_notifications&last_ride_id=${lastSeenRideId}`);
+            const data = await response.json();
+
+            if (data.success && data.new_rides && data.new_rides.length > 0) {
+                data.new_rides.forEach(ride => {
+                    showTaxiNotification('New Ride Request!', `${ride.customer_name} requested a ride from ${ride.pickup_location}`, 'info', `<?php echo BASE_URL; ?>/taxi/rides.php`);
+                });
+                const maxId = Math.max(...data.new_rides.map(r => parseInt(r.id)));
+                if (maxId > lastSeenRideId) lastSeenRideId = maxId;
+            }
+        } catch (error) { console.error('Taxi Notification Error:', error); }
+    }
+
+    function showTaxiNotification(title, message, icon, url) {
+        // Distinct alert sound for taxi requests
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1103/1103-preview.mp3');
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'View',
+            confirmButtonColor: '#1B5E20',
+            showCancelButton: true,
+            timer: 15000,
+            timerProgressBar: true,
+            background: '#fff',
+            color: '#1B5E20',
+            didOpen: (toast) => {
+                toast.style.cursor = 'pointer';
+                toast.onclick = () => window.location.href = url;
+            }
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+

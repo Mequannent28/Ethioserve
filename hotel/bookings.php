@@ -340,7 +340,7 @@ foreach (['pending', 'approved', 'cancelled'] as $s) {
     </div>
 
     <!-- Assign Room Modal -->
-    <div class="modal fade" id="assignRoomModal" tabindex="-1">
+    <div class="modal" id="assignRoomModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <form method="POST" class="modal-content border-0 shadow-lg rounded-4">
                 <?php echo csrfField(); ?>

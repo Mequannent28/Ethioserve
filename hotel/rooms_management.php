@@ -151,11 +151,10 @@ $rooms = $stmt->fetchAll();
                                             data-bs-target="#editRoomModal">
                                             <i class="fas fa-edit me-1"></i> Edit
                                         </button>
-                                        <a href="process_rooms.php?action=delete&id=<?php echo $room['id']; ?>"
-                                            class="btn btn-sm btn-outline-danger rounded-pill"
-                                            onclick="return confirm('Delete this room?')">
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill"
+                                            onclick="confirmDelete('<?php echo $room['id']; ?>', 'Room <?php echo htmlspecialchars($room['room_number'], ENT_QUOTES); ?>')">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -167,7 +166,7 @@ $rooms = $stmt->fetchAll();
     </div>
 
     <!-- Add Room Modal -->
-    <div class="modal fade" id="addRoomModal" tabindex="-1">
+    <div class="modal" id="addRoomModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <form action="process_rooms.php?action=add" method="POST" enctype="multipart/form-data"
                 class="modal-content border-0 shadow-lg rounded-4">
@@ -219,7 +218,7 @@ $rooms = $stmt->fetchAll();
     </div>
 
     <!-- Edit Room Modal -->
-    <div class="modal fade" id="editRoomModal" tabindex="-1">
+    <div class="modal" id="editRoomModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <form action="process_rooms.php?action=edit" method="POST" enctype="multipart/form-data"
                 class="modal-content border-0 shadow-lg rounded-4">
@@ -282,6 +281,7 @@ $rooms = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -294,6 +294,36 @@ $rooms = $stmt->fetchAll();
                 document.getElementById('edit_status').value = room.status;
             });
         });
+
+        function confirmDelete(roomId, roomName) {
+            Swal.fire({
+                title: '<span style="color:#c62828;"><i class="fas fa-trash-alt me-2"></i>Move to Recycle Bin?</span>',
+                html: `
+                    <p class="text-muted mb-3">You are about to delete <strong>${roomName}</strong>. Please select a reason:</p>
+                    <select id="deleteReason" class="form-select rounded-3">
+                        <option value="No longer needed">No longer needed</option>
+                        <option value="Duplicate entry">Duplicate entry</option>
+                        <option value="Under renovation">Under renovation</option>
+                        <option value="Pricing update required">Pricing update required</option>
+                        <option value="Other">Other</option>
+                    </select>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-trash-restore me-1"></i> Move to Bin',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#c62828',
+                cancelButtonColor: '#6c757d',
+                focusConfirm: false,
+                preConfirm: () => {
+                    return document.getElementById('deleteReason').value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `process_rooms.php?action=delete&id=${roomId}&reason=${encodeURIComponent(result.value)}`;
+                }
+            });
+        }
     </script>
 </body>
 

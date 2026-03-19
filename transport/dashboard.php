@@ -105,302 +105,204 @@ $stmt = $pdo->prepare("
 $stmt->execute([$company_id]);
 $recent_bookings = $stmt->fetchAll();
 ?>
-<!DOCTYPE html>
-<html lang="en">
+    <?php
+    $page_title = 'Transport Dashboard';
+    $top_title = 'Transport Management';
+    include('../includes/transport_header.php');
+    ?>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transport Dashboard - EthioServe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
-    <style>
-        body {
-            overflow-x: hidden;
-            background-color: #f4f6f9;
-        }
+    <?php echo displayFlashMessage(); ?>
 
-        .dashboard-wrapper {
-            display: flex;
-            width: 100%;
-        }
+    <!-- Welcome Message -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-0">Transport Management</h2>
+        <p class="text-muted">Welcome back, <?php echo htmlspecialchars($company['company_name']); ?>!</p>
+    </div>
 
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            min-height: 100vh;
-        }
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card admin-stat-card border-0 shadow-sm p-4 bg-primary-green text-white rounded-4">
+                <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Buses</p>
+                <h2 class="fw-bold mb-0"><?php echo number_format($total_buses); ?></h2>
+                <p class="small mb-0 mt-2"><i class="fas fa-bus me-1"></i> Fleet size</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-stat-card border-0 shadow-sm p-4 bg-warning text-dark rounded-4">
+                <p class="small fw-bold text-uppercase opacity-75 mb-1">Active Routes</p>
+                <h2 class="fw-bold mb-0"><?php echo number_format($total_routes); ?></h2>
+                <p class="small mb-0 mt-2"><i class="fas fa-route me-1"></i> Operational paths</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-stat-card border-0 shadow-sm p-4 text-white rounded-4" style="background-color: #00796B;">
+                <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Bookings</p>
+                <h2 class="fw-bold mb-0"><?php echo number_format($total_bookings); ?></h2>
+                <p class="small mb-0 mt-2"><i class="fas fa-ticket-alt me-1"></i> Tickets sold</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card admin-stat-card border-0 shadow-sm p-4 bg-success text-white rounded-4">
+                <p class="small fw-bold text-uppercase opacity-75 mb-1">Revenue</p>
+                <h2 class="fw-bold mb-0"><?php echo number_format($total_revenue / 1000, 1); ?>k <small class="fs-6">ETB</small></h2>
+                <p class="small mb-0 mt-2"><i class="fas fa-money-bill-wave me-1"></i> Paid earnings</p>
+            </div>
+        </div>
+    </div>
 
-        .admin-stat-card {
-            transition: transform 0.3s;
-            border-radius: 15px;
-            color: #fff;
-        }
-
-        .admin-stat-card:hover {
-            transform: translateY(-5px);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="dashboard-wrapper">
-        <?php include('../includes/sidebar_transport.php'); ?>
-
-        <div class="main-content">
-            <?php echo displayFlashMessage(); ?>
-
-            <!-- Top Nav -->
-            <div class="d-flex justify-content-between align-items-center mb-5">
-                <div>
-                    <h2 class="fw-bold mb-0">Transport Management</h2>
-                    <p class="text-muted">Welcome back, <?php echo htmlspecialchars($company['company_name']); ?>!</p>
+    <div class="row g-4">
+        <!-- Pending Bookings -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center rounded-top-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-clock text-warning me-2"></i>Pending Bookings</h5>
+                    <span class="badge bg-warning text-dark rounded-pill"><?php echo count($pending_bookings); ?> pending</span>
                 </div>
-                <div class="d-flex gap-3 align-items-center">
-                    <?php if ($company['status'] === 'pending'): ?>
-                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Status: Pending Approval</span>
-                    <?php elseif ($company['status'] === 'approved'): ?>
-                        <span class="badge bg-success px-3 py-2 rounded-pill">Status: Active</span>
+                <div class="card-body p-0">
+                    <?php if (empty($pending_bookings)): ?>
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-check-circle text-success fs-1 mb-3 d-block"></i>
+                            No pending bookings. Great job!
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0 px-4">Booking</th>
+                                        <th class="border-0">Route</th>
+                                        <th class="border-0">Customer</th>
+                                        <th class="border-0">Amount</th>
+                                        <th class="border-0">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($pending_bookings as $booking): ?>
+                                        <tr>
+                                            <td class="px-4">
+                                                <strong><?php echo htmlspecialchars($booking['booking_reference']); ?></strong>
+                                                <br><small class="text-muted"><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?> - <?php echo date('h:i A', strtotime($booking['departure_time'])); ?></small>
+                                            </td>
+                                            <td>
+                                                <?php echo htmlspecialchars($booking['origin']); ?> → <?php echo htmlspecialchars($booking['destination']); ?>
+                                                <br><small class="text-muted">Bus: <?php echo htmlspecialchars($booking['bus_number']); ?></small>
+                                            </td>
+                                            <td>
+                                                <?php echo htmlspecialchars($booking['customer_name']); ?>
+                                                <?php if ($booking['customer_phone']): ?>
+                                                    <br><small class="text-muted"><?php echo htmlspecialchars($booking['customer_phone']); ?></small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><strong><?php echo number_format($booking['total_amount']); ?> ETB</strong></td>
+                                            <td>
+                                                <form method="POST">
+                                                    <?php echo csrfField(); ?>
+                                                    <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                    <input type="hidden" name="update_booking_status" value="1">
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <small class="text-muted"><?php echo $booking['num_passengers']; ?> passenger(s)</small>
+                                                        <input type="text" name="seat_numbers" class="form-control form-control-sm rounded-pill" placeholder="Seat #s" style="min-width:120px;" value="<?php echo htmlspecialchars($booking['seat_numbers'] ?? ''); ?>">
+                                                        <div class="d-flex gap-1">
+                                                            <button type="submit" name="status" value="confirmed" class="btn btn-sm btn-success rounded-pill flex-grow-1"> Approve </button>
+                                                            <button type="submit" name="status" value="cancelled" class="btn btn-sm btn-outline-danger rounded-pill" onclick="return confirm('Reject this booking?')"> Reject </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php endif; ?>
+                </div>
+            </div>
+        </div>
 
-                    <div class="dropdown">
-                        <button class="btn btn-white shadow-sm dropdown-toggle rounded-pill px-4"
-                            data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle me-2"></i>
-                            <?php echo htmlspecialchars(getCurrentUserName()); ?>
-                        </button>
-                        <ul class="dropdown-menu border-0 shadow mt-2">
-                            <li><a class="dropdown-item" href="profile.php"><i class="fas fa-cog me-2"></i>Profile</a>
-                            </li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item text-danger" href="../logout.php"><i
-                                        class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        </ul>
+        <!-- Quick Actions & Info -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4 rounded-4">
+                <div class="card-header bg-white border-0 py-3 rounded-top-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="buses.php" class="btn btn-outline-primary-green rounded-pill">
+                            <i class="fas fa-bus me-2"></i> Manage Buses
+                        </a>
+                        <a href="routes.php" class="btn btn-outline-primary-green rounded-pill">
+                            <i class="fas fa-route me-2"></i> Manage Routes
+                        </a>
+                        <a href="schedules.php" class="btn btn-outline-primary-green rounded-pill">
+                            <i class="fas fa-calendar-alt me-2"></i> Manage Schedules
+                        </a>
+                        <a href="bookings.php" class="btn btn-outline-primary-green rounded-pill">
+                            <i class="fas fa-ticket-alt me-2"></i> All Bookings
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="row g-4 mb-5">
-                <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-primary-green">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Buses</p>
-                        <h2 class="fw-bold mb-0"><?php echo number_format($total_buses); ?></h2>
-                        <p class="small mb-0 mt-2"><i class="fas fa-bus me-1"></i> Fleet size</p>
-                    </div>
+            <!-- Company Info -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3 rounded-top-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-building text-primary-green me-2"></i>Company Info</h5>
                 </div>
-                <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-warning text-dark">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Active Routes</p>
-                        <h2 class="fw-bold mb-0"><?php echo number_format($total_routes); ?></h2>
-                        <p class="small mb-0 mt-2"><i class="fas fa-route me-1"></i> Operational paths</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-info text-white">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Bookings</p>
-                        <h2 class="fw-bold mb-0"><?php echo number_format($total_bookings); ?></h2>
-                        <p class="small mb-0 mt-2"><i class="fas fa-ticket-alt me-1"></i> Tickets sold</p>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-success text-white">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Revenue</p>
-                        <h2 class="fw-bold mb-0"><?php echo number_format($total_revenue / 1000, 1); ?>k <small
-                                class="fs-6">ETB</small></h2>
-                        <p class="small mb-0 mt-2"><i class="fas fa-money-bill-wave me-1"></i> Paid earnings</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4">
-                <!-- Pending Bookings -->
-                <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm">
-                        <div
-                            class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                            <h5 class="fw-bold mb-0"><i class="fas fa-clock text-warning me-2"></i>Pending Bookings</h5>
-                            <span class="badge bg-warning text-dark"><?php echo count($pending_bookings); ?>
-                                pending</span>
-                        </div>
-                        <div class="card-body p-0">
-                            <?php if (empty($pending_bookings)): ?>
-                                <div class="p-4 text-center text-muted">
-                                    <i class="fas fa-check-circle text-success fs-1 mb-3 d-block"></i>
-                                    No pending bookings. Great job!
-                                </div>
-                            <?php else: ?>
-                                <div class="table-responsive">
-                                    <table class="table align-middle mb-0">
-                                        <thead class="bg-light">
-                                            <tr>
-                                                <th class="border-0 px-4">Booking</th>
-                                                <th class="border-0">Route</th>
-                                                <th class="border-0">Customer</th>
-                                                <th class="border-0">Amount</th>
-                                                <th class="border-0">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($pending_bookings as $booking): ?>
-                                                <tr>
-                                                    <td class="px-4">
-                                                        <strong><?php echo htmlspecialchars($booking['booking_reference']); ?></strong>
-                                                        <br><small
-                                                            class="text-muted"><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?>
-                                                            -
-                                                            <?php echo date('h:i A', strtotime($booking['departure_time'])); ?></small>
-                                                    </td>
-                                                    <td>
-                                                        <?php echo htmlspecialchars($booking['origin']); ?> →
-                                                        <?php echo htmlspecialchars($booking['destination']); ?>
-                                                        <br><small class="text-muted">Bus:
-                                                            <?php echo htmlspecialchars($booking['bus_number']); ?></small>
-                                                    </td>
-                                                    <td>
-                                                        <?php echo htmlspecialchars($booking['customer_name']); ?>
-                                                        <?php if ($booking['customer_phone']): ?>
-                                                            <br><small
-                                                                class="text-muted"><?php echo htmlspecialchars($booking['customer_phone']); ?></small>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td><strong><?php echo number_format($booking['total_amount']); ?>
-                                                            ETB</strong></td>
-                                                    <td>
-                                                        <form method="POST">
-                                                            <?php echo csrfField(); ?>
-                                                            <input type="hidden" name="booking_id"
-                                                                value="<?php echo $booking['id']; ?>">
-                                                            <input type="hidden" name="update_booking_status" value="1">
-                                                            <div class="d-flex flex-column gap-1">
-                                                                <small class="text-muted"><?php echo $booking['num_passengers']; ?> passenger(s)</small>
-                                                                <input type="text" name="seat_numbers" 
-                                                                    class="form-control form-control-sm rounded-pill" 
-                                                                    placeholder="Seat #s (e.g. 12,13)" 
-                                                                    style="min-width:120px;"
-                                                                    value="<?php echo htmlspecialchars($booking['seat_numbers'] ?? ''); ?>">
-                                                                <div class="d-flex gap-1">
-                                                                    <button type="submit" name="status" value="confirmed"
-                                                                        class="btn btn-sm btn-success rounded-pill flex-grow-1">
-                                                                        <i class="fas fa-check"></i> Approve
-                                                                    </button>
-                                                                    <button type="submit" name="status" value="cancelled"
-                                                                        class="btn btn-sm btn-outline-danger rounded-pill"
-                                                                        onclick="return confirm('Reject this booking?')">
-                                                                        <i class="fas fa-times"></i>
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </form>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white border-0 py-3">
-                            <h5 class="fw-bold mb-0"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <a href="buses.php" class="btn btn-outline-primary-green rounded-pill">
-                                    <i class="fas fa-bus me-2"></i> Manage Buses
-                                </a>
-                                <a href="routes.php" class="btn btn-outline-primary-green rounded-pill">
-                                    <i class="fas fa-route me-2"></i> Manage Routes
-                                </a>
-                                <a href="schedules.php" class="btn btn-outline-primary-green rounded-pill">
-                                    <i class="fas fa-calendar-alt me-2"></i> Manage Schedules
-                                </a>
-                                <a href="bookings.php" class="btn btn-outline-primary-green rounded-pill">
-                                    <i class="fas fa-ticket-alt me-2"></i> All Bookings
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Company Info -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-0 py-3">
-                            <h5 class="fw-bold mb-0"><i class="fas fa-building text-primary-green me-2"></i>Company Info
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-2"><strong>Company:</strong>
-                                <?php echo htmlspecialchars($company['company_name']); ?></p>
-                            <p class="mb-2"><strong>Phone:</strong>
-                                <?php echo htmlspecialchars($company['phone'] ?? 'Not set'); ?></p>
-                            <p class="mb-2"><strong>Email:</strong>
-                                <?php echo htmlspecialchars($company['email'] ?? 'Not set'); ?></p>
-                            <p class="mb-0"><strong>Rating:</strong>
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <i
-                                        class="fas fa-star <?php echo $i <= $company['rating'] ? 'text-warning' : 'text-muted'; ?>"></i>
-                                <?php endfor; ?>
-                            </p>
-                            <a href="profile.php" class="btn btn-sm btn-light rounded-pill mt-3 w-100">
-                                <i class="fas fa-edit me-1"></i> Edit Profile
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Bookings -->
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Recent Bookings</h5>
-                    <a href="bookings.php" class="btn btn-sm btn-light rounded-pill">View All</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="border-0 px-4">Reference</th>
-                                <th class="border-0">Route</th>
-                                <th class="border-0">Customer</th>
-                                <th class="border-0">Travel Date</th>
-                                <th class="border-0">Amount</th>
-                                <th class="border-0">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recent_bookings as $booking): ?>
-                                <tr>
-                                    <td class="px-4 fw-bold text-primary-green">
-                                        <?php echo htmlspecialchars($booking['booking_reference']); ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($booking['origin']); ?> →
-                                        <?php echo htmlspecialchars($booking['destination']); ?>
-                                    </td>
-                                    <td><?php echo htmlspecialchars($booking['customer_name']); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></td>
-                                    <td><?php echo number_format($booking['total_amount']); ?> ETB</td>
-                                    <td><?php echo getStatusBadge($booking['status']); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Company:</strong> <?php echo htmlspecialchars($company['company_name']); ?></p>
+                    <p class="mb-2"><strong>Phone:</strong> <?php echo htmlspecialchars($company['phone'] ?? 'Not set'); ?></p>
+                    <p class="mb-2"><strong>Status:</strong> 
+                        <?php if ($company['status'] === 'pending'): ?>
+                            <span class="text-warning">Pending Approval</span>
+                        <?php else: ?>
+                            <span class="text-success">Active</span>
+                        <?php endif; ?>
+                    </p>
+                    <p class="mb-0"><strong>Rating:</strong>
+                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <i class="fas fa-star <?php echo $i <= $company['rating'] ? 'text-warning' : 'text-muted'; ?>"></i>
+                        <?php endfor; ?>
+                    </p>
+                    <a href="profile.php" class="btn btn-sm btn-light rounded-pill mt-3 w-100">
+                        <i class="fas fa-edit me-1"></i> Edit Profile
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
+    <!-- Recent Bookings -->
+    <div class="card border-0 shadow-sm mt-4 rounded-4">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center rounded-top-4">
+            <h5 class="fw-bold mb-0">Recent Bookings</h5>
+            <a href="bookings.php" class="btn btn-sm btn-light rounded-pill">View All</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="border-0 px-4">Reference</th>
+                        <th class="border-0">Route</th>
+                        <th class="border-0">Customer</th>
+                        <th class="border-0">Travel Date</th>
+                        <th class="border-0">Amount</th>
+                        <th class="border-0">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_bookings as $booking): ?>
+                        <tr>
+                            <td class="px-4 fw-bold text-primary-green"><?php echo htmlspecialchars($booking['booking_reference']); ?></td>
+                            <td><?php echo htmlspecialchars($booking['origin']); ?> → <?php echo htmlspecialchars($booking['destination']); ?></td>
+                            <td><?php echo htmlspecialchars($booking['customer_name']); ?></td>
+                            <td><?php echo date('M d, Y', strtotime($booking['travel_date'])); ?></td>
+                            <td><?php echo number_format($booking['total_amount']); ?> ETB</td>
+                            <td><?php echo getStatusBadge($booking['status']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php include('../includes/transport_footer.php'); ?>

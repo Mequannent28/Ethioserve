@@ -101,7 +101,7 @@ $stmt->execute([$company['id']]);
 $routes = $stmt->fetchAll();
 
 // Build query for schedules
-$where = "b.company_id = ?";
+$where = "bus.company_id = ?";
 $params = [$company['id']];
 
 if ($route_filter) {
@@ -131,12 +131,11 @@ $schedules = $stmt->fetchAll();
 
 $days_of_week = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-include('../includes/header.php');
+$page_title = 'Manage Schedules';
+$top_title = 'Schedule Management';
+include('../includes/transport_header.php');
 ?>
 
-<?php include('../includes/sidebar_transport.php'); ?>
-
-<main class="container py-4">
     <?php echo displayFlashMessage(); ?>
     
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -257,125 +256,6 @@ include('../includes/header.php');
                                         <?php endif; ?>
                                     </td>
                                 </tr>
-
-                                <!-- Edit Schedule Modal -->
-                                <div class="modal fade" id="editScheduleModal<?php echo $schedule['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-primary-green text-white">
-                                                <h5 class="modal-title">Edit Schedule</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST">
-                                                <?php echo csrfField(); ?>
-                                                <input type="hidden" name="schedule_id" value="<?php echo $schedule['id']; ?>">
-                                                <div class="modal-body">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label class="form-label fw-bold">Bus</label>
-                                                            <select name="bus_id" class="form-select rounded-pill bg-light border-0" required>
-                                                                <?php foreach ($buses as $bus): ?>
-                                                                    <option value="<?php echo $bus['id']; ?>" <?php echo $schedule['bus_id'] == $bus['id'] ? 'selected' : ''; ?>>
-                                                                        <?php echo htmlspecialchars($bus['bus_number']); ?>
-                                                                    </option>
-                                                                <?php endforeach; ?>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label class="form-label fw-bold">Route</label>
-                                                            <select name="route_id" class="form-select rounded-pill bg-light border-0" required>
-                                                                <?php foreach ($routes as $route): ?>
-                                                                    <option value="<?php echo $route['id']; ?>" <?php echo $schedule['route_id'] == $route['id'] ? 'selected' : ''; ?>>
-                                                                        <?php echo htmlspecialchars($route['origin'] . ' → ' . $route['destination']); ?>
-                                                                    </option>
-                                                                <?php endforeach; ?>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Departure Time</label>
-                                                            <input type="time" name="departure_time" class="form-control rounded-pill bg-light border-0" 
-                                                                   value="<?php echo $schedule['departure_time']; ?>" required>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Arrival Time</label>
-                                                            <input type="time" name="arrival_time" class="form-control rounded-pill bg-light border-0" 
-                                                                   value="<?php echo $schedule['arrival_time']; ?>">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Price (ETB)</label>
-                                                            <input type="number" name="price" step="10" class="form-control rounded-pill bg-light border-0" 
-                                                                   value="<?php echo $schedule['price']; ?>" required>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <label class="form-label fw-bold">Operating Days</label>
-                                                            <div class="d-flex flex-wrap gap-2">
-                                                                <?php 
-                                                                $selected_days = explode(',', $schedule['operating_days'] ?? '');
-                                                                foreach ($days_of_week as $day): 
-                                                                ?>
-                                                                    <div class="form-check form-check-inline">
-                                                                        <input class="form-check-input" type="checkbox" name="operating_days[]" 
-                                                                               id="edit_day_<?php echo $schedule['id']; ?>_<?php echo $day; ?>" 
-                                                                               value="<?php echo $day; ?>"
-                                                                               <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?>>
-                                                                        <label class="form-check-label" for="edit_day_<?php echo $schedule['id']; ?>_<?php echo $day; ?>">
-                                                                            <?php echo $day; ?>
-                                                                        </label>
-                                                                    </div>
-                                                                <?php endforeach; ?>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="is_active" 
-                                                                       id="active<?php echo $schedule['id']; ?>" 
-                                                                       <?php echo $schedule['is_active'] ? 'checked' : ''; ?>>
-                                                                <label class="form-check-label" for="active<?php echo $schedule['id']; ?>">
-                                                                    Active (available for booking)
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" name="update_schedule" class="btn btn-primary-green rounded-pill">
-                                                        <i class="fas fa-save me-2"></i>Save Changes
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Delete Schedule Modal -->
-                                <div class="modal fade" id="deleteScheduleModal<?php echo $schedule['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">Delete Schedule</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST">
-                                                <?php echo csrfField(); ?>
-                                                <input type="hidden" name="schedule_id" value="<?php echo $schedule['id']; ?>">
-                                                <div class="modal-body">
-                                                    <p>Delete this schedule?</p>
-                                                    <p class="text-muted small">
-                                                        <?php echo htmlspecialchars($schedule['origin']); ?> → <?php echo htmlspecialchars($schedule['destination']); ?> 
-                                                        at <?php echo date('h:i A', strtotime($schedule['departure_time'])); ?>
-                                                    </p>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" name="delete_schedule" class="btn btn-danger rounded-pill">
-                                                        <i class="fas fa-trash me-2"></i>Delete Schedule
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -383,11 +263,132 @@ include('../includes/header.php');
             </div>
         </div>
     </div>
-</main>
+
+    <?php foreach ($schedules as $schedule): ?>
+        <!-- Edit Schedule Modal -->
+        <div class="modal fade" id="editScheduleModal<?php echo $schedule['id']; ?>" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-primary-green text-white border-0 py-3">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Schedule</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="schedule_id" value="<?php echo $schedule['id']; ?>">
+                        <div class="modal-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Bus</label>
+                                    <select name="bus_id" class="form-select rounded-pill bg-light border-0 px-3" required>
+                                        <?php foreach ($buses as $bus): ?>
+                                            <option value="<?php echo $bus['id']; ?>" <?php echo $schedule['bus_id'] == $bus['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($bus['bus_number']); ?> (<?php echo htmlspecialchars($bus['bus_type']); ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Route</label>
+                                    <select name="route_id" class="form-select rounded-pill bg-light border-0 px-3" required>
+                                        <?php foreach ($routes as $route): ?>
+                                            <option value="<?php echo $route['id']; ?>" <?php echo $schedule['route_id'] == $route['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($route['origin'] . ' → ' . $route['destination']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-muted">Departure Time</label>
+                                    <input type="time" name="departure_time" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo $schedule['departure_time']; ?>" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-muted">Arrival Time</label>
+                                    <input type="time" name="arrival_time" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo $schedule['arrival_time']; ?>">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small text-muted">Price (ETB)</label>
+                                    <input type="number" name="price" step="1" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo $schedule['price']; ?>" required>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <label class="form-label fw-bold small text-muted">Operating Days</label>
+                                    <div class="d-flex flex-wrap gap-2 p-3 bg-light rounded-4 ms-0">
+                                        <?php 
+                                        $selected_days = explode(',', $schedule['operating_days'] ?? '');
+                                        foreach ($days_of_week as $day): 
+                                        ?>
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="operating_days[]" 
+                                                       id="edit_day_<?php echo $schedule['id']; ?>_<?php echo $day; ?>" 
+                                                       value="<?php echo $day; ?>"
+                                                       <?php echo in_array($day, $selected_days) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label fw-bold" for="edit_day_<?php echo $schedule['id']; ?>_<?php echo $day; ?>">
+                                                    <?php echo $day; ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="form-check form-switch p-3 bg-light rounded-4 ms-0">
+                                        <input class="form-check-input ms-0 me-3" type="checkbox" name="is_active" id="activeSch<?php echo $schedule['id']; ?>" 
+                                               <?php echo $schedule['is_active'] ? 'checked' : ''; ?>>
+                                        <label class="form-check-label fw-bold" for="activeSch<?php echo $schedule['id']; ?>">
+                                            Active (Available for booking)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" name="update_schedule" class="btn btn-primary-green rounded-pill px-4 fw-bold">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Schedule Modal -->
+        <div class="modal fade" id="deleteScheduleModal<?php echo $schedule['id']; ?>" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-danger text-white border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-trash-alt me-2"></i>Confirm Deletion</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="schedule_id" value="<?php echo $schedule['id']; ?>">
+                        <div class="modal-body p-4 text-center">
+                            <i class="fas fa-exclamation-triangle text-danger fs-1 mb-3"></i>
+                            <p class="mb-1">Are you sure you want to delete this schedule?</p>
+                            <p class="fw-bold fs-5">
+                                <?php echo htmlspecialchars($schedule['origin']); ?> → <?php echo htmlspecialchars($schedule['destination']); ?> 
+                                <br><small class="text-muted">at <?php echo date('h:i A', strtotime($schedule['departure_time'])); ?></small>
+                            </p>
+                            <p class="text-muted small mt-2">This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer border-0 justify-content-center pb-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" name="delete_schedule" class="btn btn-danger rounded-pill px-4 fw-bold">
+                                <i class="fas fa-trash me-2"></i>Yes, Delete Schedule
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
 
 <!-- Add Schedule Modal -->
-<div class="modal fade" id="addScheduleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal" id="addScheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
             <div class="modal-header bg-primary-green text-white">
                 <h5 class="modal-title"><i class="fas fa-calendar-plus me-2"></i>Add New Schedule</h5>
@@ -395,60 +396,66 @@ include('../includes/header.php');
             </div>
             <form method="POST">
                 <?php echo csrfField(); ?>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Bus</label>
-                            <select name="bus_id" class="form-select rounded-pill bg-light border-0" required>
-                                <option value="">Select Bus</option>
-                                <?php foreach ($buses as $bus): ?>
-                                    <option value="<?php echo $bus['id']; ?>"><?php echo htmlspecialchars($bus['bus_number']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Route</label>
-                            <select name="route_id" class="form-select rounded-pill bg-light border-0" required>
-                                <option value="">Select Route</option>
-                                <?php foreach ($routes as $route): ?>
-                                    <option value="<?php echo $route['id']; ?>" data-price="<?php echo $route['base_price']; ?>">
-                                        <?php echo htmlspecialchars($route['origin'] . ' → ' . $route['destination']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Departure Time</label>
-                            <input type="time" name="departure_time" class="form-control rounded-pill bg-light border-0" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Arrival Time</label>
-                            <input type="time" name="arrival_time" class="form-control rounded-pill bg-light border-0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Price (ETB)</label>
-                            <input type="number" name="price" step="10" class="form-control rounded-pill bg-light border-0" 
-                                   id="schedulePrice" placeholder="e.g., 500" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold">Operating Days</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($days_of_week as $day): ?>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox" name="operating_days[]" 
-                                               id="day_<?php echo $day; ?>" value="<?php echo $day; ?>" checked>
-                                        <label class="form-check-label" for="day_<?php echo $day; ?>">
-                                            <?php echo $day; ?>
-                                        </label>
+                <div class="modal-body bg-light">
+                    <div class="container py-4">
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-body p-4 p-md-5">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Select Bus</label>
+                                        <select name="bus_id" class="form-select form-control-lg rounded-pill border-0 shadow-sm" required>
+                                            <option value="">Choose a Bus...</option>
+                                            <?php foreach ($buses as $bus): ?>
+                                                <option value="<?php echo $bus['id']; ?>"><?php echo htmlspecialchars($bus['bus_number']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
-                                <?php endforeach; ?>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Select Route</label>
+                                        <select name="route_id" class="form-select form-control-lg rounded-pill border-0 shadow-sm" required>
+                                            <option value="">Choose a Route...</option>
+                                            <?php foreach ($routes as $route): ?>
+                                                <option value="<?php echo $route['id']; ?>" data-price="<?php echo $route['base_price']; ?>">
+                                                    <?php echo htmlspecialchars($route['origin'] . ' → ' . $route['destination']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Departure Time</label>
+                                        <input type="time" name="departure_time" class="form-control form-control-lg rounded-pill border-0 shadow-sm" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Arrival Time</label>
+                                        <input type="time" name="arrival_time" class="form-control form-control-lg rounded-pill border-0 shadow-sm">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Price (ETB)</label>
+                                        <input type="number" name="price" step="10" class="form-control form-control-lg rounded-pill border-0 shadow-sm" 
+                                               id="schedulePrice" placeholder="e.g., 500" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Operating Days</label>
+                                        <div class="d-flex flex-wrap gap-3 p-3 bg-white rounded-4 shadow-sm">
+                                            <?php foreach ($days_of_week as $day): ?>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" name="operating_days[]" 
+                                                           id="day_<?php echo $day; ?>" value="<?php echo $day; ?>" checked>
+                                                    <label class="form-check-label fw-bold" for="day_<?php echo $day; ?>">
+                                                        <?php echo $day; ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="add_schedule" class="btn btn-primary-green rounded-pill">
+                <div class="modal-footer bg-white shadow-lg">
+                    <button type="button" class="btn btn-lg btn-light rounded-pill px-5" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="add_schedule" class="btn btn-lg btn-primary-green rounded-pill px-5">
                         <i class="fas fa-plus me-2"></i>Add Schedule
                     </button>
                 </div>
@@ -468,4 +475,4 @@ document.querySelector('select[name="route_id"]').addEventListener('change', fun
 });
 </script>
 
-<?php include('../includes/footer.php'); ?>
+<?php include('../includes/transport_footer.php'); ?>

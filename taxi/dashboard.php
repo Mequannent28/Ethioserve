@@ -148,7 +148,7 @@ $top_customers = $stmt->fetchAll();
         }
 
         .ride-status-in_progress {
-            border-left-color: #1976D2;
+            border-left-color: #00796B;
         }
 
         .ride-status-completed {
@@ -218,7 +218,7 @@ $top_customers = $stmt->fetchAll();
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-info text-white">
+                    <div class="card admin-stat-card border-0 shadow-sm p-4 bg-teal text-white" style="background-color: #00796B;">
                         <p class="small fw-bold text-uppercase opacity-75 mb-1">Fleet Size</p>
                         <h2 class="fw-bold mb-0"><?php echo $total_vehicles; ?></h2>
                         <p class="small mb-0 mt-2"><i class="fas fa-car me-1"></i> Registered vehicles</p>

@@ -77,11 +77,7 @@ $activity_types = $pdo->query("SELECT DISTINCT activity_type FROM activity_logs 
             color: #333;
         }
 
-        .main-content {
-            margin-left: 260px;
-            padding: 20px;
-            min-height: 100vh;
-        }
+        
 
         .log-container {
             display: flex;

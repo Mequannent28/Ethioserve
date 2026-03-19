@@ -428,6 +428,431 @@ switch ($action) {
         jsonResponse(['success' => true, 'message' => 'Booking status updated']);
         break;
 
+    case 'get_hotel_notifications':
+        if (!isLoggedIn() || !hasRole('hotel')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get hotel ID
+        $stmt = $pdo->prepare("SELECT id FROM hotels WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $hotel = $stmt->fetch();
+
+        if (!$hotel) {
+            jsonResponse(['success' => false, 'message' => 'Hotel not found']);
+        }
+
+        $hotel_id = $hotel['id'];
+        $last_order_id = (int) ($_GET['last_order_id'] ?? 0);
+        $last_booking_id = (int) ($_GET['last_booking_id'] ?? 0);
+
+        // Check for new pending orders
+        $stmt = $pdo->prepare("
+            SELECT o.*, u.full_name as customer_name 
+            FROM orders o
+            JOIN users u ON o.customer_id = u.id
+            WHERE o.hotel_id = ? AND o.status = 'pending' AND o.id > ?
+            ORDER BY o.id DESC
+        ");
+        $stmt->execute([$hotel_id, $last_order_id]);
+        $new_orders = $stmt->fetchAll();
+
+        // Check for new pending bookings
+        $stmt = $pdo->prepare("
+            SELECT b.*, u.full_name as customer_name 
+            FROM bookings b
+            JOIN users u ON b.customer_id = u.id
+            WHERE b.hotel_id = ? AND b.status = 'pending' AND b.id > ?
+            ORDER BY b.id DESC
+        ");
+        $stmt->execute([$hotel_id, $last_booking_id]);
+        $new_bookings = $stmt->fetchAll();
+
+        // Total pending counts for badges
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE hotel_id = ? AND status = 'pending'");
+        $stmt->execute([$hotel_id]);
+        $all_pending_orders = (int) $stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE hotel_id = ? AND status = 'pending'");
+        $stmt->execute([$hotel_id]);
+        $all_pending_bookings = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_orders' => $new_orders,
+            'new_bookings' => $new_bookings,
+            'total_pending_orders' => $all_pending_orders,
+            'total_pending_bookings' => $all_pending_bookings
+        ]);
+        break;
+
+    case 'get_employer_notifications':
+        if (!isLoggedIn() || !hasRole('employer')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get company ID
+        $stmt = $pdo->prepare("SELECT id FROM job_companies WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $company = $stmt->fetch();
+
+        if (!$company) {
+            jsonResponse(['success' => false, 'message' => 'Company not found']);
+        }
+
+        $company_id = $company['id'];
+        $last_app_id = (int) ($_GET['last_app_id'] ?? 0);
+
+        // Check for new pending applications
+        $stmt = $pdo->prepare("
+            SELECT ja.*, u.full_name as applicant_name, jl.title as job_title 
+            FROM job_applications ja
+            JOIN users u ON ja.applicant_id = u.id
+            JOIN job_listings jl ON ja.job_id = jl.id
+            WHERE jl.company_id = ? AND ja.status = 'pending' AND ja.id > ?
+            ORDER BY ja.id DESC
+        ");
+        $stmt->execute([$company_id, $last_app_id]);
+        $new_apps = $stmt->fetchAll();
+
+        // Check for unread messages
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM job_messages WHERE receiver_id = ? AND is_read = 0");
+        $stmt->execute([getCurrentUserId()]);
+        $unread_messages = (int) $stmt->fetchColumn();
+
+        // Total pending counts for badges
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM job_applications ja JOIN job_listings jl ON ja.job_id = jl.id WHERE jl.company_id = ? AND ja.status = 'pending'");
+        $stmt->execute([$company_id]);
+        $all_pending_apps = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_applications' => $new_apps,
+            'unread_messages' => $unread_messages,
+            'total_pending_apps' => $all_pending_apps
+        ]);
+        break;
+
+    case 'get_restaurant_notifications':
+        if (!isLoggedIn() || !hasRole('restaurant')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get restaurant ID
+        $stmt = $pdo->prepare("SELECT id FROM restaurants WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $restaurant = $stmt->fetch();
+
+        if (!$restaurant) {
+            jsonResponse(['success' => false, 'message' => 'Restaurant not found']);
+        }
+
+        $restaurant_id = $restaurant['id'];
+        $last_order_id = (int) ($_GET['last_order_id'] ?? 0);
+
+        // Check for new pending orders
+        $stmt = $pdo->prepare("
+            SELECT ro.*, u.full_name as customer_name 
+            FROM restaurant_orders ro
+            JOIN users u ON ro.customer_id = u.id
+            WHERE ro.restaurant_id = ? AND ro.status = 'pending' AND ro.id > ?
+            ORDER BY ro.id DESC
+        ");
+        $stmt->execute([$restaurant_id, $last_order_id]);
+        $new_orders = $stmt->fetchAll();
+
+        // Total pending counts for badges
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM restaurant_orders WHERE restaurant_id = ? AND status = 'pending'");
+        $stmt->execute([$restaurant_id]);
+        $all_pending_orders = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_orders' => $new_orders,
+            'total_pending_orders' => $all_pending_orders
+        ]);
+        break;
+
+    case 'get_taxi_notifications':
+        if (!isLoggedIn() || !hasRole('taxi')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get company ID
+        $stmt = $pdo->prepare("SELECT id FROM taxi_companies WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $company = $stmt->fetch();
+
+        if (!$company) {
+            jsonResponse(['success' => false, 'message' => 'Taxi company not found']);
+        }
+
+        $company_id = $company['id'];
+        $last_ride_id = (int) ($_GET['last_ride_id'] ?? 0);
+
+        // Check for new ride requests
+        $stmt = $pdo->prepare("
+            SELECT tr.*, u.full_name as customer_name 
+            FROM taxi_rides tr
+            JOIN users u ON tr.customer_id = u.id
+            WHERE tr.taxi_company_id = ? AND tr.status = 'requested' AND tr.id > ?
+            ORDER BY tr.id DESC
+        ");
+        $stmt->execute([$company_id, $last_ride_id]);
+        $new_rides = $stmt->fetchAll();
+
+        // Total pending counts for badges
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM taxi_rides WHERE taxi_company_id = ? AND status = 'requested'");
+        $stmt->execute([$company_id]);
+        $all_pending_rides = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_rides' => $new_rides,
+            'total_pending_rides' => $all_pending_rides
+        ]);
+        break;
+
+    case 'get_transport_notifications':
+        if (!isLoggedIn() || !hasRole('transport')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get company ID
+        $stmt = $pdo->prepare("SELECT id FROM transport_companies WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $company = $stmt->fetch();
+
+        if (!$company) {
+            jsonResponse(['success' => false, 'message' => 'Transport company not found']);
+        }
+
+        $company_id = $company['id'];
+        $last_booking_id = (int) ($_GET['last_booking_id'] ?? 0);
+
+        // Check for new bus bookings
+        $stmt = $pdo->prepare("
+            SELECT bb.*, u.full_name as customer_name 
+            FROM bus_bookings bb
+            JOIN users u ON bb.customer_id = u.id
+            JOIN schedules s ON bb.schedule_id = s.id
+            JOIN buses b ON s.bus_id = b.id
+            WHERE b.company_id = ? AND bb.status = 'pending' AND bb.id > ?
+            ORDER BY bb.id DESC
+        ");
+        $stmt->execute([$company_id, $last_booking_id]);
+        $new_bookings = $stmt->fetchAll();
+
+        // Total pending counts for badges
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) 
+            FROM bus_bookings bb
+            JOIN schedules s ON bb.schedule_id = s.id
+            JOIN buses b ON s.bus_id = b.id
+            WHERE b.company_id = ? AND bb.status = 'pending'
+        ");
+        $stmt->execute([$company_id]);
+        $all_pending_bookings = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_bookings' => $new_bookings,
+            'total_pending_bookings' => $all_pending_bookings
+        ]);
+        break;
+
+    case 'get_broker_notifications':
+        if (!isLoggedIn() || !hasRole('broker')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get broker ID
+        $stmt = $pdo->prepare("SELECT id FROM brokers WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $broker = $stmt->fetch();
+
+        $broker_id = $broker['id'];
+        $user_id = getCurrentUserId();
+        $last_ref_id = (int) ($_GET['last_ref_id'] ?? 0);
+        $last_request_id = (int) ($_GET['last_request_id'] ?? 0);
+
+        // Check for new referrals (traditional broker role)
+        $stmt = $pdo->prepare("
+            SELECT r.*, u.full_name as customer_name, o.total_amount 
+            FROM referrals r
+            JOIN orders o ON r.order_id = o.id
+            JOIN users u ON o.customer_id = u.id
+            WHERE r.broker_id = ? AND r.id > ?
+            ORDER BY r.id DESC
+        ");
+        $stmt->execute([$broker_id, $last_ref_id]);
+        $new_refs = $stmt->fetchAll();
+
+        // Check for new rental requests (new Owner role)
+        $stmt = $pdo->prepare("
+            SELECT rr.*, l.title as listing_title, u.full_name as customer_name_db
+            FROM rental_requests rr
+            JOIN listings l ON rr.listing_id = l.id
+            LEFT JOIN users u ON rr.customer_id = u.id
+            WHERE l.user_id = ? AND rr.status = 'pending' AND rr.id > ?
+            ORDER BY rr.id DESC
+        ");
+        $stmt->execute([$user_id, $last_request_id]);
+        $new_requests = $stmt->fetchAll();
+
+        jsonResponse([
+            'success' => true,
+            'new_referrals' => $new_refs,
+            'new_requests' => $new_requests,
+            'total_new_refs' => count($new_refs),
+            'total_new_requests' => count($new_requests)
+        ]);
+        break;
+
+    case 'get_doctor_notifications':
+        if (!isLoggedIn() || !hasRole('doctor')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get provider ID
+        $stmt = $pdo->prepare("SELECT id FROM health_providers WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $doctor = $stmt->fetch();
+
+        if (!$doctor) {
+            jsonResponse(['success' => false, 'message' => 'Doctor not found']);
+        }
+
+        $provider_id = $doctor['id'];
+        $last_appt_id = (int) ($_GET['last_appt_id'] ?? 0);
+
+        // Check for new pending appointments
+        $stmt = $pdo->prepare("
+            SELECT a.*, u.full_name as patient_name 
+            FROM health_appointments a
+            JOIN users u ON a.user_id = u.id
+            WHERE a.provider_id = ? AND a.status = 'pending' AND a.id > ?
+            ORDER BY a.id DESC
+        ");
+        $stmt->execute([$provider_id, $last_appt_id]);
+        $new_appts = $stmt->fetchAll();
+
+        // Check for unread messages
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM doctor_messages WHERE provider_id = ? AND is_read = 0 AND sender_type = 'customer'");
+        $stmt->execute([$provider_id]);
+        $unread_messages = (int) $stmt->fetchColumn();
+
+        // Total pending apps
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM health_appointments WHERE provider_id = ? AND status = 'pending'");
+        $stmt->execute([$provider_id]);
+        $total_pending_appts = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_appointments' => $new_appts,
+            'unread_messages' => $unread_messages,
+            'total_pending_appts' => $total_pending_appts
+        ]);
+        break;
+
+    case 'get_home_pro_notifications':
+        if (!isLoggedIn() || !hasRole('home_pro')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        // Get provider ID
+        $stmt = $pdo->prepare("SELECT id FROM home_service_providers WHERE user_id = ?");
+        $stmt->execute([getCurrentUserId()]);
+        $pro = $stmt->fetch();
+
+        if (!$pro) {
+            jsonResponse(['success' => false, 'message' => 'Home pro not found']);
+        }
+
+        $provider_id = $pro['id'];
+        $last_booking_id = (int) ($_GET['last_booking_id'] ?? 0);
+
+        // Check for new pending bookings
+        $stmt = $pdo->prepare("
+            SELECT b.*, u.full_name as customer_name 
+            FROM home_service_bookings b
+            JOIN users u ON b.customer_id = u.id
+            WHERE b.provider_id = ? AND b.status = 'pending' AND b.id > ?
+            ORDER BY b.id DESC
+        ");
+        $stmt->execute([$provider_id, $last_booking_id]);
+        $new_bookings = $stmt->fetchAll();
+
+        jsonResponse([
+            'success' => true,
+            'new_bookings' => $new_bookings,
+            'total_pending_bookings' => count($new_bookings)
+        ]);
+        break;
+
+    case 'get_admin_notifications':
+        if (!isLoggedIn() || !hasRole('admin')) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $last_hotel_id = (int) ($_GET['last_hotel_id'] ?? 0);
+        $last_rest_id = (int) ($_GET['last_rest_id'] ?? 0);
+
+        // Check for new pending hotels
+        $stmt = $pdo->prepare("SELECT id, name FROM hotels WHERE status = 'pending' AND id > ? ORDER BY id DESC");
+        $stmt->execute([$last_hotel_id]);
+        $hotels = $stmt->fetchAll();
+
+        // Check for new pending restaurants
+        $stmt = $pdo->prepare("SELECT id, name FROM restaurants WHERE status = 'pending' AND id > ? ORDER BY id DESC");
+        $stmt->execute([$last_rest_id]);
+        $rests = $stmt->fetchAll();
+
+        // Total counts for badges
+        $stmt = $pdo->query("SELECT COUNT(*) FROM hotels WHERE status = 'pending'");
+        $total_hotels = (int) $stmt->fetchColumn();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM restaurants WHERE status = 'pending'");
+        $total_rests = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'new_hotels' => $hotels,
+            'new_restaurants' => $rests,
+            'total_pending_hotels' => $total_hotels,
+            'total_pending_rests' => $total_rests
+        ]);
+        break;
+
+    case 'get_customer_notifications':
+        if (!isLoggedIn()) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $user_id = getCurrentUserId();
+        $last_notif_id = (int) ($_GET['last_notif_id'] ?? 0);
+
+        // Check for new bus booking notifications
+        $stmt = $pdo->prepare("
+            SELECT * FROM booking_notifications 
+            WHERE user_id = ? AND id > ? 
+            ORDER BY id DESC
+        ");
+        $stmt->execute([$user_id, $last_notif_id]);
+        $notifs = $stmt->fetchAll();
+
+        // Check for unread personal messages (general)
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND is_read = 0");
+        $stmt->execute([$user_id]);
+        $unread_msgs = (int) $stmt->fetchColumn();
+
+        jsonResponse([
+            'success' => true,
+            'notifications' => $notifs,
+            'unread_messages' => $unread_msgs,
+            'total' => count($notifs)
+        ]);
+        break;
+
     // ==================== ADMIN OPERATIONS ====================
 
     case 'approve_hotel':
@@ -505,6 +930,166 @@ switch ($action) {
         );
 
         jsonResponse($result);
+        break;
+
+    case 'get_chat_messages':
+        if (!isLoggedIn()) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $app_id = (int) ($_GET['application_id'] ?? 0);
+        $last_id = (int) ($_GET['last_id'] ?? 0);
+        $user_id = getCurrentUserId();
+
+        if (!$app_id) {
+            jsonResponse(['success' => false, 'message' => 'Invalid application ID']);
+        }
+
+        // Security check
+        $stmt = $pdo->prepare("
+            SELECT applicant_id, c.user_id as employer_id 
+            FROM job_applications ja
+            JOIN job_listings jl ON ja.job_id = jl.id
+            JOIN job_companies c ON jl.company_id = c.id
+            WHERE ja.id = ?
+        ");
+        $stmt->execute([$app_id]);
+        $app = $stmt->fetch();
+
+        if (!$app || ($user_id != $app['applicant_id'] && $user_id != $app['employer_id'])) {
+            jsonResponse(['success' => false, 'message' => 'Access denied']);
+        }
+
+        // Fetch new messages with replied-to content
+        $stmt = $pdo->prepare("
+            SELECT m.*, rm.message as replied_message 
+            FROM job_messages m
+            LEFT JOIN job_messages rm ON m.reply_to_id = rm.id
+            WHERE m.application_id = ? AND m.id > ? 
+            ORDER BY m.created_at ASC
+        ");
+        $stmt->execute([$app_id, $last_id]);
+        $messages = $stmt->fetchAll();
+
+        // Mark as read in background
+        if (!empty($messages)) {
+            $pdo->prepare("UPDATE job_messages SET is_read = 1 WHERE application_id = ? AND receiver_id = ? AND is_read = 0")
+                ->execute([$app_id, $user_id]);
+        }
+
+        jsonResponse(['success' => true, 'messages' => $messages]);
+        break;
+
+    case 'delete_chat_message':
+        if (!isLoggedIn()) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $msg_id = (int) ($_POST['message_id'] ?? 0);
+        $user_id = getCurrentUserId();
+
+        if (!$msg_id) {
+            jsonResponse(['success' => false, 'message' => 'Invalid message ID']);
+        }
+
+        // Security: only sender can delete
+        $stmt = $pdo->prepare("DELETE FROM job_messages WHERE id = ? AND sender_id = ?");
+        $stmt->execute([$msg_id, $user_id]);
+
+        if ($stmt->rowCount() > 0) {
+            jsonResponse(['success' => true, 'message' => 'Message deleted']);
+        } else {
+            jsonResponse(['success' => false, 'message' => 'Failed to delete message or access denied']);
+        }
+        break;
+
+    case 'get_doctor_messages':
+        if (!isLoggedIn()) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $provider_id = (int) ($_GET['provider_id'] ?? 0);
+        $customer_id = (int) ($_GET['customer_id'] ?? 0);
+        $last_id = (int) ($_GET['last_id'] ?? 0);
+        $user_id = getCurrentUserId();
+
+        if (!$provider_id || !$customer_id) {
+            jsonResponse(['success' => false, 'message' => 'Invalid parameters']);
+        }
+
+        // Security check: Either you are the customer or the user_id belongs to the provider
+        $stmt = $pdo->prepare("SELECT user_id FROM health_providers WHERE id = ?");
+        $stmt->execute([$provider_id]);
+        $provider = $stmt->fetch();
+        $provider_user_id = $provider['user_id'] ?? 0;
+
+        if ($user_id != $customer_id && $user_id != $provider_user_id) {
+            jsonResponse(['success' => false, 'message' => 'Access denied']);
+        }
+
+        // Fetch new messages with replied-to content
+        $stmt = $pdo->prepare("
+            SELECT m.*, rm.message as replied_message 
+            FROM doctor_messages m
+            LEFT JOIN doctor_messages rm ON m.reply_to_id = rm.id
+            WHERE m.provider_id = ? AND m.customer_id = ? AND m.id > ? 
+            ORDER BY m.created_at ASC
+        ");
+        $stmt->execute([$provider_id, $customer_id, $last_id]);
+        $messages = $stmt->fetchAll();
+
+        // Mark as read in background if needed
+        foreach ($messages as $m) {
+            // If I am the receiver, mark as read
+            $is_me_customer = ($user_id == $customer_id);
+            if (($is_me_customer && $m['sender_type'] == 'doctor') || (!$is_me_customer && $m['sender_type'] == 'customer')) {
+                $pdo->prepare("UPDATE doctor_messages SET is_read = 1 WHERE id = ?")->execute([$m['id']]);
+            }
+        }
+
+        jsonResponse(['success' => true, 'messages' => $messages]);
+        break;
+
+    case 'delete_doctor_chat_message':
+        if (!isLoggedIn()) {
+            jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $msg_id = (int) ($_POST['message_id'] ?? 0);
+        $user_id = getCurrentUserId();
+
+        if (!$msg_id) {
+            jsonResponse(['success' => false, 'message' => 'Invalid message ID']);
+        }
+
+        // Check if I am the sender of this message
+        // Needs provider_id check too if sender_type is doctor...
+        $stmt = $pdo->prepare("SELECT * FROM doctor_messages WHERE id = ?");
+        $stmt->execute([$msg_id]);
+        $msg = $stmt->fetch();
+
+        if (!$msg) {
+            jsonResponse(['success' => false, 'message' => 'Message not found']);
+        }
+
+        $is_allowed = false;
+        if ($msg['sender_type'] == 'customer' && $user_id == $msg['sender_id']) {
+            $is_allowed = true;
+        } else if ($msg['sender_type'] == 'doctor') {
+            $stmt = $pdo->prepare("SELECT user_id FROM health_providers WHERE id = ?");
+            $stmt->execute([$msg['provider_id']]);
+            $p_user = $stmt->fetch();
+            if ($p_user && $p_user['user_id'] == $user_id) {
+                $is_allowed = true;
+            }
+        }
+
+        if ($is_allowed) {
+            $pdo->prepare("DELETE FROM doctor_messages WHERE id = ?")->execute([$msg_id]);
+            jsonResponse(['success' => true, 'message' => 'Message deleted']);
+        } else {
+            jsonResponse(['success' => false, 'message' => 'Access denied']);
+        }
         break;
 
     case 'chapa_callback':

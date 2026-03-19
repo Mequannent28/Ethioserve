@@ -10,7 +10,7 @@ if (!$user_id) {
     exit;
 }
 
-$exam_id = (int) ($_GET['exam_id'] ?? 0);
+$exam_id = (int) ($_GET['id'] ?? $_GET['exam_id'] ?? 0);
 if ($exam_id <= 0) {
     header('Location: lms.php');
     exit;

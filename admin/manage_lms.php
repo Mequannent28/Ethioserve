@@ -1,7 +1,7 @@
 <?php
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
-requireRole('admin');
+requireRole(['admin', 'school_admin']);
 
 // Ensure tables exist
 try {
@@ -44,10 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass_pct = (int) $_POST['pass_percentage'];
         $difficulty = sanitize($_POST['difficulty']);
         $status = sanitize($_POST['status'] ?? 'active');
+        $chapter_id = !empty($_POST['chapter_id']) ? (int) $_POST['chapter_id'] : null;
         $title = "Grade $grade $subject — Chapter $chapter: $chapter_title";
 
-        $stmt = $pdo->prepare("INSERT INTO lms_exams (grade,subject,chapter,chapter_title,title,description,duration_minutes,pass_percentage,total_questions,difficulty,status) VALUES (?,?,?,?,?,?,?,?,0,?,?)");
-        $stmt->execute([$grade, $subject, $chapter, $chapter_title, $title, $description, $duration, $pass_pct, $difficulty, $status]);
+        $stmt = $pdo->prepare("INSERT INTO lms_exams (chapter_id,grade,subject,chapter,chapter_title,title,description,duration_minutes,pass_percentage,total_questions,difficulty,status) VALUES (?,?,?,?,?,?,?,?,?,0,?,?)");
+        $stmt->execute([$chapter_id, $grade, $subject, $chapter, $chapter_title, $title, $description, $duration, $pass_pct, $difficulty, $status]);
         redirectWithMessage('manage_lms.php?view=exam&id=' . $pdo->lastInsertId(), 'success', 'Exam created! Now add questions.');
     }
 
@@ -63,10 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pass_pct = (int) $_POST['pass_percentage'];
         $difficulty = sanitize($_POST['difficulty']);
         $status = sanitize($_POST['status'] ?? 'active');
+        $chapter_id = !empty($_POST['chapter_id']) ? (int) $_POST['chapter_id'] : null;
         $title = "Grade $grade $subject — Chapter $chapter: $chapter_title";
 
-        $stmt = $pdo->prepare("UPDATE lms_exams SET grade=?,subject=?,chapter=?,chapter_title=?,title=?,description=?,duration_minutes=?,pass_percentage=?,difficulty=?,status=? WHERE id=?");
-        $stmt->execute([$grade, $subject, $chapter, $chapter_title, $title, $description, $duration, $pass_pct, $difficulty, $status, $id]);
+        $stmt = $pdo->prepare("UPDATE lms_exams SET chapter_id=?, grade=?,subject=?,chapter=?,chapter_title=?,title=?,description=?,duration_minutes=?,pass_percentage=?,difficulty=?,status=? WHERE id=?");
+        $stmt->execute([$chapter_id, $grade, $subject, $chapter, $chapter_title, $title, $description, $duration, $pass_pct, $difficulty, $status, $id]);
         redirectWithMessage('manage_lms.php?view=exam&id=' . $id, 'success', 'Exam updated successfully.');
     }
 
@@ -127,6 +129,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("UPDATE lms_exams SET total_questions=? WHERE id=?")->execute([$count->fetchColumn(), $exam_id]);
         redirectWithMessage('manage_lms.php?view=exam&id=' . $exam_id, 'success', 'Question deleted.');
     }
+
+    // CREATE CHAPTER
+    if ($action === 'create_chapter') {
+        $grade = (int) $_POST['grade'];
+        $subject = sanitize($_POST['subject']);
+        $chapter_num = (int) $_POST['chapter_number'];
+        $title = sanitize($_POST['title']);
+        $content = $_POST['content']; // HTML content
+        $video = sanitize($_POST['video_url'] ?? '');
+
+        $stmt = $pdo->prepare("INSERT INTO lms_chapters (grade, subject, chapter_number, title, content, video_url) VALUES (?,?,?,?,?,?)");
+        $stmt->execute([$grade, $subject, $chapter_num, $title, $content, $video]);
+        redirectWithMessage('manage_lms.php?view=chapters', 'success', 'Chapter created successfully.');
+    }
+
+    // UPDATE CHAPTER
+    if ($action === 'update_chapter') {
+        $id = (int) $_POST['chapter_id'];
+        $grade = (int) $_POST['grade'];
+        $subject = sanitize($_POST['subject']);
+        $chapter_num = (int) $_POST['chapter_number'];
+        $title = sanitize($_POST['title']);
+        $content = $_POST['content'];
+        $video = sanitize($_POST['video_url'] ?? '');
+
+        $stmt = $pdo->prepare("UPDATE lms_chapters SET grade=?, subject=?, chapter_number=?, title=?, content=?, video_url=? WHERE id=?");
+        $stmt->execute([$grade, $subject, $chapter_num, $title, $content, $video, $id]);
+        redirectWithMessage('manage_lms.php?view=chapters', 'success', 'Chapter updated successfully.');
+    }
+
+    // DELETE CHAPTER
+    if ($action === 'delete_chapter') {
+        $id = (int) $_POST['chapter_id'];
+        $pdo->prepare("DELETE FROM lms_chapters WHERE id=?")->execute([$id]);
+        // Also nullify chapter_id in exams
+        $pdo->prepare("UPDATE lms_exams SET chapter_id=NULL WHERE chapter_id=?")->execute([$id]);
+        redirectWithMessage('manage_lms.php?view=chapters', 'success', 'Chapter deleted.');
+    }
 }
 
 // ============================
@@ -144,6 +184,7 @@ try {
     $total_attempts = $pdo->query("SELECT COUNT(*) FROM lms_attempts WHERE status='completed'")->fetchColumn();
 } catch (Exception $e) {
 }
+$total_chapters = $pdo->query("SELECT COUNT(*) FROM lms_chapters")->fetchColumn();
 
 // All subjects
 $all_subjects = [
@@ -196,6 +237,28 @@ if ($view === 'list') {
     $stmt->execute($params);
     $exams = $stmt->fetchAll();
 }
+
+// Fetch Chapters list
+$chapters = [];
+if ($view === 'chapters') {
+    $sql = "SELECT * FROM lms_chapters WHERE 1=1";
+    $params = [];
+    if ($filter_grade > 0) {
+        $sql .= " AND grade=?";
+        $params[] = $filter_grade;
+    }
+    if (!empty($filter_subject)) {
+        $sql .= " AND subject=?";
+        $params[] = $filter_subject;
+    }
+    $sql .= " ORDER BY grade, subject, chapter_number";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $chapters = $stmt->fetchAll();
+}
+
+// Fetch all chapters for dropdowns
+$all_chapters_dropdown = $pdo->query("SELECT id, title, grade, subject FROM lms_chapters ORDER BY grade, subject, chapter_number")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -214,13 +277,7 @@ if ($view === 'list') {
             overflow-x: hidden;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .stat-card {
             border-radius: 15px;
@@ -265,12 +322,7 @@ if ($view === 'list') {
             margin-right: 4px;
         }
 
-        @media(max-width:768px) {
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
-        }
+        
     </style>
 </head>
 
@@ -281,165 +333,244 @@ if ($view === 'list') {
         <div class="main-content">
             <?php echo displayFlashMessage(); ?>
 
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 class="fw-bold mb-1"><i class="fas fa-brain text-primary me-2"></i>LMS Management</h2>
-                    <p class="text-muted mb-0">Create and manage exams, questions, and quiz content</p>
+                    <h2 class="fw-bold text-dark mb-0">Learning Management (LMS)</h2>
+                    <p class="text-muted">Manage courses, chapters, and online exam modules.</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="seed_exams.php" class="btn btn-outline-primary rounded-pill px-3">
-                        <i class="fas fa-database me-1"></i> Seed Exams
+                    <a href="manage_lms.php?view=chapters" class="btn <?php echo $view === 'chapters' ? 'btn-primary' : 'btn-outline-primary'; ?> rounded-pill px-3">
+                        <i class="fas fa-book-open me-1"></i> Chapters
                     </a>
-                    <?php if ($view !== 'list'): ?>
+                    <?php if ($view === 'chapters'): ?>
+                        <button class="btn btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#createChapterModal">
+                            <i class="fas fa-plus me-1"></i> New Chapter
+                        </button>
+                    <?php elseif ($view === 'list'): ?>
+                        <button class="btn btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#createExamModal">
+                            <i class="fas fa-plus me-1"></i> New Exam
+                        </button>
+                    <?php else: ?>
                         <a href="manage_lms.php" class="btn btn-outline-secondary rounded-pill px-3">
-                            <i class="fas fa-arrow-left me-1"></i> All Exams
+                            <i class="fas fa-arrow-left me-1"></i> Back
                         </a>
                     <?php endif; ?>
-                    <button class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal"
-                        data-bs-target="#createExamModal">
-                        <i class="fas fa-plus me-1"></i> New Exam
-                    </button>
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <div class="card stat-card border-0 shadow-sm p-4"
-                        style="background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Exams</p>
-                        <h2 class="fw-bold">
-                            <?php echo $total_exams; ?>
-                        </h2>
+            <!-- PREMIM LMS DASHBOARD -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100" style="background: #fff;">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle mx-auto mb-3" style="width: 54px; height: 54px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-book-open text-success"></i>
+                        </div>
+                        <h4 class="fw-bold mb-0"><?= $total_chapters ?></h4>
+                        <p class="text-muted small fw-bold mb-0">CHAPTERS</p>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card stat-card border-0 shadow-sm p-4"
-                        style="background:linear-gradient(135deg,#10b981,#34d399);color:#fff;">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Total Questions</p>
-                        <h2 class="fw-bold">
-                            <?php echo $total_questions; ?>
-                        </h2>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100" style="background: #fff;">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle mx-auto mb-3" style="width: 54px; height: 54px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-file-alt text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold mb-0"><?= $total_exams ?></h4>
+                        <p class="text-muted small fw-bold mb-0">ACTIVE EXAMS</p>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card stat-card border-0 shadow-sm p-4"
-                        style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;">
-                        <p class="small fw-bold text-uppercase opacity-75 mb-1">Student Attempts</p>
-                        <h2 class="fw-bold">
-                            <?php echo $total_attempts; ?>
-                        </h2>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100" style="background: #fff;">
+                        <div class="bg-warning bg-opacity-10 p-3 rounded-circle mx-auto mb-3" style="width: 54px; height: 54px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-question text-warning"></i>
+                        </div>
+                        <h4 class="fw-bold mb-0"><?= $total_questions ?></h4>
+                        <p class="text-muted small fw-bold mb-0">TOTAL Q's</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center h-100" style="background: #fff;">
+                        <div class="bg-danger bg-opacity-10 p-3 rounded-circle mx-auto mb-3" style="width: 54px; height: 54px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user-check text-danger"></i>
+                        </div>
+                        <h4 class="fw-bold mb-0"><?= $total_attempts ?></h4>
+                        <p class="text-muted small fw-bold mb-0">TOTAL ATTEMPTS</p>
                     </div>
                 </div>
             </div>
 
-            <?php if ($view === 'list'): ?>
-                <!-- EXAM LIST VIEW -->
-                <!-- Filters -->
-                <div class="card border-0 shadow-sm p-3 mb-4">
-                    <form method="GET" class="d-flex gap-2 flex-wrap align-items-center">
-                        <select name="grade" class="form-select form-select-sm rounded-pill" style="width:auto;">
-                            <option value="0">All Grades</option>
-                            <?php for ($g = 1; $g <= 12; $g++): ?>
-                                <option value="<?php echo $g; ?>" <?php echo $filter_grade == $g ? 'selected' : ''; ?>>Grade
-                                    <?php echo $g; ?>
-                                </option>
-                            <?php endfor; ?>
-                        </select>
-                        <select name="subject" class="form-select form-select-sm rounded-pill" style="width:auto;">
-                            <option value="">All Subjects</option>
-                            <?php foreach ($all_subjects as $s): ?>
-                                <option value="<?php echo $s; ?>" <?php echo $filter_subject === $s ? 'selected' : ''; ?>>
-                                    <?php echo $s; ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button class="btn btn-sm btn-primary rounded-pill px-3"><i class="fas fa-filter me-1"></i>
-                            Filter</button>
-                        <a href="manage_lms.php" class="btn btn-sm btn-light rounded-pill px-3">Clear</a>
+            <!-- NAVIGATION TABS -->
+            <ul class="nav nav-tabs nav-tabs-premium mb-4">
+                <li class="nav-item">
+                    <a class="nav-link <?= in_array($view, ['list','exam']) ? 'active' : '' ?>" href="manage_lms.php?view=list">
+                        <i class="fas fa-file-alt me-2"></i>Exams & Quizzes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= $view === 'chapters' ? 'active' : '' ?>" href="manage_lms.php?view=chapters">
+                        <i class="fas fa-book-open me-2"></i>Chapters & Content
+                    </a>
+                </li>
+            </ul>
+
+            <?php if ($view === 'list' || $view === 'chapters'): ?>
+                <!-- FILTERS -->
+                <div class="card border-0 shadow-sm p-3 mb-4 rounded-4">
+                    <form method="GET" class="d-flex gap-2 flex-wrap align-items-center mb-0">
+                        <?php if($view === 'chapters'): ?><input type="hidden" name="view" value="chapters"><?php endif; ?>
+                        <div class="input-group input-group-sm" style="width: auto;">
+                            <label class="input-group-text bg-light text-muted small"><i class="fas fa-filter"></i></label>
+                            <select name="grade" class="form-select">
+                                <option value="0">All Grades</option>
+                                <?php for ($g = 1; $g <= 12; $g++): ?>
+                                    <option value="<?php echo $g; ?>" <?php echo $filter_grade == $g ? 'selected' : ''; ?>>Grade <?php echo $g; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="input-group input-group-sm" style="width: auto;">
+                            <select name="subject" class="form-select">
+                                <option value="">All Subjects</option>
+                                <?php foreach ($all_subjects as $s): ?>
+                                    <option value="<?php echo $s; ?>" <?php echo $filter_subject === $s ? 'selected' : ''; ?>><?php echo $s; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-premium rounded-pill px-4">Apply Filters</button>
+                        <a href="manage_lms.php<?= $view === 'chapters' ? '?view=chapters' : '' ?>" class="btn btn-sm btn-light rounded-pill px-3 border">Clear</a>
                     </form>
                 </div>
 
-                <!-- Exams Table -->
-                <div class="card border-0 shadow-sm">
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th class="border-0 px-4">Exam</th>
-                                    <th class="border-0">Grade</th>
-                                    <th class="border-0">Subject</th>
-                                    <th class="border-0">Chapter</th>
-                                    <th class="border-0">Questions</th>
-                                    <th class="border-0">Difficulty</th>
-                                    <th class="border-0">Status</th>
-                                    <th class="border-0">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($exams)): ?>
+
+                <?php if ($view === 'list'): ?>
+                    <!-- EXAMS TABLE -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="bg-light">
                                     <tr>
-                                        <td colspan="8" class="text-center py-5 text-muted">
-                                            <i class="fas fa-clipboard-list fs-1 d-block mb-3 opacity-25"></i>
-                                            No exams found. Create one or run the seeder!
-                                        </td>
+                                        <th class="border-0 px-4">Exam</th>
+                                        <th class="border-0">Grade</th>
+                                        <th class="border-0">Subject</th>
+                                        <th class="border-0">Chapter</th>
+                                        <th class="border-0">Questions</th>
+                                        <th class="border-0">Difficulty</th>
+                                        <th class="border-0">Status</th>
+                                        <th class="border-0">Actions</th>
                                     </tr>
-                                <?php else:
-                                    foreach ($exams as $e): ?>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($exams)): ?>
+                                        <tr><td colspan="8" class="text-center py-5 text-muted">No exams found.</td></tr>
+                                    <?php else: foreach ($exams as $e): ?>
                                         <tr>
                                             <td class="px-4">
-                                                <a href="?view=exam&id=<?php echo $e['id']; ?>"
-                                                    class="fw-bold text-decoration-none">
-                                                    <?php echo htmlspecialchars($e['chapter_title']); ?>
-                                                </a>
+                                                <a href="?view=exam&id=<?php echo $e['id']; ?>" class="fw-bold text-decoration-none"><?php echo htmlspecialchars($e['chapter_title']); ?></a>
                                             </td>
-                                            <td><span class="badge bg-primary rounded-pill">
-                                                    <?php echo $e['grade']; ?>
-                                                </span></td>
+                                            <td><span class="badge bg-primary rounded-pill"><?php echo $e['grade']; ?></span></td>
+                                            <td><?php echo htmlspecialchars($e['subject']); ?></td>
+                                            <td>Ch. <?php echo $e['chapter']; ?></td>
+                                            <td><span class="fw-bold <?php echo $e['q_count'] > 0 ? 'text-success' : 'text-danger'; ?>"><?php echo $e['q_count']; ?></span></td>
+                                            <td><span class="badge bg-<?php echo $e['difficulty'] === 'easy' ? 'success' : ($e['difficulty'] === 'hard' ? 'danger' : 'warning text-dark'); ?> rounded-pill"><?php echo ucfirst($e['difficulty']); ?></span></td>
+                                            <td><span class="badge bg-<?php echo $e['status'] === 'active' ? 'success' : ($e['status'] === 'draft' ? 'secondary' : 'danger'); ?> rounded-pill"><?php echo ucfirst($e['status']); ?></span></td>
                                             <td>
-                                                <?php echo htmlspecialchars($e['subject']); ?>
-                                            </td>
-                                            <td>Ch.
-                                                <?php echo $e['chapter']; ?>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    class="fw-bold <?php echo $e['q_count'] > 0 ? 'text-success' : 'text-danger'; ?>">
-                                                    <?php echo $e['q_count']; ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    class="badge bg-<?php echo $e['difficulty'] === 'easy' ? 'success' : ($e['difficulty'] === 'hard' ? 'danger' : 'warning text-dark'); ?> rounded-pill">
-                                                    <?php echo ucfirst($e['difficulty']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    class="badge bg-<?php echo $e['status'] === 'active' ? 'success' : ($e['status'] === 'draft' ? 'secondary' : 'danger'); ?> rounded-pill">
-                                                    <?php echo ucfirst($e['status']); ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="?view=exam&id=<?php echo $e['id']; ?>"
-                                                    class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Manage">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                                <form method="POST" style="display:inline;"
-                                                    onsubmit="return confirm('Delete this exam and all its questions?');">
+                                                <a href="?view=exam&id=<?php echo $e['id']; ?>" class="btn btn-sm btn-outline-primary rounded-pill px-2"><i class="fas fa-edit"></i></a>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this exam?');">
                                                     <input type="hidden" name="action" value="delete_exam">
                                                     <input type="hidden" name="exam_id" value="<?php echo $e['id']; ?>">
-                                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-2"
-                                                        title="Delete"><i class="fas fa-trash"></i></button>
+                                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-2"><i class="fas fa-trash"></i></button>
                                                 </form>
                                             </td>
                                         </tr>
                                     <?php endforeach; endif; ?>
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+
+                <?php else: ?>
+                    <!-- CHAPTERS TABLE -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="border-0 px-4">Chapter Title</th>
+                                        <th class="border-0">Grade</th>
+                                        <th class="border-0">Subject</th>
+                                        <th class="border-0">#</th>
+                                        <th class="border-0">Content</th>
+                                        <th class="border-0">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($chapters)): ?>
+                                        <tr><td colspan="6" class="text-center py-5 text-muted">No chapters found.</td></tr>
+                                    <?php else: foreach ($chapters as $c): ?>
+                                        <tr>
+                                            <td class="px-4 fw-bold"><?php echo htmlspecialchars($c['title']); ?></td>
+                                            <td><span class="badge bg-primary rounded-pill"><?php echo $c['grade']; ?></span></td>
+                                            <td><?php echo htmlspecialchars($c['subject']); ?></td>
+                                            <td><?php echo $c['chapter_number']; ?></td>
+                                            <td><span class="badge bg-<?php echo !empty($c['content']) ? 'success' : 'secondary'; ?> rounded-pill"><?php echo !empty($c['content']) ? 'Yes' : 'No'; ?></span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary rounded-pill px-2" data-bs-toggle="modal" data-bs-target="#editChapter<?php echo $c['id']; ?>"><i class="fas fa-edit"></i></button>
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this chapter?');">
+                                                    <input type="hidden" name="action" value="delete_chapter">
+                                                    <input type="hidden" name="chapter_id" value="<?php echo $c['id']; ?>">
+                                                    <button class="btn btn-sm btn-outline-danger rounded-pill px-2"><i class="fas fa-trash"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <!-- Edit Chapter Modal -->
+                                        <div class="modal fade" id="editChapter<?php echo $c['id']; ?>" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <form method="POST">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Edit Chapter</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <input type="hidden" name="action" value="update_chapter">
+                                                            <input type="hidden" name="chapter_id" value="<?php echo $c['id']; ?>">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4"><label class="form-label small fw-bold">Grade</label>
+                                                                    <select name="grade" class="form-select">
+                                                                        <?php for($g=1;$g<=12;$g++): ?><option value="<?php echo $g; ?>" <?php echo $c['grade'] == $g ? 'selected' : ''; ?>>Grade <?php echo $g; ?></option><?php endfor; ?>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4"><label class="form-label small fw-bold">Subject</label>
+                                                                    <select name="subject" class="form-select">
+                                                                        <?php foreach($all_subjects as $s): ?><option value="<?php echo $s; ?>" <?php echo $c['subject'] === $s ? 'selected' : ''; ?>><?php echo $s; ?></option><?php endforeach; ?>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4"><label class="form-label small fw-bold">Chapter #</label>
+                                                                    <input type="number" name="chapter_number" class="form-control" value="<?php echo $c['chapter_number']; ?>" required>
+                                                                </div>
+                                                                <div class="col-12"><label class="form-label small fw-bold">Title</label>
+                                                                    <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($c['title']); ?>" required>
+                                                                </div>
+                                                                <div class="col-12"><label class="form-label small fw-bold">Course Material (HTML allowed)</label>
+                                                                    <textarea name="content" class="form-control" rows="10"><?php echo htmlspecialchars($c['content']); ?></textarea>
+                                                                </div>
+                                                                <div class="col-12"><label class="form-label small fw-bold">Video URL (Optional)</label>
+                                                                    <input type="text" name="video_url" class="form-control" value="<?php echo htmlspecialchars($c['video_url'] ?? ''); ?>">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-primary rounded-pill">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
             <?php elseif ($view === 'exam' && $exam): ?>
                 <!-- EXAM DETAIL VIEW -->
@@ -704,6 +835,16 @@ if ($view === 'list') {
                                             <input type="number" name="chapter" class="form-control"
                                                 value="<?php echo $exam['chapter']; ?>" min="1">
                                         </div>
+                                        <div class="col-12"><label class="form-label small fw-bold">Link to Course Chapter (Optional)</label>
+                                            <select name="chapter_id" class="form-select">
+                                                <option value="">-- No Link --</option>
+                                                <?php foreach ($all_chapters_dropdown as $ch): ?>
+                                                    <option value="<?php echo $ch['id']; ?>" <?php echo ($exam['chapter_id'] == $ch['id']) ? 'selected' : ''; ?>>
+                                                        G<?php echo $ch['grade']; ?> <?php echo $ch['subject']; ?>: <?php echo htmlspecialchars($ch['title']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
                                         <div class="col-12"><label class="form-label small fw-bold">Chapter Title</label>
                                             <input type="text" name="chapter_title" class="form-control"
                                                 value="<?php echo htmlspecialchars($exam['chapter_title']); ?>" required>
@@ -792,6 +933,16 @@ if ($view === 'list') {
                             <div class="col-md-4"><label class="form-label small fw-bold">Chapter #</label>
                                 <input type="number" name="chapter" class="form-control" value="1" min="1" required>
                             </div>
+                            <div class="col-12"><label class="form-label small fw-bold">Link to Course Chapter (Optional)</label>
+                                <select name="chapter_id" class="form-select">
+                                    <option value="">-- No Link --</option>
+                                    <?php foreach ($all_chapters_dropdown as $ch): ?>
+                                        <option value="<?php echo $ch['id']; ?>">
+                                            G<?php echo $ch['grade']; ?> <?php echo $ch['subject']; ?>: <?php echo htmlspecialchars($ch['title']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                             <div class="col-12"><label class="form-label small fw-bold">Chapter Title *</label>
                                 <input type="text" name="chapter_title" class="form-control"
                                     placeholder="e.g. Numbers 1-20" required>
@@ -832,6 +983,54 @@ if ($view === 'list') {
         </div>
     </div>
 
+    <!-- Create Chapter Modal -->
+    <div class="modal fade" id="createChapterModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle text-success me-2"></i>Create New Chapter</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="create_chapter">
+                        <div class="row g-3">
+                            <div class="col-md-4"><label class="form-label small fw-bold">Grade *</label>
+                                <select name="grade" class="form-select" required>
+                                    <?php for ($g = 1; $g <= 12; $g++): ?>
+                                        <option value="<?php echo $g; ?>">Grade <?php echo $g; ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4"><label class="form-label small fw-bold">Subject *</label>
+                                <select name="subject" class="form-select" required>
+                                    <?php foreach ($all_subjects as $s): ?>
+                                        <option value="<?php echo $s; ?>"><?php echo $s; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4"><label class="form-label small fw-bold">Chapter #</label>
+                                <input type="number" name="chapter_number" class="form-control" value="1" min="1" required>
+                            </div>
+                            <div class="col-12"><label class="form-label small fw-bold">Title *</label>
+                                <input type="text" name="title" class="form-control" placeholder="e.g. Introduction to Biology" required>
+                            </div>
+                            <div class="col-12"><label class="form-label small fw-bold">Course Material (HTML allowed)</label>
+                                <textarea name="content" class="form-control" rows="10" placeholder="Type your course content here..."></textarea>
+                            </div>
+                            <div class="col-12"><label class="form-label small fw-bold">Video URL (Optional)</label>
+                                <input type="text" name="video_url" class="form-control" placeholder="YouTube URL">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-pill"><i class="fas fa-plus me-1"></i> Create Chapter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

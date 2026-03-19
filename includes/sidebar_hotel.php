@@ -22,12 +22,14 @@
                 <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/hotel/orders.php">
                     <i class="fas fa-shopping-bag"></i> <span>All Orders</span>
+                    <span class="badge bg-danger rounded-pill ms-auto" id="hotel-order-count" style="display: none;">0</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'bookings.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/hotel/bookings.php">
                     <i class="fas fa-calendar-alt"></i> <span>Bookings</span>
+                    <span class="badge bg-danger rounded-pill ms-auto" id="hotel-booking-count" style="display: none;">0</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -52,6 +54,12 @@
                 <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
                     href="<?php echo BASE_URL; ?>/hotel/reports.php">
                     <i class="fas fa-chart-bar"></i> <span>Analytics Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-hotel <?php echo basename($_SERVER['PHP_SELF']) == 'recycle_bin.php' ? 'active' : ''; ?>"
+                    href="<?php echo BASE_URL; ?>/hotel/recycle_bin.php">
+                    <i class="fas fa-trash-restore"></i> <span>Recycle Bin</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -211,3 +219,122 @@
         }
     }
 </style>
+<!-- SweetAlert2 for Premium Notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Real-time Notification Polling
+    let hotelApiUrl = '<?php echo BASE_URL; ?>/api.php';
+    let lastSeenOrderId = 0;
+    let lastSeenBookingId = 0;
+    let isInitialized = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Find existing maximum IDs from the page
+        const findMaxIds = () => {
+            const elements = document.querySelectorAll('strong, .order-id, .booking-id');
+            elements.forEach(el => {
+                const text = el.innerText;
+                const oMatch = text.match(/#(\d+)/);
+                if (oMatch) {
+                    const id = parseInt(oMatch[1]);
+                    if (id > lastSeenOrderId) lastSeenOrderId = id;
+                }
+            });
+        };
+
+        findMaxIds();
+        
+        // Start polling - reduced to 4 seconds for better responsiveness
+        setInterval(checkNotifications, 4000);
+        
+        // Immediate first check
+        setTimeout(checkNotifications, 1000);
+    });
+
+    async function checkNotifications() {
+        try {
+            const response = await fetch(`${hotelApiUrl}?action=get_hotel_notifications&last_order_id=${lastSeenOrderId}&last_booking_id=${lastSeenBookingId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                // New Orders
+                if (data.new_orders && data.new_orders.length > 0) {
+                    data.new_orders.forEach(order => {
+                        const orderIdNum = parseInt(order.id);
+                        if (orderIdNum > lastSeenOrderId) {
+                            if (isInitialized) {
+                                showNotification('New Order Recevied!', `Order #${order.id.toString().padStart(5, '0')} by ${order.customer_name}`, 'success', 'orders.php');
+                            }
+                            lastSeenOrderId = orderIdNum;
+                        }
+                    });
+                }
+
+                // New Bookings
+                if (data.new_bookings && data.new_bookings.length > 0) {
+                    data.new_bookings.forEach(booking => {
+                        const bookingIdNum = parseInt(booking.id);
+                        if (bookingIdNum > lastSeenBookingId) {
+                            if (isInitialized) {
+                                showNotification('New Room Booking!', `${booking.customer_name} booked a room (#${booking.id})`, 'info', 'bookings.php');
+                            }
+                            lastSeenBookingId = bookingIdNum;
+                        }
+                    });
+                }
+
+                // Update Sidebar Badges
+                if (data.total_pending_orders !== undefined) updateHotelBadge('hotel-order-count', data.total_pending_orders);
+                if (data.total_pending_bookings !== undefined) updateHotelBadge('hotel-booking-count', data.total_pending_bookings);
+                
+                isInitialized = true; // Mark as initialized after first successful poll
+            }
+        } catch (err) {
+            console.warn('Notification poll failed:', err);
+        }
+    }
+
+    function updateHotelBadge(id, count) {
+        const badge = document.getElementById(id);
+        if (badge) {
+            if (count > 0) {
+                if (badge.innerText != count) {
+                    badge.innerText = count;
+                    badge.classList.add('animate__animated', 'animate__bounceIn');
+                    setTimeout(() => badge.classList.remove('animate__bounceIn'), 1000);
+                }
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function showNotification(title, message, icon, redirectUrl) {
+        // Sound for notification
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3');
+        audio.play().catch(e => console.log('Audio blocked by browser, click anywhere on page to enable sounds.'));
+
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'View',
+            confirmButtonColor: '#1B5E20',
+            timer: 10000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onclick = () => { window.location.href = redirectUrl; };
+            }
+        });
+    }
+</script>
+
+<!-- Required Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+

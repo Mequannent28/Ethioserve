@@ -62,10 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_provider'])) {
             background-color: #f4f6f9;
         }
 
-        .main-content {
-            margin-left: 260px;
-            padding: 40px;
-        }
+        
 
         .card {
             border: none;

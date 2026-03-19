@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $plate_number = sanitize($_POST['plate_number']);
             
             $stmt = $pdo->prepare("
-                INSERT INTO buses (company_id, bus_type_id, bus_number, plate_number, total_seats, amenities, is_active, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, TRUE, NOW())
+                INSERT INTO buses (company_id, bus_type_id, bus_number, plate_number, total_seats, amenities, is_active)
+                VALUES (?, ?, ?, ?, ?, ?, TRUE)
             ");
             $stmt->execute([$company['id'], $bus_type_id, $bus_number, $plate_number, $total_seats, $amenities]);
             redirectWithMessage('buses.php', 'success', 'Bus added successfully');
@@ -81,17 +81,16 @@ $stmt = $pdo->prepare("
     FROM buses b
     JOIN bus_types bt ON b.bus_type_id = bt.id
     WHERE b.company_id = ?
-    ORDER BY b.created_at DESC
+    ORDER BY b.id DESC
 ");
 $stmt->execute([$company['id']]);
 $buses = $stmt->fetchAll();
 
-include('../includes/header.php');
+$page_title = 'Manage Buses';
+$top_title = 'Bus Management';
+include('../includes/transport_header.php');
 ?>
 
-<?php include('../includes/sidebar_transport.php'); ?>
-
-<main class="container py-4">
     <?php echo displayFlashMessage(); ?>
     
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -102,7 +101,6 @@ include('../includes/header.php');
             </button>
         </div>
     </div>
-
     <!-- Statistics -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">
@@ -142,7 +140,6 @@ include('../includes/header.php');
             </div>
         </div>
     </div>
-
     <!-- Buses List -->
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
@@ -168,7 +165,8 @@ include('../includes/header.php');
                                     <p class="text-muted mb-0">No buses added yet</p>
                                 </td>
                             </tr>
-                        <?php else: ?>
+                        <?php
+else: ?>
                             <?php foreach ($buses as $bus): ?>
                                 <tr>
                                     <td>
@@ -180,23 +178,27 @@ include('../includes/header.php');
                                     </td>
                                     <td><?php echo $bus['total_seats']; ?> seats</td>
                                     <td>
-                                        <?php 
-                                        $amenities = explode(',', $bus['amenities'] ?? '');
-                                        foreach (array_slice($amenities, 0, 3) as $amenity): 
-                                        ?>
+                                        <?php
+        $amenities = explode(',', $bus['amenities'] ?? '');
+        foreach (array_slice($amenities, 0, 3) as $amenity):
+?>
                                             <span class="badge bg-light text-dark small me-1"><?php echo trim($amenity); ?></span>
-                                        <?php endforeach; ?>
+                                        <?php
+        endforeach; ?>
                                         <?php if (count($amenities) > 3): ?>
                                             <span class="badge bg-light text-dark small">+<?php echo count($amenities) - 3; ?></span>
-                                        <?php endif; ?>
+                                        <?php
+        endif; ?>
                                     </td>
                                     <td><?php echo $bus['active_schedules']; ?> active</td>
                                     <td>
                                         <?php if ($bus['is_active']): ?>
                                             <span class="badge bg-success">Active</span>
-                                        <?php else: ?>
+                                        <?php
+        else: ?>
                                             <span class="badge bg-secondary">Inactive</span>
-                                        <?php endif; ?>
+                                        <?php
+        endif; ?>
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill me-1" 
@@ -212,97 +214,10 @@ include('../includes/header.php');
                                                     data-bs-toggle="modal" data-bs-target="#deleteBusModal<?php echo $bus['id']; ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
-                                        <?php endif; ?>
+                                        <?php
+        endif; ?>
                                     </td>
                                 </tr>
-
-                                <!-- Edit Bus Modal -->
-                                <div class="modal fade" id="editBusModal<?php echo $bus['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-primary-green text-white">
-                                                <h5 class="modal-title">Edit Bus</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST">
-                                                <?php echo csrfField(); ?>
-                                                <input type="hidden" name="bus_id" value="<?php echo $bus['id']; ?>">
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-bold">Bus Number</label>
-                                                        <input type="text" name="bus_number" class="form-control rounded-pill bg-light border-0" 
-                                                               value="<?php echo htmlspecialchars($bus['bus_number']); ?>" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-bold">Plate Number</label>
-                                                        <input type="text" name="plate_number" class="form-control rounded-pill bg-light border-0" 
-                                                               value="<?php echo htmlspecialchars($bus['plate_number']); ?>" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-bold">Bus Type</label>
-                                                        <select name="bus_type_id" class="form-select rounded-pill bg-light border-0" required>
-                                                            <?php foreach ($bus_types as $type): ?>
-                                                                <option value="<?php echo $type['id']; ?>" <?php echo $bus['bus_type_id'] == $type['id'] ? 'selected' : ''; ?>>
-                                                                    <?php echo htmlspecialchars($type['name']); ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-bold">Total Seats</label>
-                                                        <input type="number" name="total_seats" class="form-control rounded-pill bg-light border-0" 
-                                                               value="<?php echo $bus['total_seats']; ?>" min="1" max="100" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-bold">Amenities (comma separated)</label>
-                                                        <input type="text" name="amenities" class="form-control rounded-pill bg-light border-0" 
-                                                               value="<?php echo htmlspecialchars($bus['amenities']); ?>" 
-                                                               placeholder="AC, WiFi, TV, USB Charging">
-                                                    </div>
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="is_active" id="active<?php echo $bus['id']; ?>" 
-                                                               <?php echo $bus['is_active'] ? 'checked' : ''; ?>>
-                                                        <label class="form-check-label" for="active<?php echo $bus['id']; ?>">
-                                                            Active (available for booking)
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" name="update_bus" class="btn btn-primary-green rounded-pill">
-                                                        <i class="fas fa-save me-2"></i>Save Changes
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Delete Bus Modal -->
-                                <div class="modal fade" id="deleteBusModal<?php echo $bus['id']; ?>" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header bg-danger text-white">
-                                                <h5 class="modal-title">Delete Bus</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST">
-                                                <?php echo csrfField(); ?>
-                                                <input type="hidden" name="bus_id" value="<?php echo $bus['id']; ?>">
-                                                <div class="modal-body">
-                                                    <p>Are you sure you want to delete bus <strong><?php echo htmlspecialchars($bus['bus_number']); ?></strong>?</p>
-                                                    <p class="text-muted small">This action cannot be undone.</p>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" name="delete_bus" class="btn btn-danger rounded-pill">
-                                                        <i class="fas fa-trash me-2"></i>Delete Bus
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -310,59 +225,154 @@ include('../includes/header.php');
             </div>
         </div>
     </div>
-</main>
 
-<!-- Add Bus Modal -->
-<div class="modal fade" id="addBusModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary-green text-white">
-                <h5 class="modal-title"><i class="fas fa-bus me-2"></i>Add New Bus</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <?php foreach ($buses as $bus): ?>
+        <!-- Edit Bus Modal -->
+        <div class="modal" id="editBusModal<?php echo $bus['id']; ?>" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-primary-green text-white border-0 py-3">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Bus Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="bus_id" value="<?php echo $bus['id']; ?>">
+                        <div class="modal-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Bus Number</label>
+                                    <input type="text" name="bus_number" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo htmlspecialchars($bus['bus_number']); ?>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Plate Number</label>
+                                    <input type="text" name="plate_number" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo htmlspecialchars($bus['plate_number']); ?>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Bus Type</label>
+                                    <select name="bus_type_id" class="form-select rounded-pill bg-light border-0 px-3" required>
+                                        <?php foreach ($bus_types as $type): ?>
+                                            <option value="<?php echo $type['id']; ?>" <?php echo $bus['bus_type_id'] == $type['id'] ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($type['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">Total Seats</label>
+                                    <input type="number" name="total_seats" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo $bus['total_seats']; ?>" min="1" max="100" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold small text-muted">Amenities (comma separated)</label>
+                                    <input type="text" name="amenities" class="form-control rounded-pill bg-light border-0 px-3" 
+                                           value="<?php echo htmlspecialchars($bus['amenities']); ?>" 
+                                           placeholder="e.g., AC, WiFi, TV, USB Charging">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_active" id="active<?php echo $bus['id']; ?>" 
+                                               <?php echo $bus['is_active'] ? 'checked' : ''; ?>>
+                                        <label class="form-check-label fw-bold" for="active<?php echo $bus['id']; ?>">
+                                            Active (Available for booking)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" name="update_bus" class="btn btn-primary-green rounded-pill px-4 fw-bold">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <form method="POST">
-                <?php echo csrfField(); ?>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Bus Number/Name</label>
-                        <input type="text" name="bus_number" class="form-control rounded-pill bg-light border-0" 
-                               placeholder="e.g., Bus 001" required>
+        </div>
+
+        <!-- Delete Bus Modal -->
+        <div class="modal" id="deleteBusModal<?php echo $bus['id']; ?>" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-danger text-white border-0">
+                        <h5 class="modal-title fw-bold"><i class="fas fa-trash-alt me-2"></i>Confirm Deletion</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Plate Number</label>
-                        <input type="text" name="plate_number" class="form-control rounded-pill bg-light border-0" 
-                               placeholder="e.g., AA-1234-A1" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Bus Type</label>
-                        <select name="bus_type_id" class="form-select rounded-pill bg-light border-0" required>
-                            <option value="">Select Type</option>
-                            <?php foreach ($bus_types as $type): ?>
-                                <option value="<?php echo $type['id']; ?>"><?php echo htmlspecialchars($type['name']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Total Seats</label>
-                        <input type="number" name="total_seats" class="form-control rounded-pill bg-light border-0" 
-                               placeholder="e.g., 44" min="1" max="100" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Amenities (comma separated)</label>
-                        <input type="text" name="amenities" class="form-control rounded-pill bg-light border-0" 
-                               placeholder="e.g., AC, WiFi, TV, USB Charging">
-                        <small class="text-muted">Enter amenities like: AC, WiFi, TV, USB Charging, Reclining Seats, etc.</small>
-                    </div>
+                    <form method="POST">
+                        <?php echo csrfField(); ?>
+                        <input type="hidden" name="bus_id" value="<?php echo $bus['id']; ?>">
+                        <div class="modal-body p-4 text-center">
+                            <i class="fas fa-exclamation-triangle text-danger fs-1 mb-3"></i>
+                            <p class="mb-1">Are you sure you want to delete bus <strong><?php echo htmlspecialchars($bus['bus_number']); ?></strong>?</p>
+                            <p class="text-muted small">This action cannot be undone and will remove all history for this vehicle.</p>
+                        </div>
+                        <div class="modal-footer border-0 justify-content-center pb-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" name="delete_bus" class="btn btn-danger rounded-pill px-4 fw-bold">
+                                <i class="fas fa-trash me-2"></i>Yes, Delete Bus
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="add_bus" class="btn btn-primary-green rounded-pill">
-                        <i class="fas fa-plus me-2"></i>Add Bus
-                    </button>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+    <!-- Add Bus Modal -->
+    <div class="modal fade" id="addBusModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary-green text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-bus me-2"></i>Add New Bus</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-            </form>
+                <form method="POST">
+                    <?php echo csrfField(); ?>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Bus Number/Name</label>
+                                <input type="text" name="bus_number" class="form-control rounded-pill bg-light border-0 px-3" 
+                                       placeholder="e.g., Bus 001" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Plate Number</label>
+                                <input type="text" name="plate_number" class="form-control rounded-pill bg-light border-0 px-3" 
+                                       placeholder="e.g., AA-1234-A1" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Bus Type</label>
+                                <select name="bus_type_id" class="form-select rounded-pill bg-light border-0 px-3" required>
+                                    <option value="">Select Type</option>
+                                    <?php foreach ($bus_types as $type): ?>
+                                        <option value="<?php echo $type['id']; ?>"><?php echo htmlspecialchars($type['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Total Seats</label>
+                                <input type="number" name="total_seats" class="form-control rounded-pill bg-light border-0 px-3" 
+                                       placeholder="e.g., 44" min="1" max="100" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Amenities (comma separated)</label>
+                                <input type="text" name="amenities" class="form-control rounded-pill bg-light border-0 px-3" 
+                                       placeholder="e.g., AC, WiFi, TV, USB Charging">
+                                <small class="text-muted d-block mt-1">Enter amenities like: AC, WiFi, TV, USB Charging, etc.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="add_bus" class="btn btn-primary-green rounded-pill px-4 fw-bold">
+                            <i class="fas fa-plus me-2"></i>Add Bus
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-
-<?php include('../includes/footer.php'); ?>
+<?php include('../includes/transport_footer.php'); ?>

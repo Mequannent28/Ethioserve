@@ -63,7 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($action === 'delete') {
     $id = (int) $_GET['id'];
+    $reason = sanitize($_GET['reason'] ?? 'No reason provided');
+    require_once '../includes/recycle_bin_helper.php';
+    moveToRecycleBin($pdo, 'hotel_rooms', $id, 'hotel', $user_id, $reason);
+    
     $stmt = $pdo->prepare("DELETE FROM hotel_rooms WHERE id = ? AND hotel_id = ?");
     $stmt->execute([$id, $hotel_id]);
-    redirectWithMessage('rooms_management.php', 'success', 'Room deleted successfully!');
+    redirectWithMessage('rooms_management.php', 'success', 'Room moved to recycle bin.');
 }

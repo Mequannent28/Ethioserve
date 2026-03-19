@@ -16,7 +16,6 @@ if (isset($_GET['id']) && isset($_GET['status'])) {
         redirectWithMessage('manage_home.php', 'success', 'Booking status updated to ' . ucfirst($status));
     }
 }
-
 // Handle Delete
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
@@ -24,7 +23,6 @@ if (isset($_GET['delete'])) {
     $stmt->execute([$id]);
     redirectWithMessage('manage_home.php', 'success', 'Booking deleted');
 }
-
 // Fetch Bookings
 $bookings = [];
 try {
@@ -37,7 +35,8 @@ try {
                          LEFT JOIN users p_u ON p.user_id = p_u.id
                          ORDER BY b.created_at DESC");
     $bookings = $stmt->fetchAll();
-} catch (Exception $e) {
+}
+catch (Exception $e) {
 }
 
 // Stats
@@ -53,11 +52,9 @@ foreach ($bookings as $b) {
     if ($b['status'] === 'completed')
         $stats['total_val'] += $b['total_price'];
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,14 +70,7 @@ foreach ($bookings as $b) {
             font-family: 'Poppins', sans-serif;
             background: #f8f9fa;
         }
-
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            min-height: 100vh;
-        }
-
+        
         .stat-card {
             border-radius: 20px;
             border: none;
@@ -172,7 +162,6 @@ foreach ($bookings as $b) {
                     </div>
                 </div>
             </div>
-
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -192,7 +181,8 @@ foreach ($bookings as $b) {
                                 <tr>
                                     <td colspan="7" class="text-center py-5 text-muted">No bookings found</td>
                                 </tr>
-                            <?php else: ?>
+                            <?php
+else: ?>
                                 <?php foreach ($bookings as $b): ?>
                                     <tr>
                                         <td class="ps-4">
@@ -220,14 +210,14 @@ foreach ($bookings as $b) {
                                         <td class="fw-bold"><?php echo number_format($b['total_price']); ?></td>
                                         <td>
                                             <?php
-                                            $colors = [
-                                                'pending' => 'bg-warning text-dark',
-                                                'confirmed' => 'bg-info text-white',
-                                                'in_progress' => 'bg-primary text-white',
-                                                'completed' => 'bg-success text-white',
-                                                'cancelled' => 'bg-danger text-white'
-                                            ];
-                                            ?>
+        $colors = [
+            'pending' => 'bg-warning text-dark',
+            'confirmed' => 'bg-info text-white',
+            'in_progress' => 'bg-primary text-white',
+            'completed' => 'bg-success text-white',
+            'cancelled' => 'bg-danger text-white'
+        ];
+?>
                                             <span class="status-pill <?php echo $colors[$b['status']]; ?>">
                                                 <?php echo ucfirst($b['status']); ?>
                                             </span>
@@ -257,8 +247,10 @@ foreach ($bookings as $b) {
                                             </div>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                <?php
+    endforeach; ?>
+                            <?php
+endif; ?>
                         </tbody>
                     </table>
                 </div>

@@ -4,23 +4,42 @@ require_once '../includes/db.php';
 $flash = getFlashMessage();
 
 // Check student grade if logged in
-if (isLoggedIn() && !isset($_GET['grade'])) {
+$user_grade = 0;
+if (isLoggedIn()) {
     $uid = $_SESSION['user_id'];
     try {
-        $stmt = $pdo->prepare("SELECT grade FROM users WHERE id = ?");
+        // First check users table for grade and role
+        $stmt = $pdo->prepare("SELECT grade, role FROM users WHERE id = ?");
         $stmt->execute([$uid]);
-        $g = $stmt->fetchColumn();
-        if ($g > 0) {
-            header("Location: education.php?grade=" . $g);
-            exit();
+        $user_data = $stmt->fetch();
+        $user_grade = (int) ($user_data['grade'] ?? 0);
+        $user_role = $user_data['role'] ?? '';
+
+        // If grade is not set in users table and role is student, check student profile
+        if ($user_grade === 0 && $user_role === 'student') {
+            $stmt = $pdo->prepare("SELECT c.class_name FROM sms_student_profiles p 
+                                 JOIN sms_classes c ON p.class_id = c.id 
+                                 WHERE p.user_id = ?");
+            $stmt->execute([$uid]);
+            $className = $stmt->fetchColumn();
+            if ($className) {
+                // Extract grade number from class name (e.g. "Grade 10" or "Grdae 10")
+                if (preg_match('/\d+/', $className, $matches)) {
+                    $user_grade = (int)$matches[0];
+                }
+            }
         }
     } catch (Exception $e) {
-        // Column might not exist yet
+        // Column or tables might not exist yet
     }
 }
 
 // Selected grade
 $grade = isset($_GET['grade']) ? (int) $_GET['grade'] : 0;
+if ($user_grade > 0) {
+    $grade = $user_grade; // Force them into their specific grade
+}
+
 $tab = sanitize($_GET['tab'] ?? 'textbooks');
 
 // Ethiopian curriculum data
@@ -84,8 +103,11 @@ $video_links = [
     'Amharic' => ['title' => 'Amharic Fidel', 'id' => 'wk3v4GkxbPo'],
 ];
 
-
 include('../includes/header.php');
+if (isset($_GET['iframe'])) {
+    echo '<style> header, nav, .navbar, footer, .site-footer { display: none !important; } body { padding-top: 0 !important; } </style>';
+    echo "<script>document.addEventListener('DOMContentLoaded', function() { document.querySelectorAll('a').forEach(a => { if(a.href && !a.href.startsWith('javascript:') && !a.href.startsWith('#')) { a.href += (a.href.includes('?') ? '&' : '?') + 'iframe=1'; } }); });</script>";
+}
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -367,16 +389,22 @@ include('../includes/header.php');
     <!-- Grade Selection Bar -->
     <div class="grade-scroll-wrap">
         <div class="grade-scroll">
-            <a href="education.php" class="grade-btn <?php echo $grade === 0 ? 'active' : ''; ?>">
-                <i class="fas fa-home me-2"></i> Overview
-            </a>
-            <?php for ($g = 1; $g <= 12; $g++): ?>
-                <a href="<?php echo isLoggedIn() ? 'set_grade.php' : 'education.php'; ?>?grade=<?php echo $g; ?>&tab=<?php echo $tab; ?>"
-                    class="grade-btn <?php echo $grade === $g ? 'active' : ''; ?>">
-                    Grade
-                    <?php echo $g; ?>
+            <?php if ($user_grade > 0): ?>
+                <a href="set_grade.php?grade=<?php echo $user_grade; ?>&tab=<?php echo $tab; ?>" class="grade-btn active">
+                    <i class="fas fa-user-graduate me-2"></i> My Grade (Grade <?php echo $user_grade; ?>)
                 </a>
-            <?php endfor; ?>
+            <?php else: ?>
+                <a href="education.php" class="grade-btn <?php echo $grade === 0 ? 'active' : ''; ?>">
+                    <i class="fas fa-home me-2"></i> Overview
+                </a>
+                <?php for ($g = 1; $g <= 12; $g++): ?>
+                    <a href="<?php echo isLoggedIn() ? 'set_grade.php' : 'education.php'; ?>?grade=<?php echo $g; ?>&tab=<?php echo $tab; ?>"
+                        class="grade-btn <?php echo $grade === $g ? 'active' : ''; ?>">
+                        Grade
+                        <?php echo $g; ?>
+                    </a>
+                <?php endfor; ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -593,14 +621,27 @@ include('../includes/header.php');
             <div class="row g-4 mb-5">
                 <?php foreach ($subjects_by_grade[$grade] as $subj):
                     $color = $subject_colors[$subj] ?? '#1565C0';
-                    $vid = $video_links[$subj] ?? null;
+                    // Fetch real video data
+                    $vid_res = null;
+                    try {
+                        $v_stmt = $pdo->prepare("SELECT * FROM education_resources WHERE grade=? AND subject=? AND type='video' AND status='active' LIMIT 1");
+                        $v_stmt->execute([$grade, $subj]);
+                        $vid_res = $v_stmt->fetch();
+                    } catch (Exception $e) {}
+                    
+                    $video_id = $vid_res['video_id'] ?? null;
+                    $local_vid = $vid_res['local_video_path'] ?? null;
                     ?>
                     <div class="col-lg-4 col-md-6">
                         <div class="subject-card-new p-0 overflow-hidden h-100">
-                            <div class="video-thumb">
-                                <?php if ($vid): ?>
-                                    <iframe src="https://www.youtube.com/embed/<?php echo $vid['id']; ?>" allowfullscreen
-                                        loading="lazy"></iframe>
+                            <div class="video-thumb position-relative" style="height:200px;">
+                                <?php if ($video_id): ?>
+                                    <iframe src="https://www.youtube.com/embed/<?php echo $video_id; ?>" allowfullscreen
+                                        loading="lazy" class="w-100 h-100 border-0"></iframe>
+                                <?php elseif ($local_vid): ?>
+                                    <video controls class="w-100 h-100">
+                                        <source src="../uploads/education/videos/<?php echo $local_vid; ?>" type="video/mp4">
+                                    </video>
                                 <?php else: ?>
                                     <div class="d-flex align-items-center justify-content-center h-100 position-absolute top-0 start-0 w-100"
                                         style="background:linear-gradient(135deg,<?php echo $color; ?>,<?php echo $color; ?>cc);">
@@ -624,10 +665,10 @@ include('../includes/header.php');
                                         style="font-size: 0.7rem;">
                                         <i class="fas fa-clock text-primary me-2"></i>HD Quality
                                     </span>
-                                    <?php if ($vid): ?>
-                                        <a href="https://www.youtube.com/watch?v=<?php echo $vid['id']; ?>" target="_blank"
+                                    <?php if ($vid_res): ?>
+                                        <a href="view_textbook.php?id=<?php echo $vid_res['id']; ?>"
                                             class="btn btn-sm btn-action-rounded">
-                                            <i class="fas fa-play me-1"></i> Full Screen
+                                            <i class="fas fa-expand me-1"></i> Full Screen
                                         </a>
                                     <?php endif; ?>
                                 </div>

@@ -26,6 +26,7 @@
                 <a class="nav-link-portal <?php echo basename($_SERVER['PHP_SELF']) == 'orders.php' ? 'active' : ''; ?>"
                     href="orders.php">
                     <i class="fas fa-shopping-bag"></i> <span>Orders</span>
+                    <span class="badge bg-danger rounded-pill ms-auto" id="rest-order-count" style="display: none;">0</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -44,6 +45,12 @@
                 <a class="nav-link-portal <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>"
                     href="reports.php">
                     <i class="fas fa-chart-line"></i> <span>Business Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link-portal <?php echo basename($_SERVER['PHP_SELF']) == 'recycle_bin.php' ? 'active' : ''; ?>"
+                    href="recycle_bin.php">
+                    <i class="fas fa-trash-restore"></i> <span>Recycle Bin</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -191,3 +198,88 @@
         }
     }
 </style>
+
+<!-- Restaurant Notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const restApiUrl = '<?php echo BASE_URL; ?>/api.php';
+    let lastSeenOrderId = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial setup for existing orders
+        const findMaxIds = () => {
+            const orderLinks = document.querySelectorAll('strong, .order-id');
+            orderLinks.forEach(el => {
+                const match = el.innerText.match(/#(\d+)/);
+                if (match) {
+                    const id = parseInt(match[1]);
+                    if (id > lastSeenOrderId) lastSeenOrderId = id;
+                }
+            });
+        };
+        findMaxIds();
+
+        // Start polling
+        setInterval(checkRestNotifications, 10000);
+    });
+
+    async function checkRestNotifications() {
+        try {
+            const response = await fetch(`${restApiUrl}?action=get_restaurant_notifications&last_order_id=${lastSeenOrderId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                if (data.new_orders && data.new_orders.length > 0) {
+                    data.new_orders.forEach(order => {
+                        showRestNotification('New Order!', `${order.customer_name} placed a new order of ETB ${order.total_amount}`, 'success', `<?php echo BASE_URL; ?>/restaurant/orders.php`);
+                    });
+                    const maxId = Math.max(...data.new_orders.map(o => parseInt(o.id)));
+                    if (maxId > lastSeenOrderId) lastSeenOrderId = maxId;
+                }
+                // Update badges
+                if (data.total_pending_orders !== undefined) updateRestBadge('rest-order-count', data.total_pending_orders);
+            }
+        } catch (error) { console.error('Rest Notification Error:', error); }
+    }
+
+    function updateRestBadge(id, count) {
+        const badge = document.getElementById(id);
+        if (badge) {
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function showRestNotification(title, message, icon, url) {
+        // High-quality notification sound for restaurants
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3'); 
+        audio.volume = 0.7;
+        audio.play().catch(e => console.log('Audio blocked:', e));
+
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'View',
+            confirmButtonColor: '#1B5E20',
+            showCancelButton: true,
+            timer: 15000,
+            timerProgressBar: true,
+            background: '#fff',
+            color: '#1B5E20',
+            didOpen: (toast) => {
+                toast.style.cursor = 'pointer';
+                toast.onclick = () => window.location.href = url;
+            }
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+

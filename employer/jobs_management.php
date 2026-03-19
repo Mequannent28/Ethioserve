@@ -29,8 +29,13 @@ if (isset($_GET['toggle_status']) && isset($_GET['id'])) {
 // Handle delete
 if (isset($_GET['delete']) && isset($_GET['id'])) {
     $job_id = (int) $_GET['id'];
+    $reason = sanitize($_GET['reason'] ?? 'Closed/Deleting Listing');
+    
+    require_once '../includes/recycle_bin_helper.php';
+    moveToRecycleBin($pdo, 'job_listings', $job_id, 'employer', $user_id, $reason);
+
     $pdo->prepare("DELETE FROM job_listings WHERE id = ? AND company_id = ?")->execute([$job_id, $company_id]);
-    redirectWithMessage('jobs_management.php', 'success', 'Job listing deleted');
+    redirectWithMessage('jobs_management.php', 'success', 'Job listing moved to recycle bin.');
 }
 
 // Fetch all jobs for this company
@@ -162,8 +167,8 @@ $jobs = $stmt->fetchAll();
                                                             <hr class="dropdown-divider">
                                                         </li>
                                                         <li><a class="dropdown-item text-danger"
-                                                                href="?delete=1&id=<?php echo $job['id']; ?>"
-                                                                onclick="return confirm('Are you sure you want to delete this job listing?')"><i
+                                                                href="javascript:void(0)"
+                                                                onclick="confirmJobDelete('<?php echo $job['id']; ?>', '<?php echo htmlspecialchars($job['title'], ENT_QUOTES); ?>')"><i
                                                                     class="fas fa-trash me-2"></i>Delete</a></li>
                                                     </ul>
                                                 </div>
@@ -179,6 +184,37 @@ $jobs = $stmt->fetchAll();
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmJobDelete(jobId, jobTitle) {
+            Swal.fire({
+                title: '<span style="color:#d32f2f;"><i class="fas fa-trash-alt me-2"></i>Move to Recycle Bin?</span>',
+                html: `
+                    <p class="text-muted mb-3">You are about to delete <strong>${jobTitle}</strong>. Please select a reason:</p>
+                    <select id="deleteReason" class="form-select rounded-3">
+                        <option value="Position filled">Position filled</option>
+                        <option value="Hiring put on hold">Hiring put on hold</option>
+                        <option value="Duplicate listing">Duplicate listing</option>
+                        <option value="Budget constraints">Budget constraints</option>
+                        <option value="Other">Other</option>
+                    </select>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-trash-restore me-1"></i> Move to Bin',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#1B5E20',
+                cancelButtonColor: '#6c757d',
+                focusConfirm: false,
+                preConfirm: () => {
+                    return document.getElementById('deleteReason').value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = `?delete=1&id=${jobId}&reason=${encodeURIComponent(result.value)}`;
+                }
+            });
+        }
+    </script>
 </body>
-
 </html>

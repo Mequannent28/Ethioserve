@@ -25,6 +25,28 @@ if ($user_id) {
     }
 }
 
+// Check user status for jobs and exams
+$user_applied_jobs = [];
+$user_failed_exams = [];
+$user_passed_exams = [];
+if ($user_id) {
+    $stmt = $pdo->prepare("SELECT job_id FROM job_applications WHERE applicant_id = ?");
+    $stmt->execute([$user_id]);
+    $user_applied_jobs = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $stmt = $pdo->prepare("SELECT exam_id, score, total_score FROM job_exam_attempts WHERE candidate_id = ? AND status = 'completed'");
+    $stmt->execute([$user_id]);
+    $exam_status = $stmt->fetchAll();
+    foreach($exam_status as $es) {
+        $perc = ($es['total_score'] > 0) ? ($es['score'] / $es['total_score']) * 100 : 0;
+        if($perc < 50) {
+            $user_failed_exams[] = $es['exam_id'];
+        } else {
+            $user_passed_exams[] = (string)$es['exam_id'];
+        }
+    }
+}
+
 // ── Handle Quick Apply ────────────────────────────────────────────
 $apply_success = false;
 $apply_error = '';
@@ -45,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_job'])) {
         $chk = $pdo->prepare("SELECT id FROM job_applications WHERE job_id=? AND applicant_id=?");
         $chk->execute([$job_id, $user_id]);
         if ($chk->fetch()) {
-            $apply_error = 'You have already applied for this job.';
+            $apply_error = 'Disqualified: You have already applied for this job.';
         } else {
             // Handle Photo Upload (3x4)
             $photo_url = null;
@@ -128,6 +150,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_job'])) {
                     ->execute([$job_id, $user_id, $name, $email, $phone, $photo_url, $cover, $cv_url, $portfolio, $university, $gpa, $recommendation_url, $certificates_url]);
 
                 $pdo->prepare("UPDATE job_listings SET views=views+1 WHERE id=?")->execute([$job_id]);
+                
+                // Notify Employer by Email
+                try {
+                    require_once '../includes/email_service.php';
+                    $stmt_emp = $pdo->prepare("SELECT jl.title, u.full_name, u.email 
+                                             FROM job_listings jl 
+                                             JOIN users u ON jl.posted_by = u.id 
+                                             WHERE jl.id = ?");
+                    $stmt_emp->execute([$job_id]);
+                    $emp_data = $stmt_emp->fetch();
+                    
+                    if ($emp_data) {
+                        $title = "New Application: " . $emp_data['title'];
+                        $msg = "Hello {$emp_data['full_name']},\n\n<strong>{$name}</strong> has just applied for your job posting: \"{$emp_data['title']}\".\n\nYou can review the application details in your dashboard.";
+                        sendDirectNotification($emp_data['email'], $title, $msg, 'View Applications', '/employer/applications.php');
+                    }
+                } catch (Exception $e) { /* Log error if needed */ }
+
                 $apply_success = true;
             }
         }
@@ -291,12 +331,14 @@ if ($user_id) {
 $my_applications = [];
 if ($user_id) {
     try {
-        $stmt = $pdo->prepare("SELECT ja.*, jl.title, jl.job_type, jc.company_name, jp.cv_url as profile_cv
-                               FROM job_applications ja
-                               JOIN job_listings jl ON ja.job_id = jl.id
-                               LEFT JOIN job_companies jc ON jl.company_id = jc.id
-                               LEFT JOIN job_profiles jp ON jp.user_id = ja.applicant_id
-                               WHERE ja.applicant_id = ? ORDER BY ja.applied_at DESC LIMIT 10");
+        $stmt = $pdo->prepare("SELECT ja.*, jl.title, jl.job_type, jl.exam_id, jc.company_name, jp.cv_url as profile_cv,
+                               jea.score as exam_score, jea.total_score as exam_total
+                                FROM job_applications ja
+                                JOIN job_listings jl ON ja.job_id = jl.id
+                                LEFT JOIN job_companies jc ON jl.company_id = jc.id
+                                LEFT JOIN job_profiles jp ON jp.user_id = ja.applicant_id
+                                LEFT JOIN job_exam_attempts jea ON (jea.exam_id = jl.exam_id AND jea.candidate_id = ja.applicant_id)
+                                WHERE ja.applicant_id = ? ORDER BY ja.applied_at DESC LIMIT 10");
         $stmt->execute([$user_id]);
         $my_applications = $stmt->fetchAll();
     } catch (Exception $e) {
@@ -318,6 +360,16 @@ include '../includes/header.php';
     </div>
     <div class="container py-5 position-relative">
         <!-- Messages -->
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success rounded-4 shadow-sm border-0 mb-4 p-4 animate__animated animate__fadeIn">
+                <i class="fas fa-check-circle me-2"></i><?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger rounded-4 shadow-sm border-0 mb-4 p-4 animate__animated animate__fadeIn">
+                <i class="fas fa-times-circle me-2"></i><?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
+            </div>
+        <?php endif; ?>
         <?php if ($apply_success): ?>
             <div class="alert alert-success rounded-4 shadow-sm border-0 mb-4 p-4 animate__animated animate__fadeIn">
                 <div class="d-flex align-items-center gap-3">
@@ -512,6 +564,7 @@ include '../includes/header.php';
     <ul class="nav nav-pills gap-2 mb-4 flex-wrap" id="jobTabs">
         <?php $tabs = [
             'jobs' => ['fas fa-briefcase', 'All Jobs'],
+            'exams' => ['fas fa-file-alt', 'Employer Exams'],
             'freelance' => ['fas fa-laptop-code', 'Freelance'],
             'internship' => ['fas fa-graduation-cap', 'Internships'],
             'daily' => ['fas fa-hard-hat', 'Daily Labor'],
@@ -646,6 +699,24 @@ include '../includes/header.php';
                                                 </div>
                                             </div>
                                             <div class="text-end flex-shrink-0">
+                                                <?php if (!empty($job['deadline'])): 
+                                                    $deadline = strtotime($job['deadline']);
+                                                    $diff = $deadline - time();
+                                                    if ($diff > 0):
+                                                        $days = floor($diff / 86400); $hrs = floor(($diff % 86400) / 3600);
+                                                        $urgency = ($days < 3) ? 'bg-danger' : 'bg-warning text-dark';
+                                                    ?>
+                                                        <div class="badge rounded-pill <?php echo $urgency; ?> bg-opacity-10 border border-<?php echo str_replace('bg-', '', explode(' ', $urgency)[0]); ?> border-opacity-25 px-3 py-2 mb-2" style="font-size:0.75rem;">
+                                                            <i class="fas fa-hourglass-half me-1"></i>
+                                                            <strong><?php echo $days; ?>d <?php echo $hrs; ?>h</strong> left
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary px-3 py-2 mb-2" style="font-size:0.75rem;">
+                                                            <i class="fas fa-calendar-times me-1"></i> Expired
+                                                        </div>
+                                                    <?php endif; 
+                                                endif; ?>
+
                                                 <?php if ($job['salary_min'] || $job['salary_max']): ?>
                                                     <div class="fw-bold text-success" style="font-size:0.9rem;">
                                                         <?php echo $job['currency'] ?? 'ETB'; ?>
@@ -661,7 +732,7 @@ include '../includes/header.php';
                                                     </div>
                                                 <?php endif; ?>
                                                 <small class="text-muted">
-                                                    <?php echo date('M d', strtotime($job['created_at'])); ?>
+                                                    Posted: <?php echo date('M d', strtotime($job['created_at'])); ?>
                                                 </small>
                                             </div>
                                         </div>
@@ -697,6 +768,11 @@ include '../includes/header.php';
                                                     style="background:#fff3e0;color:#e65100;font-size:0.7rem;"><i
                                                         class="fas fa-clock me-1"></i>Closing Soon</span>
                                             <?php endif; ?>
+                                            <?php if (!empty($job['exam_id'])): ?>
+                                                <span class="badge rounded-pill px-2 py-1"
+                                                    style="background:#e3f2fd;color:#0d47a1;font-size:0.7rem;"><i
+                                                        class="fas fa-file-signature me-1"></i>Exam Required</span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <!-- Skills -->
@@ -723,8 +799,9 @@ include '../includes/header.php';
                                                 data-job-id="<?php echo $job['id']; ?>"
                                                 data-job-title="<?php echo htmlspecialchars($job['title']); ?>"
                                                 data-company="<?php echo htmlspecialchars($job['company_name'] ?: $job['poster_name']); ?>"
+                                                data-exam-id="<?php echo $job['exam_id']; ?>"
                                                 style="font-size:0.88rem;">
-                                                <i class="fas fa-paper-plane me-1"></i>Apply Now
+                                                <i class="fas fa-paper-plane me-1"></i><?php echo !empty($job['exam_id']) ? 'Take Exam & Apply' : 'Apply Now'; ?>
                                             </button>
                                             <button class="btn btn-outline-secondary rounded-pill px-3 py-2"
                                                 style="font-size:0.88rem;" data-bs-toggle="modal" data-bs-target="#jobDetailModal"
@@ -748,6 +825,95 @@ include '../includes/header.php';
                             </div>
                         </div>
                     <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- ─────────────────── EMPLOYER EXAMS TAB ──────────────────────── -->
+    <?php elseif ($active_tab === 'exams'): ?>
+        <?php
+        // Fetch all exams, possibly filter by user's applied jobs/companies
+        // For now, let's fetch all active exams that the candidate hasn't completed yet
+        $exams = [];
+        try {
+            $sql = "SELECT e.*, c.company_name, c.logo_url FROM job_exams e LEFT JOIN job_companies c ON e.company_id = c.id ORDER BY e.created_at DESC";
+            $stmt = $pdo->query($sql);
+            $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // Error handling
+        }
+        ?>
+        <div class="row g-4">
+            <div class="col-12">
+                <h4 class="fw-bold mb-3"><i class="fas fa-file-alt text-primary me-2"></i>Available Employer Exams</h4>
+                <p class="text-muted">Take these exams to showcase your skills to employers and boost your profile.</p>
+                <?php if(empty($exams)): ?>
+                    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                        <i class="fas fa-search text-muted fs-1 mb-3"></i>
+                        <h5 class="fw-bold">No Exams Available</h5>
+                        <p class="text-muted">Employers haven't posted any exams at the moment.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="row g-4">
+                        <?php foreach($exams as $exam): ?>
+                            <?php
+                            // Check attempt status
+                            $attempt_status = 'Not Started';
+                            $attempt_score = null;
+                            if ($user_id) {
+                                $astmt = $pdo->prepare("SELECT status, score, total_score FROM job_exam_attempts WHERE exam_id = ? AND candidate_id = ?");
+                                $astmt->execute([$exam['id'], $user_id]);
+                                $att = $astmt->fetch(PDO::FETCH_ASSOC);
+                                if ($att) {
+                                    $attempt_status = $att['status']; // 'ongoing' or 'completed'
+                                    if ($att['status'] == 'completed') {
+                                        $attempt_score = $att['score'] . " / " . $att['total_score'];
+                                    }
+                                }
+                            }
+                            ?>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card border-0 shadow-sm rounded-4 h-100 hover-lift">
+                                    <div class="card-body p-4 d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" style="width: 40px; height: 40px; background: linear-gradient(135deg, #4CAF50, #1B5E20);">
+                                                    <i class="fas fa-file-signature"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-0 text-dark"><?php echo htmlspecialchars($exam['title']); ?></h6>
+                                                    <div class="small text-muted"><i class="fas fa-building me-1"></i><?php echo htmlspecialchars($exam['company_name']); ?></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="text-muted small mb-3 flex-grow-1" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                                            <?php echo nl2br(htmlspecialchars($exam['description'])); ?>
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded-3 mb-3">
+                                            <div class="small text-muted"><i class="fas fa-clock text-primary me-1"></i><?php echo $exam['duration_minutes']; ?> Mins</div>
+                                            <?php if($attempt_status == 'completed'): ?>
+                                                <div class="small fw-bold text-success"><i class="fas fa-check-circle me-1"></i>Score: <?php echo $attempt_score; ?></div>
+                                            <?php elseif($attempt_status == 'ongoing'): ?>
+                                                <div class="small fw-bold text-warning"><i class="fas fa-spinner fa-spin me-1"></i>Ongoing</div>
+                                            <?php else: ?>
+                                                <div class="small text-muted"><i class="fas fa-circle me-1" style="font-size:8px;"></i>Not Started</div>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <?php if(!$user_id): ?>
+                                            <a href="../login.php" class="btn btn-outline-primary rounded-pill w-100">Login to take</a>
+                                        <?php elseif($attempt_status == 'completed'): ?>
+                                            <button class="btn btn-success rounded-pill w-100 disabled"><i class="fas fa-check me-1"></i>Completed</button>
+                                        <?php elseif($attempt_status == 'ongoing'): ?>
+                                            <a href="job_take_exam.php?id=<?php echo $exam['id']; ?>" class="btn btn-warning rounded-pill w-100"><i class="fas fa-play me-1"></i>Resume Exam</a>
+                                        <?php else: ?>
+                                            <a href="job_take_exam.php?id=<?php echo $exam['id']; ?>" class="btn btn-primary rounded-pill w-100 shadow-sm"><i class="fas fa-play me-1"></i>Start Exam</a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -907,6 +1073,15 @@ include '../includes/header.php';
                                 <div class="text-muted small mt-1"><i class="fas fa-calendar me-1"></i>Applied
                                     <?php echo date('M d, Y', strtotime($app['applied_at'])); ?>
                                 </div>
+                                <?php if($app['exam_id'] && isset($app['exam_score'])): ?>
+                                    <div class="mt-2 text-primary small fw-bold">
+                                        <i class="fas fa-file-invoice me-1"></i>Assessment Score: <?php echo $app['exam_score']; ?> / <?php echo $app['exam_total']; ?>
+                                    </div>
+                                <?php elseif($app['exam_id']): ?>
+                                    <div class="mt-2 text-warning small fw-bold">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Assessment Required (Pending)
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <span class="badge rounded-pill px-3 py-2 fw-semibold"
                                 style="background:<?php echo $s[0]; ?>;color:<?php echo $s[1]; ?>;font-size:0.8rem;">
@@ -1258,7 +1433,7 @@ include '../includes/header.php';
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold apply-from-detail">
+                <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold apply-from-detail" id="detailApplyBtn">
                     <i class="fas fa-paper-plane me-2"></i>Apply for This Job
                 </button>
                 <button type="button" class="btn btn-outline-secondary rounded-pill"
@@ -1427,21 +1602,68 @@ include '../includes/header.php';
 <!-- SweetAlert2 for Premium Popups -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- ══════════════════════ SCRIPTS ════════════════════════════════ -->
 <script>
+    const userAppliedJobs = <?php echo json_encode($user_applied_jobs); ?>;
+    const userFailedExams = <?php echo json_encode($user_failed_exams); ?>;
+    const userPassedExams = <?php echo json_encode($user_passed_exams); ?>;
+
     document.addEventListener('DOMContentLoaded', function () {
 
         // Apply button → open modal
         document.querySelectorAll('.apply-btn').forEach(btn => {
             btn.addEventListener('click', function () {
-                document.getElementById('applyJobId').value = this.dataset.jobId;
-                document.getElementById('applyModalTitle').textContent = this.dataset.jobTitle;
-                document.getElementById('applyModalCompany').textContent = this.dataset.company;
+                const jobId = this.dataset.jobId;
+                const examId = this.dataset.examId;
+                
                 <?php if (!$user_id): ?>
                     window.location.href = '../login.php';
                     return;
                 <?php endif; ?>
-                new bootstrap.Modal(document.getElementById('applyModal')).show();
+
+                // Rule 1: Already Applied -> Disqualified
+                if (userAppliedJobs.includes(jobId) || userAppliedJobs.includes(parseInt(jobId))) {
+                    Swal.fire({
+                        title: 'Disqualified',
+                        text: 'You have already applied for this job. Each candidate can apply only once.',
+                        icon: 'error',
+                        confirmButtonColor: '#d33'
+                    });
+                    return;
+                }
+
+                // Rule 2: Failed Exam -> Block
+                if (examId && (userFailedExams.includes(examId) || userFailedExams.includes(parseInt(examId)))) {
+                    Swal.fire({
+                        title: 'Not Eligible',
+                        text: 'You did not pass the required assessment for this job and cannot apply.',
+                        icon: 'warning',
+                        confirmButtonColor: '#f39c12'
+                    });
+                    return;
+                }
+
+                // Rule 3: Passed Exam -> Skip redirect
+                const hasPassed = (userPassedExams.includes(examId) || userPassedExams.includes(parseInt(examId)));
+
+                if (examId && examId !== "" && examId !== "0" && !hasPassed) {
+                    Swal.fire({
+                        title: 'Assessment Required',
+                        text: 'This job requires an online assessment (Pass threshold: 50%). You will be redirected to the exam page first.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Start Exam',
+                        confirmButtonColor: '#1565C0'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'job_take_exam.php?id=' + examId + '&job_id=' + jobId;
+                        }
+                    });
+                } else {
+                    document.getElementById('applyJobId').value = jobId;
+                    document.getElementById('applyModalTitle').textContent = this.dataset.jobTitle;
+                    document.getElementById('applyModalCompany').textContent = this.dataset.company;
+                    new bootstrap.Modal(document.getElementById('applyModal')).show();
+                }
             });
         });
 
@@ -1472,22 +1694,50 @@ include '../includes/header.php';
                 document.querySelector('.apply-from-detail').dataset.jobId = this.dataset.jobId;
                 document.querySelector('.apply-from-detail').dataset.jobTitle = this.dataset.title;
                 document.querySelector('.apply-from-detail').dataset.company = this.dataset.company;
+                document.querySelector('.apply-from-detail').dataset.examId = this.dataset.examId || "";
+                
+                const applyBtn = document.getElementById('detailApplyBtn');
+                if (this.dataset.examId) {
+                    applyBtn.innerHTML = '<i class="fas fa-file-signature me-2"></i>Take Exam & Apply';
+                } else {
+                    applyBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Apply for This Job';
+                }
             });
         });
 
         // Apply from detail modal
         document.querySelector('.apply-from-detail')?.addEventListener('click', function () {
+            const jobId = this.dataset.jobId;
+            const examId = this.dataset.examId;
+
+            <?php if (!$user_id): ?>
+                window.location.href = '../login.php';
+                return;
+            <?php endif; ?>
+
+            // Rules check also in detail button
+            if (userAppliedJobs.includes(jobId) || userAppliedJobs.includes(parseInt(jobId))) {
+                Swal.fire('Disqualified', 'You have already applied for this job.', 'error');
+                return;
+            }
+            if (examId && (userFailedExams.includes(examId) || userFailedExams.includes(parseInt(examId)))) {
+                Swal.fire('Not Eligible', 'You did not pass the assessment for this job.', 'warning');
+                return;
+            }
+
             bootstrap.Modal.getInstance(document.getElementById('jobDetailModal'))?.hide();
-            setTimeout(() => {
-                document.getElementById('applyJobId').value = this.dataset.jobId;
-                document.getElementById('applyModalTitle').textContent = this.dataset.jobTitle;
-                document.getElementById('applyModalCompany').textContent = this.dataset.company;
-                <?php if (!$user_id): ?>
-                    window.location.href = '../login.php';
-                    return;
-                <?php endif; ?>
-                new bootstrap.Modal(document.getElementById('applyModal')).show();
-            }, 350);
+            
+            if (examId && examId !== "" && examId !== "0") {
+                // Re-trigger the main flow for exams
+                document.querySelector(`.apply-btn[data-job-id="${jobId}"]`).click();
+            } else {
+                setTimeout(() => {
+                    document.getElementById('applyJobId').value = jobId;
+                    document.getElementById('applyModalTitle').textContent = this.dataset.jobTitle;
+                    document.getElementById('applyModalCompany').textContent = this.dataset.company;
+                    new bootstrap.Modal(document.getElementById('applyModal')).show();
+                }, 350);
+            }
         });
 
         // Show Success Popup if application was successful
@@ -1506,6 +1756,42 @@ include '../includes/header.php';
                 if (result.isConfirmed) {
                     window.location.href = '?tab=my_apps';
                 }
+            });
+        <?php endif; ?>
+
+        // Check if returned from exam
+        // Check if returned from exam (Success)
+        <?php if (isset($_GET['applied_after_exam']) && isset($_GET['job_id'])): ?>
+            const returnedJobId = "<?php echo (int)$_GET['job_id']; ?>";
+            const jobBtn = document.querySelector(`.apply-btn[data-job-id="${returnedJobId}"]`);
+            if (jobBtn) {
+                Swal.fire({
+                    title: 'Exam Completed!',
+                    text: 'Great job! Now you can finish your application for this position.',
+                    icon: 'success',
+                    confirmButtonText: 'Complete Application',
+                    confirmButtonColor: '#1565C0'
+                }).then(() => {
+                    document.getElementById('applyJobId').value = jobBtn.dataset.jobId;
+                    document.getElementById('applyModalTitle').textContent = jobBtn.dataset.jobTitle;
+                    document.getElementById('applyModalCompany').textContent = jobBtn.dataset.company;
+                    new bootstrap.Modal(document.getElementById('applyModal')).show();
+                });
+            }
+        <?php endif; ?>
+
+        // Check if failed exam
+        <?php if (isset($_GET['failed_exam']) && isset($_GET['job_id'])): ?>
+            const failedJobId = "<?php echo (int)$_GET['job_id']; ?>";
+            const failMsg = "<?php echo $_SESSION['error_message'] ?? ''; ?>";
+            <?php unset($_SESSION['error_message']); ?>
+            
+            Swal.fire({
+                title: 'Assessment Failed',
+                text: failMsg || 'You did not pass the assessment for this job.',
+                icon: 'error',
+                confirmButtonText: 'Browse Other Jobs',
+                confirmButtonColor: '#d33'
             });
         <?php endif; ?>
     });

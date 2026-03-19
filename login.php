@@ -9,7 +9,7 @@ if (isLoggedIn()) {
         header("Location: admin/dashboard.php");
     } elseif ($role == 'hotel') {
         header("Location: hotel/dashboard.php");
-    } elseif ($role == 'broker') {
+    } elseif ($role == 'broker' || $role == 'property_owner') {
         header("Location: broker/dashboard.php");
     } elseif ($role == 'transport') {
         header("Location: transport/dashboard.php");
@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             header("Location: hotel/dashboard.php");
                             break;
                         case 'broker':
+                        case 'property_owner':
                             header("Location: broker/dashboard.php");
                             break;
                         case 'transport':
@@ -95,7 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             header("Location: taxi/dashboard.php");
                             break;
                         case 'student':
-                            header("Location: customer/education.php");
+                            header("Location: student/dashboard.php");
+                            break;
+                        case 'teacher':
+                            header("Location: teacher/dashboard.php");
+                            break;
+                        case 'parent':
+                            header("Location: student/dashboard.php");
                             break;
                         case 'employer':
                             header("Location: employer/dashboard.php");
@@ -108,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             break;
                         default:
                             header("Location: customer/index.php");
-                    }
+                        }
                 }
                 exit();
             } else {
@@ -201,10 +208,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </p>
                         </div>
 
+                        <!-- School Portal Banner -->
+                        <a href="school/login.php" class="d-flex align-items-center gap-3 mt-4 p-3 text-decoration-none rounded-3"
+                            style="background:linear-gradient(135deg,#1B5E20,#2E7D32); transition: all .3s;">
+                            <div class="bg-white bg-opacity-10 p-2 rounded-3 text-center" style="min-width:42px;">
+                                <i class="fas fa-graduation-cap text-warning fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-white fw-bold small">School Management Portal</div>
+                                <div class="text-white-50" style="font-size:0.75rem;">Teachers, Students & Parents → Login here</div>
+                            </div>
+                            <i class="fas fa-arrow-right text-white-50 ms-auto"></i>
+                        </a>
+
                         <!-- Demo Credentials -->
                         <div class="mt-4 p-3 bg-light rounded-3">
-                            <small class="text-muted d-block text-center mb-2 fw-bold">Quick Login (Tap to
-                                fill):</small>
+                            <small class="text-muted d-block text-center mb-2 fw-bold">Quick Login (Tap to fill):</small>
                             <div class="d-flex flex-wrap gap-2 justify-content-center">
                                 <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
                                     onclick="fillLogin('customer1','password')">
@@ -228,7 +247,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
                                     onclick="fillLogin('broker1','password')">
-                                    <i class="fas fa-home me-1"></i>Rent
+                                    <i class="fas fa-home me-1"></i>Rent Broker
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                    onclick="fillLogin('owner1','password')">
+                                    <i class="fas fa-building me-1"></i>Property Owner
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
                                     onclick="fillLogin('golden_bus','password')">
@@ -265,6 +288,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
                                     onclick="fillLogin('dr_dawit','password')">
                                     <i class="fas fa-stethoscope me-1"></i>Doctor
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
+                                    onclick="fillLogin('teacher1','password')">
+                                    <i class="fas fa-chalkboard-teacher me-1"></i>Teacher
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3"
+                                    onclick="fillLogin('parent1','password')">
+                                    <i class="fas fa-users me-1"></i>Parent
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                     onclick="fillLogin('admin','password')">

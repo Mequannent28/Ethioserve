@@ -66,7 +66,6 @@ if [ $WAITED -ge $MAX_WAIT ]; then
     echo "  ✗ CRITICAL: Database did not start within ${MAX_WAIT} seconds!"
     exit 1
 fi
-
 # 4. Setup Database Schema and Users
 echo "[3/4] Configuring Database: $DB_NAME"
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

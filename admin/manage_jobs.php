@@ -93,12 +93,7 @@ $pending_verification = $total_companies - $verified_companies;
             background-color: #f4f6f9;
         }
 
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            min-height: 100vh;
-        }
+        
 
         .company-logo,
         .applicant-avatar {

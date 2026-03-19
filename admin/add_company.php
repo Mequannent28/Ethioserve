@@ -74,13 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_company'])) {
             width: 100%;
         }
 
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .form-section {
             background: white;

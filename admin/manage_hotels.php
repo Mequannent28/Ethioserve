@@ -143,13 +143,7 @@ foreach ($hotels as $h) {
             width: 100%;
         }
 
-        .main-content {
-            margin-left: 240px;
-            width: calc(100% - 240px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
     </style>
 </head>
 
@@ -327,7 +321,7 @@ foreach ($hotels as $h) {
     </div>
 
     <!-- Import Modal -->
-    <div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal" id="importModal" tabindex="-1">
         <div class="modal-dialog">
             <form method="POST" enctype="multipart/form-data" class="modal-content border-0 rounded-4">
                 <?php echo csrfField(); ?>

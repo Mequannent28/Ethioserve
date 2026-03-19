@@ -105,3 +105,71 @@
         text-align: center;
     }
 </style>
+
+<!-- Transport Notifications -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const transportApiUrl = '<?php echo BASE_URL; ?>/api.php';
+    let lastSeenBusBookingId = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial setup for existing bookings
+        const findMaxIds = () => {
+            const bookingRefs = document.querySelectorAll('.booking-ref, strong');
+            bookingRefs.forEach(el => {
+                const match = el.innerText.match(/BUS-(\w+)/);
+                if (match) {
+                    // Similar to taxi, we'll rely on the API for numeric ID tracking.
+                }
+            });
+        };
+        findMaxIds();
+
+        // Start polling
+        setInterval(checkTransportNotifications, 10000);
+    });
+
+    async function checkTransportNotifications() {
+        try {
+            const response = await fetch(`${transportApiUrl}?action=get_transport_notifications&last_booking_id=${lastSeenBusBookingId}`);
+            const data = await response.json();
+
+            if (data.success && data.new_bookings && data.new_bookings.length > 0) {
+                data.new_bookings.forEach(booking => {
+                    showTransportNotification('New Bus Booking!', `${booking.customer_name} booked seats for ${booking.travel_date}.`, 'info', `<?php echo BASE_URL; ?>/transport/bookings.php`);
+                });
+                const maxId = Math.max(...data.new_bookings.map(b => parseInt(b.id)));
+                if (maxId > lastSeenBusBookingId) lastSeenBusBookingId = maxId;
+            }
+        } catch (error) { console.error('Transport Notification Error:', error); }
+    }
+
+    function showTransportNotification(title, message, icon, url) {
+        // Distinct alert sound for transport bookings
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'View',
+            confirmButtonColor: '#1B5E20',
+            showCancelButton: true,
+            timer: 15000,
+            timerProgressBar: true,
+            background: '#fff',
+            color: '#1B5E20',
+            didOpen: (toast) => {
+                toast.style.cursor = 'pointer';
+                toast.onclick = () => window.location.href = url;
+            }
+        }).then((result) => { if (result.isConfirmed) window.location.href = url; });
+    }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+

@@ -206,7 +206,7 @@ $top_customers = $stmt->fetchAll();
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card stat-card blue p-4 border-0 shadow-sm">
+                    <div class="card stat-card p-4 border-0 shadow-sm" style="border-left-color: #00796B;">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <p class="text-muted mb-1 small">Total Customers</p>
@@ -215,7 +215,7 @@ $top_customers = $stmt->fetchAll();
                                 </h3>
                             </div>
                             <div class="bg-light rounded-3 p-3">
-                                <i class="fas fa-users text-primary fs-4"></i>
+                                <i class="fas fa-users text-teal fs-4" style="color: #00796B;"></i>
                             </div>
                         </div>
                     </div>

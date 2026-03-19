@@ -201,7 +201,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Import Excel Modal -->
-    <div class="modal fade" id="importExcelModal" tabindex="-1">
+    <div class="modal" id="importExcelModal" tabindex="-1">
         <div class="modal-dialog">
             <form action="process_menu.php?action=import_csv" method="POST" enctype="multipart/form-data"
                 class="modal-content">
@@ -234,7 +234,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal" id="addItemModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-4">
                 <form action="process_menu.php?action=add" method="POST" enctype="multipart/form-data">
@@ -297,7 +297,7 @@ $categories = $stmt->fetchAll();
     </div>
 
     <!-- Edit Item Modal -->
-    <div class="modal fade" id="editItemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal" id="editItemModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-4">
                 <form action="process_menu.php?action=edit" method="POST" enctype="multipart/form-data">

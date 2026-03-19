@@ -45,13 +45,7 @@ try {
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 260px;
-            width: calc(100% - 260px);
-            padding: 30px;
-            background-color: #f4f6f9;
-            min-height: 100vh;
-        }
+        
 
         .stat-card {
             transition: transform 0.3s;
@@ -75,6 +69,9 @@ try {
                     <p class="text-muted mb-0">Manage broker accounts, referral codes, and commissions</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
+                    <a href="manage_referrals.php" class="btn btn-outline-warning rounded-pill px-4">
+                        <i class="fas fa-hand-holding-usd me-2"></i>Referrals & Payouts
+                    </a>
                     <a href="add_user.php?role=broker" class="btn btn-primary-green rounded-pill px-4">
                         <i class="fas fa-plus me-2"></i>Add Broker
                     </a>

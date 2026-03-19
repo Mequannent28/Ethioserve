@@ -53,11 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_provider'])) {
             font-family: 'Poppins', sans-serif;
         }
 
-        .main-content {
-            margin-left: 240px;
-            padding: 30px;
-            min-height: 100vh;
-        }
+        
 
         .form-card {
             background: white;
@@ -73,11 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_provider'])) {
             font-weight: 700;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-            }
-        }
+        
     </style>
 </head>
 

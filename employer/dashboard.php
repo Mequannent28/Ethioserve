@@ -84,7 +84,7 @@ $recent_applications = $stmt->fetchAll();
         :root {
             --premium-green: #1B5E20;
             --premium-yellow: #FFB300;
-            --premium-blue: #0288D1;
+            --premium-teal: #00796B;
             --premium-red: #D32F2F;
         }
 
@@ -243,7 +243,7 @@ $recent_applications = $stmt->fetchAll();
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="premium-stat-card" style="background: var(--premium-blue);">
+                    <div class="premium-stat-card" style="background: var(--premium-teal);">
                         <div class="stat-label">Hired Candidates</div>
                         <div class="stat-value"><?php echo $total_hired; ?></div>
                         <div class="stat-desc"><i class="fas fa-check-circle me-1"></i> Successful hires</div>

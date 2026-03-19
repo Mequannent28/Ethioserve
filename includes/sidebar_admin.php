@@ -1,4 +1,7 @@
-<?php $current_page = basename($_SERVER['PHP_SELF']); ?>
+<?php 
+$current_page = basename($_SERVER['PHP_SELF']); 
+$user_role = $_SESSION['role'] ?? '';
+?>
 <!-- Sidebar -->
 <nav id="sidebarMenu" class="admin-sidebar">
     <div class="sidebar-inner">
@@ -12,7 +15,11 @@
             <p class="text-white-50 small mb-0 mt-1">
                 <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Admin'); ?>
             </p>
-            <span class="badge bg-danger mt-1">Super Admin</span>
+            <?php if ($user_role === 'school_admin'): ?>
+                <span class="badge bg-success mt-1">School Admin</span>
+            <?php else: ?>
+                <span class="badge bg-danger mt-1">Super Admin</span>
+            <?php endif; ?>
         </div>
 
         <!-- Navigation -->
@@ -20,13 +27,14 @@
             <ul class="nav flex-column sidebar-nav">
                 <!-- Dashboard -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>"
-                        href="dashboard.php">
+                    <a class="nav-link <?php echo ($current_page == 'dashboard.php' || ($user_role === 'school_admin' && $current_page == 'manage_school.php' && !isset($_GET['view']))) ? 'active' : ''; ?>"
+                        href="<?php echo $user_role === 'school_admin' ? 'manage_school.php' : 'dashboard.php'; ?>">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
 
+                <?php if ($user_role !== 'school_admin'): ?>
                 <!-- SERVICES Section -->
                 <li class="nav-section-title">
                     <span>SERVICES</span>
@@ -85,7 +93,121 @@
                         <span>Manage Flights</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
+                <!-- EDUCATION & ACADEMICS Section -->
+                <li class="nav-section-title">
+                    <span>ACADEMICS & LMS</span>
+                </li>
+
+                <!-- School Management -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_school.php' ? 'active' : ''; ?>" 
+                       data-bs-toggle="collapse" href="#schoolSubmenu" role="button" 
+                       aria-expanded="<?php echo $current_page == 'manage_school.php' ? 'true' : 'false'; ?>">
+                        <i class="fas fa-school"></i>
+                        <span>School Management</span>
+                        <i class="fas fa-chevron-down ms-auto small opacity-50 transition-transform <?php echo $current_page == 'manage_school.php' ? 'rotate-180' : ''; ?>"></i>
+                    </a>
+                    <div class="collapse <?php echo $current_page == 'manage_school.php' ? 'show' : ''; ?>" id="schoolSubmenu">
+                        <ul class="nav flex-column ps-4 mb-2">
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_school.php' && ($_GET['view'] ?? '') == 'classes') ? 'active-sub' : ''; ?>" 
+                                   href="manage_school.php?view=classes">
+                                    <i class="fas fa-chalkboard small"></i> Classes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_school.php' && ($_GET['view'] ?? '') == 'teachers') ? 'active-sub' : ''; ?>" 
+                                   href="manage_school.php?view=teachers">
+                                    <i class="fas fa-user-tie small"></i> Teachers
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_school.php' && ($_GET['view'] ?? '') == 'students') ? 'active-sub' : ''; ?>" 
+                                   href="manage_school.php?view=students">
+                                    <i class="fas fa-user-graduate small"></i> Students
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_school.php' && ($_GET['view'] ?? '') == 'finance') ? 'active-sub' : ''; ?>" 
+                                   href="manage_school.php?view=finance">
+                                    <i class="fas fa-file-invoice-dollar small"></i> Finance
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Manage Education (Admin Resources) -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_education.php' ? 'active' : ''; ?>"
+                       data-bs-toggle="collapse" href="#eduSubmenu" role="button" 
+                       aria-expanded="<?php echo $current_page == 'manage_education.php' ? 'true' : 'false'; ?>">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Admin Resources</span>
+                        <i class="fas fa-chevron-down ms-auto small opacity-50 transition-transform <?php echo $current_page == 'manage_education.php' ? 'rotate-180' : ''; ?>"></i>
+                    </a>
+                    <div class="collapse <?php echo $current_page == 'manage_education.php' ? 'show' : ''; ?>" id="eduSubmenu">
+                        <ul class="nav flex-column ps-4 mb-2">
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_education.php' && (($_GET['type'] ?? '') == 'textbook' || !isset($_GET['type']))) ? 'active-sub' : ''; ?>" 
+                                   href="manage_education.php?type=textbook">
+                                    <i class="fas fa-book small"></i> Textbooks
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_education.php' && ($_GET['type'] ?? '') == 'video') ? 'active-sub' : ''; ?>" 
+                                   href="manage_education.php?type=video">
+                                    <i class="fas fa-play-circle small"></i> Video Lessons
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Manage LMS -->
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page == 'manage_lms.php' ? 'active' : ''; ?>"
+                       data-bs-toggle="collapse" href="#lmsSubmenu" role="button" 
+                       aria-expanded="<?php echo $current_page == 'manage_lms.php' ? 'true' : 'false'; ?>">
+                        <i class="fas fa-brain"></i>
+                        <span>LMS & Exams</span>
+                        <i class="fas fa-chevron-down ms-auto small opacity-50 transition-transform <?php echo $current_page == 'manage_lms.php' ? 'rotate-180' : ''; ?>"></i>
+                    </a>
+                    <div class="collapse <?php echo $current_page == 'manage_lms.php' ? 'show' : ''; ?>" id="lmsSubmenu">
+                        <ul class="nav flex-column ps-4 mb-2">
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_lms.php' && (($_GET['view'] ?? '') == 'list' || !isset($_GET['view']))) ? 'active-sub' : ''; ?>" 
+                                   href="manage_lms.php?view=list">
+                                    <i class="fas fa-file-alt small"></i> Manage Exams
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo ($current_page == 'manage_lms.php' && ($_GET['view'] ?? '') == 'chapters') ? 'active-sub' : ''; ?>" 
+                                   href="manage_lms.php?view=chapters">
+                                    <i class="fas fa-book-open small"></i> Chapters
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link text-info fw-bold" href="../customer/lms.php" target="_blank">
+                                    <i class="fas fa-external-link-alt small"></i> View Public LMS Portal
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- School Portal Login (Functional Link) -->
+                <li class="nav-item">
+                    <a class="nav-link portal-link" href="../customer/school_portal.php" target="_blank">
+                        <i class="fas fa-sign-in-alt" style="color:#F9A825;"></i>
+                        <span style="color:#F9A825; font-weight:700;">School Portal Login</span>
+                        <div class="ms-auto badge bg-warning text-dark" style="font-size: 0.55rem; padding: 2px 6px;">PORTAL</div>
+                    </a>
+                </li>
+
+                <?php if ($user_role !== 'school_admin'): ?>
                 <!-- ENTERTAINMENT Section -->
                 <li class="nav-section-title">
                     <span>ENTERTAINMENT</span>
@@ -108,24 +230,9 @@
                         <span>Manage Experiences</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'manage_education.php' ? 'active' : ''; ?>"
-                        href="manage_education.php">
-                        <i class="fas fa-graduation-cap"></i>
-                        <span>Manage Education</span>
-                    </a>
-                </li>
-
-                <!-- Manage LMS -->
-                <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'manage_lms.php' ? 'active' : ''; ?>"
-                        href="manage_lms.php">
-                        <i class="fas fa-brain"></i>
-                        <span>Manage LMS</span>
-                    </a>
-                </li>
-
+                <?php if ($user_role !== 'school_admin'): ?>
                 <!-- MARKETPLACE Section -->
                 <li class="nav-section-title">
                     <span>MARKETPLACE</span>
@@ -133,11 +240,27 @@
 
                 <!-- Manage Brokers -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page == 'manage_brokers.php' ? 'active' : ''; ?>"
-                        href="manage_brokers.php">
+                    <a class="nav-link <?php echo $current_page == 'manage_brokers.php' || $current_page == 'manage_referrals.php' ? 'active' : ''; ?>"
+                        data-bs-toggle="collapse" href="#brokerSubmenu" role="button" 
+                        aria-expanded="<?php echo $current_page == 'manage_brokers.php' || $current_page == 'manage_referrals.php' ? 'true' : 'false'; ?>">
                         <i class="fas fa-user-tie"></i>
-                        <span>Manage Brokers</span>
+                        <span>Manage Agents</span>
+                        <i class="fas fa-chevron-down ms-auto small opacity-50 transition-transform <?php echo ($current_page == 'manage_brokers.php' || $current_page == 'manage_referrals.php') ? 'rotate-180' : ''; ?>"></i>
                     </a>
+                    <div class="collapse <?php echo ($current_page == 'manage_brokers.php' || $current_page == 'manage_referrals.php') ? 'show' : ''; ?>" id="brokerSubmenu">
+                        <ul class="nav flex-column ps-4 mb-2">
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo $current_page == 'manage_brokers.php' ? 'active-sub' : ''; ?>" href="manage_brokers.php">
+                                    <i class="fas fa-users-cog small"></i> Broker Accounts
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sub-nav-link <?php echo $current_page == 'manage_referrals.php' ? 'active-sub' : ''; ?>" href="manage_referrals.php">
+                                    <i class="fas fa-comment-dollar small"></i> Referrals & Payouts
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
 
                 <!-- Manage Real Estate -->
@@ -184,6 +307,7 @@
                         <span>Manage Health</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
 
                 <!-- SYSTEM Section -->
@@ -200,6 +324,7 @@
                     </a>
                 </li>
 
+                <?php if ($user_role !== 'school_admin'): ?>
                 <!-- Activity Log -->
                 <li class="nav-item">
                     <a class="nav-link <?php echo $current_page == 'activity_log.php' ? 'active' : ''; ?>"
@@ -208,6 +333,7 @@
                         <span>Activity Log</span>
                     </a>
                 </li>
+                <?php endif; ?>
 
                 <!-- View Platform -->
                 <li class="nav-item">
@@ -253,7 +379,7 @@
         top: 0;
         bottom: 0;
         width: 260px;
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        background: <?php echo $user_role === 'school_admin' ? '#1B5E20' : 'linear-gradient(180deg, #1B5E20 0%, #2E7D32 50%, #1B5E20 100%)'; ?>;
         z-index: 100;
         display: flex;
         flex-direction: column;
@@ -370,6 +496,51 @@
         flex-shrink: 0;
     }
 
+    /* Sub-navigation Styling */
+    .sub-nav-link {
+        padding: 5px 15px !important;
+        margin: 1px 0 1px 12px !important;
+        font-size: 0.8rem !important;
+        opacity: 0.7;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    
+    .sub-nav-link:hover {
+        opacity: 1;
+        background: rgba(255,255,255,0.05) !important;
+        transform: translateX(3px) !important;
+    }
+
+    .sub-nav-link.active-sub {
+        opacity: 1;
+        color: #F9A825 !important;
+        font-weight: 600;
+    }
+
+    .sub-nav-link::before {
+        display: none !important;
+    }
+
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+
+    .transition-transform {
+        transition: transform 0.3s ease;
+    }
+
+    .portal-link {
+        background: rgba(249,168,37,0.12); 
+        border-left: 3px solid #F9A825; 
+        margin: 8px 12px !important; 
+        border-radius: 8px;
+    }
+
+    .portal-link:hover {
+        background: rgba(249,168,37,0.2) !important;
+    }
+
     .sidebar-footer {
         padding: 12px 12px 20px;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -400,7 +571,10 @@
     /* Main content offset */
     .main-content {
         margin-left: 260px;
+        padding: 2.5rem;
+        min-height: 100vh;
         width: calc(100% - 260px);
+        transition: all 0.3s;
     }
 
     /* Responsive */
@@ -420,3 +594,54 @@
         }
     }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    let lastHotelId = 0;
+    let lastRestId = 0;
+
+    async function checkAdminNotifications() {
+        try {
+            const res = await fetch(`../api.php?action=get_admin_notifications&last_hotel_id=${lastHotelId}&last_rest_id=${lastRestId}`);
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.new_hotels && data.new_hotels.length > 0) {
+                    data.new_hotels.forEach(h => {
+                        showAdminToast('New Hotel Registration', `${h.name} is awaiting approval.`);
+                    });
+                    lastHotelId = Math.max(...data.new_hotels.map(h => h.id));
+                }
+                if (data.new_restaurants && data.new_restaurants.length > 0) {
+                    data.new_restaurants.forEach(r => {
+                        showAdminToast('New Restaurant registration', `${r.name} is awaiting approval.`);
+                    });
+                    lastRestId = Math.max(...data.new_restaurants.map(r => r.id));
+                }
+            }
+        } catch (e) { console.error('Admin Check Error:', e); }
+    }
+
+    function showAdminToast(title, msg) {
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play().catch(() => {});
+        Swal.fire({
+            title: title, text: msg, icon: 'info', toast: true, position: 'top-end', 
+            showConfirmButton: true, confirmButtonText: 'Review', showCancelButton: true,
+            timer: 10000, timerProgressBar: true
+        }).then(r => { if (r.isConfirmed) window.location.href = 'dashboard.php'; });
+    }
+
+    // Initial delay so it doesn't fire on page load for EXISTING pendings
+    setTimeout(() => {
+        // Set initial IDs to avoid notifying for existing items
+        fetch(`../api.php?action=get_admin_notifications`).then(r => r.json()).then(d => {
+            if (d.success) {
+                const hIds = d.new_hotels.map(h => h.id);
+                if (hIds.length > 0) lastHotelId = Math.max(...hIds);
+                const rIds = d.new_restaurants.map(r => r.id);
+                if (rIds.length > 0) lastRestId = Math.max(...rIds);
+            }
+            setInterval(checkAdminNotifications, 15000);
+        });
+    }, 2000);
+</script>

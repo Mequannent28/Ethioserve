@@ -54,11 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
             background-color: #f4f6f9;
         }
 
-        .main-content {
-            margin-left: 240px;
-            padding: 30px;
-            min-height: 100vh;
-        }
+        
 
         .form-card {
             background: white;
@@ -76,11 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
             font-weight: 700;
         }
 
-        @media (max-width: 768px) {
-            .main-content {
-                margin-left: 0;
-            }
-        }
+        
     </style>
 </head>
 
