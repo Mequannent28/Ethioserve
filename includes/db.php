@@ -81,7 +81,7 @@ foreach ($dsns as $dsn) {
      }
 }
 
-// Auto-Patch for New Features: Ensure Rental Request columns exist (for Render/Production)
+// Auto-Patch for New Features: Ensure Rental & Chat infrastructure exists (for Render/Production)
 try {
     $pdo->query("SELECT duration_months FROM rental_requests LIMIT 1");
 } catch (Exception $e) {
@@ -93,6 +93,28 @@ try {
             ADD COLUMN IF NOT EXISTS chat_initiated TINYINT(1) DEFAULT 0,
             ADD COLUMN IF NOT EXISTS customer_typing_at DATETIME NULL,
             ADD COLUMN IF NOT EXISTS owner_typing_at DATETIME NULL");
+    } catch (Exception $ex) { /* Fail silently */ }
+}
+
+// Chat System Patch
+try {
+    $pdo->query("SELECT id FROM rental_chat_messages LIMIT 1");
+} catch (Exception $ch) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `rental_chat_messages` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `request_id` int(11) NOT NULL,
+          `sender_id` int(11) NOT NULL,
+          `receiver_id` int(11) NOT NULL,
+          `message` text DEFAULT NULL,
+          `message_type` enum('text','image','payment_proof') DEFAULT 'text',
+          `file_path` varchar(500) DEFAULT NULL,
+          `is_read` tinyint(1) DEFAULT 0,
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`),
+          KEY `request_id` (`request_id`),
+          KEY `sender_id` (`sender_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Exception $ex) { /* Fail silently */ }
 }
 
