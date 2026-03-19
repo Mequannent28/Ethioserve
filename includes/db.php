@@ -87,8 +87,12 @@ try {
 } catch (Exception $e) {
     try {
         $pdo->exec("ALTER TABLE rental_requests ADD COLUMN customer_typing_at DATETIME NULL, ADD COLUMN owner_typing_at DATETIME NULL");
-    } catch (Exception $ex) { /* Fail silently if table doesn't exist yet */ }
+    } catch (Exception $ex) { /* Fail silently */ }
 }
+
+// SMS Module Patch: Ensure School Management Tables exist
+require_once __DIR__ . '/sms_migration.php';
+migrateSMS($pdo);
 
 if (!$success) {
      if (ENVIRONMENT === 'production') {
