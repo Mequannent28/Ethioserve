@@ -231,6 +231,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <i class="fas fa-user me-1"></i>Customer
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
+                                    onclick="fillLogin('teacher1','password')">
+                                    <i class="fas fa-chalkboard-teacher me-1"></i>Teacher
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                    onclick="fillLogin('student1','password')">
+                                    <i class="fas fa-graduation-cap me-1"></i>Student
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3"
+                                    onclick="fillLogin('parent1','password')">
+                                    <i class="fas fa-users me-1"></i>Parent
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
+                                    onclick="fillLogin('dr_dawit','password')">
+                                    <i class="fas fa-stethoscope me-1"></i>Doctor
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                    onclick="fillLogin('admin','password')">
+                                    <i class="fas fa-shield-alt me-1"></i>Admin
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
                                     onclick="fillLogin('hilton_owner','password')">
                                     <i class="fas fa-hotel me-1"></i>Hotel
                                 </button>
@@ -258,10 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     onclick="fillLogin('golden_bus','password')">
                                     <i class="fas fa-bus me-1"></i>Transport
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                    onclick="fillLogin('student1','password')">
-                                    <i class="fas fa-graduation-cap me-1"></i>Student
-                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                     onclick="fillLogin('selam_dating','password')">
                                     <i class="fas fa-heart me-1"></i>Dating (Selam)
@@ -285,22 +301,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3"
                                     onclick="fillLogin('cloud_company','password')">
                                     <i class="fas fa-building me-1"></i>Employer (Jobs)
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3"
-                                    onclick="fillLogin('dr_dawit','password')">
-                                    <i class="fas fa-stethoscope me-1"></i>Doctor
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3"
-                                    onclick="fillLogin('teacher1','password')">
-                                    <i class="fas fa-chalkboard-teacher me-1"></i>Teacher
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3"
-                                    onclick="fillLogin('parent1','password')">
-                                    <i class="fas fa-users me-1"></i>Parent
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                    onclick="fillLogin('admin','password')">
-                                    <i class="fas fa-shield-alt me-1"></i>Admin
                                 </button>
                             </div>
                             <small class="text-muted d-block text-center mt-2">All passwords:

@@ -1,5 +1,11 @@
-# 🇪🇹 EthioServe
+# 🇪🇹# EthioServe Platform
+Ethiopia's #1 All-in-One Super App for Real Estate, Jobs, School Management, Transport, and specialized services.
 
+**Latest Module Status:**
+- [x] **Rental Tracking** (Vouchers + Countdown) - ACTIVE
+- [x] **School Management System** (Teacher/Student/Parent portals) - INTEGRATED
+- [x] **Real-Time Chat** (Typing indicators) - ACTIVE
+ 
 **EthioServe** is a comprehensive Ethiopian services platform offering food delivery, hotel booking, transport/bus booking, house & car rental, flight booking, education resources, and broker management — all in one place.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Mequannent28/Ethioserve)
