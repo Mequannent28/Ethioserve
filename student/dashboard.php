@@ -1,7 +1,8 @@
 <?php
 require_once '../includes/functions.php';
 require_once '../includes/db.php';
-
+// Version: 1.1 - SMS Migration Reinforced
+ 
 requireLogin();
 
 $user_id   = getCurrentUserId();
