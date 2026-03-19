@@ -1,5 +1,5 @@
 <?php
-require_once 'c:/xampp/htdocs/Ethioserve-main/includes/db.php';
+require_once __DIR__ . '/../includes/db.php';
 
 function createUser($pdo, $username, $email, $fullName, $role) {
     $password = password_hash('password', PASSWORD_DEFAULT);
